@@ -120,7 +120,6 @@ function loginDenganGoogle() {
 /* ================= LOGOUT ================= */
 function logout() {
   signOut(auth).then(() => {
-    localStorage.clear();
     alert("Logout berhasil!");
     window.location.href = "index.html";
   });
