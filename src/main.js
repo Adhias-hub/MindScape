@@ -1202,16 +1202,49 @@ window.addEventListener("DOMContentLoaded", () => {
     Notification.requestPermission();
   }
   
-  // --- DAFTARKAN SERVICE WORKER DI SINI ---
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./firebase-messaging-sw.js')
-      .then((registration) => {
-        console.log('Service Worker berhasil didaftarkan dengan scope:', registration.scope);
-      })
-      .catch((err) => {
-        console.error('Service Worker gagal didaftarkan:', err);
-      });
-  }
+  // --- DAFTARKAN SERVICE WORKER & KIRIM CONFIG AMAN ---
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/firebase-messaging-sw.js')
+    .then((reg) => {
+      console.log('Service Worker berhasil didaftarkan dengan scope:', reg.scope);
+
+      // Fungsi untuk mengirimkan config dari .env secara aman
+      const kirimConfigKeSW = () => {
+        if (reg.active) {
+          reg.active.postMessage({
+            type: 'SET_FIREBASE_CONFIG',
+            config: {
+              apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+              authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+              projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+              storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+              messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+              appId: import.meta.env.VITE_FIREBASE_APP_ID
+            }
+          });
+        }
+      };
+
+      // Jika Service Worker sudah langsung aktif, kirim config-nya
+      if (reg.active) {
+        kirimConfigKeSW();
+      } else {
+        // Jika sedang menginstal atau memperbarui, tunggu sampai statusnya aktif (activated)
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'activated') {
+              kirimConfigKeSW();
+            }
+          });
+        });
+      }
+
+    })
+    .catch((err) => {
+      console.error('Service Worker gagal didaftarkan:', err);
+    });
+}
 
   jalankanSatpamOtomatis();          
   jalankanSatpamWellnessOtomatis();  
