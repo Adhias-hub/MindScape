@@ -3,10 +3,10 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
-    { "source": "/home", "destination": "/dist/home.html" },
-    { "source": "/focus", "destination": "/dist/focus.html" },
-    { "source": "/todo", "destination": "/dist/todo.html" },
-    { "source": "/wellness", "destination": "/dist/wellness.html" },
-    { "source": "/jadwal", "destination": "/dist/jadwal.html" }
+    { "source": "/home", "destination": "/home.html" },
+    { "source": "/focus", "destination": "/focus.html" },
+    { "source": "/todo", "destination": "/todo.html" },
+    { "source": "/wellness", "destination": "/wellness.html" },
+    { "source": "/jadwal", "destination": "/jadwal.html" }
   ]
 }
