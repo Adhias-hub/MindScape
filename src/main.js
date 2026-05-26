@@ -26,7 +26,24 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     console.log("User aktif:", user.email);
     
-    // Tampilkan data ke UI jika elemennya ada di halaman saat ini
+    // =========================================================================
+    // 🔥 AUTO-SWITCH DATA LOKAL BERDASARKAN USER UID (LOGIKA BARU LU)
+    // =========================================================================
+    if (isHomePage) {
+      // Ambil data spesifik milik UID user yang login
+      schedules = JSON.parse(localStorage.getItem(`schedules_${user.uid}`)) || [];
+      tasks = JSON.parse(localStorage.getItem(`tasks_${user.uid}`)) || [];
+      wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${user.uid}`)) || [];
+      
+      const savedTimer = localStorage.getItem(`activeFocusTimer_${user.uid}`);
+      // Panggil fungsi display bawaan lu biar UI langsung sinkron terupdate!
+      if (typeof displaySchedules === "function") displaySchedules();
+      if (typeof displayTasks === "function") displayTasks();
+      if (typeof displayWellness === "function") displayWellness();
+    }
+    // =========================================================================
+    
+    // Tampilkan data ke UI jika elemennya ada di halaman saat ini (Definisinya wajib ada, King!)
     const pEmail = document.getElementById("profileEmail");
     const pName = document.getElementById("profileName");
     
@@ -41,10 +58,10 @@ onAuthStateChanged(auth, (user) => {
     // Jika user belum login tapi nekat buka home.html, tendang ke login
     if (isHomePage) {
       alert("Akses ditolak! Silakan login terlebih dahulu.");
-      window.location.href = "index.html";
     }
   }
 });
+
 
 /* ================= REGISTER (STRATA AMAN FIREBASE) ================= */
 function register() {
@@ -253,7 +270,7 @@ function displaySchedules() {
   scheduleList.innerHTML = "";
   
   // Ambil data paling fresh dari localstorage
-  schedules = JSON.parse(localStorage.getItem("schedules")) || [];
+schedules = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
   urutkanJadwalSesuaiHari(); // Urutkan dulu secara internal sebelum digambar ke HTML
 
   schedules.forEach((schedule, index) => {
@@ -290,7 +307,7 @@ function addSchedule() {
   
   // SOLUSI BUG 1: Urutkan array-nya dulu, baru simpan ke localStorage secara permanen
   urutkanJadwalSesuaiHari();
-  localStorage.setItem("schedules", JSON.stringify(schedules));
+  localStorage.setItem(`schedules_${auth.currentUser.uid}`, JSON.stringify(schedules));
   
   displaySchedules();
 
@@ -304,7 +321,7 @@ function addSchedule() {
 function deleteSchedule(index) {
   // Sekarang index dari HTML dan urutan array lokal sudah 100% sinkron dan aman!
   schedules.splice(index, 1);
-  localStorage.setItem("schedules", JSON.stringify(schedules));
+  localStorage.setItem(`schedules_${auth.currentUser.uid}`, JSON.stringify(schedules));
   displaySchedules();
 }
 
@@ -324,7 +341,7 @@ function jalankanSatpamOtomatis() {
     const tanggalKunciStr = sekarang.toDateString(); // Kunci tanggal harian (Contoh: "Tue May 26 2026")
     const jamSekarangMenit = (sekarang.getHours() * 60) + sekarang.getMinutes();
     
-    const jadwalAktif = JSON.parse(localStorage.getItem("schedules")) || [];
+    const jadwalAktif = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
 
     jadwalAktif.forEach((jadwal) => {
       if (kamusHari[jadwal.day] === hariIniAngka) {
@@ -413,7 +430,7 @@ function displayTasks(){
   if(!taskList) return;
   taskList.innerHTML = "";
 
-  tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+ tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
 
   // Urutkan berdasarkan deadline terdekat
   tasks.sort((a, b) => {
@@ -457,7 +474,7 @@ function addTask(){
   let deadlineGabungan = `${dateVal}T${timeVal}`;
 
   tasks.push({ name: taskName, deadline: deadlineGabungan, note: note, completed: false });
-  localStorage.setItem("tasks", JSON.stringify(tasks));
+  localStorage.setItem(`tasks_${auth.currentUser.uid}`, JSON.stringify(tasks));
   
   displayTasks();
   displayGagalHistory(); // Refresh list gagal jika ada urutan baru
@@ -470,14 +487,14 @@ function addTask(){
 
 function completeTask(index){
   tasks[index].completed = true;
-  localStorage.setItem("tasks", JSON.stringify(tasks));
+  localStorage.setItem(`tasks_${auth.currentUser.uid}`, JSON.stringify(tasks));
   displayTasks();
   displayTodoHistory();
 }
 
 function deleteTask(index){
   tasks.splice(index, 1);
-  localStorage.setItem("tasks", JSON.stringify(tasks));
+  localStorage.setItem(`tasks_${auth.currentUser.uid}`, JSON.stringify(tasks));
   displayTasks();
   displayTodoHistory();
   displayGagalHistory(); // Update semua jenis histori
@@ -489,7 +506,7 @@ window.displayTodoHistory = function() {
   if (!historyList) return;
   historyList.innerHTML = "";
 
-  const tasksLokal = JSON.parse(localStorage.getItem("tasks")) || [];
+ const tasksLokal = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
   const tugasSelesai = tasksLokal.filter(task => task.completed);
 
   if (tugasSelesai.length === 0) {
@@ -517,7 +534,7 @@ window.displayGagalHistory = function() {
   if (!gagalList) return;
   gagalList.innerHTML = "";
 
-  const tasksLokal = JSON.parse(localStorage.getItem("tasks")) || [];
+  const tasksLokal = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
   const sekarang = new Date().getTime();
 
   const tugasGagal = tasksLokal.filter(task => !task.completed && new Date(task.deadline).getTime() < sekarang);
@@ -549,7 +566,7 @@ function jalankanAlarmTodoOtomatis() {
     const tanggalKunciStr = sekarang.toDateString();
     const timestampSekarang = sekarang.getTime();
     
-    const tugasAktif = JSON.parse(localStorage.getItem("tasks")) || [];
+   const tugasAktif = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
     periksaDeadlineOtomatis();
 
     tugasAktif.forEach((task) => {
@@ -602,7 +619,7 @@ window.deleteTask = deleteTask;
 
 function periksaDeadlineOtomatis() {
   const sekarang = new Date().getTime();
-  let tasksLokal = JSON.parse(localStorage.getItem("tasks")) || [];
+  let tasksLokal = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
   let adaPerubahan = false;
 
   tasksLokal.forEach((task, index) => {
@@ -659,7 +676,7 @@ function displayWellness(){
   wellnessList.innerHTML = "";
 
   // 1. Tarik data paling fresh dari localstorage
-  wellnessData = JSON.parse(localStorage.getItem("wellnessData")) || [];
+wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${auth.currentUser.uid}`)) || [];
 
   // 2. URUTKAN BERDASARKAN JAM PALING AWAL (Pagi ke Malam)
   wellnessData.sort((a, b) => a.time.localeCompare(b.time));
@@ -692,8 +709,7 @@ function addWellness(){
   }
 
   wellnessData.push({ type: type, time: time, note: note, completed: false });
-  localStorage.setItem("wellnessData", JSON.stringify(wellnessData));
-  displayWellness();
+  localStorage.setItem(`wellnessData_${auth.currentUser.uid}`, JSON.stringify(wellnessData));
   displayWellnessHistory(); // Ikut refresh jika ada data baru masuk
   
   if (typeof sendNotification === "function") {
@@ -709,7 +725,7 @@ function addWellness(){
 function completeWellness(index){
   // Mengubah status completed data wellness
   wellnessData[index].completed = true; 
-  localStorage.setItem("wellnessData", JSON.stringify(wellnessData));
+ localStorage.setItem(`wellnessData_${auth.currentUser.uid}`, JSON.stringify(wellnessData));
   
   displayWellness();         // Update daftar atas (aktivitas hilang)
   displayWellnessHistory();  // Update daftar histori (aktivitas muncul di bawah)
@@ -717,7 +733,7 @@ function completeWellness(index){
 
 function deleteWellness(index){
   wellnessData.splice(index, 1);
-  localStorage.setItem("wellnessData", JSON.stringify(wellnessData));
+  localStorage.setItem(`wellnessData_${auth.currentUser.uid}`, JSON.stringify(wellnessData));
   displayWellness();
   displayWellnessHistory();  // Menghapus histori jika index yang dihapus berupa item selesai
 }
@@ -726,7 +742,7 @@ function jalankanSatpamWellnessOtomatis() {
   setInterval(() => {
     const sekarang = new Date();
     const jamMenitSekarangStr = `${String(sekarang.getHours()).padStart(2, '0')}:${String(sekarang.getMinutes()).padStart(2, '0')}`;
-    const pengingatWellness = JSON.parse(localStorage.getItem("wellnessData")) || [];
+    const pengingatWellness = JSON.parse(localStorage.getItem(`wellnessData_${auth.currentUser.uid}`)) || [];
 
     pengingatWellness.forEach((item) => {
       if (!item.completed && item.time === jamMenitSekarangStr) {
@@ -755,7 +771,7 @@ window.displayWellnessHistory = function() {
   if (!historyList) return;
   historyList.innerHTML = "";
 
-  const wellnessLokal = JSON.parse(localStorage.getItem("wellnessData")) || [];
+  const wellnessLokal = JSON.parse(localStorage.getItem(`wellnessData_${auth.currentUser.uid}`)) || [];
   const wellnessSelesai = wellnessLokal.filter(item => item.completed);
 
   if (wellnessSelesai.length === 0) {
@@ -829,18 +845,21 @@ function startFocusTimer() {
   const durasiMilidetik = focusValue * 60 * 1000;
   const waktuSelesai = sekarang + durasiMilidetik;
 
-  // 3. SIMPAN PAKET DATA TIMER KE LOCALSTORAGE
+  // 3. SIMPAN PAKET DATA TIMER KE LOCALSTORAGE (SUDAH DIGEMBOK PAKE UID USER 🔥)
   const dataTimer = {
     endTime: waktuSelesai,
     initialDuration: focusValue,
     target: targetInput ? targetInput.value : "",
     note: noteInput ? noteInput.value : ""
   };
-  localStorage.setItem("activeFocusTimer", JSON.stringify(dataTimer));
+  
+  // Disimpan satu paket utuh bawaan kodingan asli lu, cuma nama kuncinya aja pake UID!
+  localStorage.setItem(`activeFocusTimer_${auth.currentUser.uid}`, JSON.stringify(dataTimer));
 
   // 4. JALANKAN MESIN COUNTDOWN
   jalankanHitungMundur(waktuSelesai, dataTimer.target, dataTimer.note, dataTimer.initialDuration);
 }
+
 
 function jalankanHitungMundur(endTime, targetText, noteText, initialDuration) {
   let targetDisplay = document.getElementById("targetDisplay");
@@ -875,7 +894,7 @@ function jalankanHitungMundur(endTime, targetText, noteText, initialDuration) {
     // KONDISI 1: JIKA WAKTU HABIS ALAMI (00:00)
     if (sisaDetikTotal <= 0) {
       clearInterval(focusInterval);
-      localStorage.removeItem("activeFocusTimer");
+      localStorage.removeItem(`activeFocusTimer_${auth.currentUser.uid}`);
 
       let timerDisplay = document.getElementById("timerDisplay");
       if (timerDisplay) timerDisplay.innerText = "00:00";
@@ -919,7 +938,7 @@ function hentikanTimerTengahJalanManual() {
     catatHistoryFocusKeLokal(dataTimer.target, dataTimer.initialDuration);
   }
 
-  localStorage.removeItem("activeFocusTimer");
+  localStorage.removeItem(`activeFocusTimer_${auth.currentUser.uid}`);
   
   let timerDisplay = document.getElementById("timerDisplay");
   if (timerDisplay) timerDisplay.innerText = "00:00";
@@ -930,7 +949,7 @@ function hentikanTimerTengahJalanManual() {
 
 function resetFocusTimer() {
   clearInterval(focusInterval);
-  localStorage.removeItem("activeFocusTimer");
+  localStorage.removeItem(`activeFocusTimer_${auth.currentUser.uid}`);
   
   let timerDisplay = document.getElementById("timerDisplay");
   if (timerDisplay) timerDisplay.innerText = "00:00";
@@ -1001,7 +1020,7 @@ function cekSesiTimerPasRefresh() {
       // Mesin dihidupkan ulang dengan data dari localStorage
       jalankanHitungMundur(dataTimer.endTime, dataTimer.target, dataTimer.note, dataTimer.initialDuration);
     } else {
-      localStorage.removeItem("activeFocusTimer");
+      localStorage.removeItem(`activeFocusTimer_${auth.currentUser.uid}`);
     }
   }
 }
@@ -1177,7 +1196,7 @@ function bersihkanWellnessGantiHariOtomatis() {
     let wellnessLokal = JSON.parse(localStorage.getItem("wellnessData")) || [];
     wellnessLokal.forEach(item => item.completed = false);
     
-    localStorage.setItem("wellnessData", JSON.stringify(wellnessLokal));
+    localStorage.setItem(`wellnessData_${auth.currentUser.uid}`, JSON.stringify(wellnessData));
     localStorage.removeItem("wellnessHistoryData"); 
     localStorage.setItem("lastWellnessDate", tanggalHariIni);
   }
