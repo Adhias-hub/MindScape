@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta name="description" content="MindSpace: Aplikasi produktivitas mahasiswa untuk mengatur jadwal kuliah, tugas, kesehatan, dan fokus belajar dengan notifikasi pintar.">
+  <script src="v1.js?v=1.1" defer></script>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/src/wellness.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wellness</title>
+  <!-- Diseragamkan ke style.css utama agar visual gradasi premiumnya sinkron -->
+  <link rel="stylesheet" href="wellness.css">
+  <link rel="manifest" href="manifest.json">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://*.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
+</head>
+
+<body>
+
+  <!-- ================= HEADER ================= -->
+  <header class="home-header">
+    <div class="logo-area">
+      <h1>MindSpace 🌸</h1>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <a href="home.html">Beranda</a>
+      <a href="jadwal.html">Jadwal</a>
+      <a href="todo.html">To-Do List</a>
+      <a href="wellness.html">Wellness</a>
+      <a href="focus.html">Focus Mode</a>
+    </nav>
+  </header>
+
+  <!-- ================= WELLNESS ================= -->
+  <section class="wellness-section">
+    <h2>💧 Wellness Reminder</h2>
+
+    <!-- FORM -->
+    <div class="wellness-form">
+      <select id="wellnessType">
+        <option value="">Pilih Reminder</option>
+        <option>Minum Air</option>
+        <option>Makan</option>
+      </select>
+      <input type="time" id="wellnessTime">
+      <input type="text" id="wellnessNote" placeholder="Pesan motivasi">
+      <button onclick="addWellness()">Tambah Reminder</button>
+    </div>
+
+    <!-- TARGET -->
+    <div class="water-target">
+      💙 Target minum hari ini: 8 gelas air
+    </div>
+
+    <!-- LIST ELEMEN AKTIF -->
+    <div id="wellnessList"></div>
+
+    <!-- ================= HISTORI WELLNESS (AUTO RESET SETIAP HARI BARU) ================= -->
+    <div class="wellness-history-section" style="margin-top: 50px; max-width: 1200px; margin-left: auto; margin-right: auto;">
+      <h3 style="color: #7c3aed; margin-bottom: 20px; font-size: 22px; font-weight: 800;">📜 Log Kesehatan Hari Ini</h3>
+      <!-- Tempat menampung log cetakan JS yang bakal auto wipe-out pas ganti hari -->
+      <div id="wellnessHistoryList"></div>
+    </div>
+
+  </section>
+
+  <!-- LOADING CORE ENGINE -->
+ <script type="module" src="/src/main.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta name="description" content="MindSpace: Aplikasi produktivitas mahasiswa untuk mengatur jadwal kuliah, tugas, kesehatan, dan fokus belajar dengan notifikasi pintar.">
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/src/todo.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>To-Do List</title>
+  <link rel="stylesheet" href="todo.css">
+  <link rel="manifest" href="manifest.json">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://*.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
+</head>
+
+<body>
+
+  <!-- ================= HEADER ================= -->
+  <header class="home-header">
+    <div class="logo-area">
+      <h1>MindSpace 🌸</h1>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <a href="home.html">Beranda</a>
+      <a href="jadwal.html">Jadwal</a>
+      <a href="todo.html">To-Do List</a>
+      <a href="wellness.html">Wellness</a>
+      <a href="focus.html">Focus Mode</a>
+    </nav>
+  </header>
+
+  <!-- ================= TODO ================= -->
+  <section class="todo-section">
+    <h2>📝 To-Do List</h2>
+
+    <!-- FORM -->
+    <div class="todo-form">
+      <input type="text" id="taskInput" placeholder="Nama tugas">
+      <input type="date" id="deadlineDate">
+      <input type="time" id="deadlineTime">
+      <input type="text" id="taskNote" placeholder="Catatan tugas">
+      <button onclick="addTask()">Tambah Tugas</button>
+    </div>
+
+    <!-- LIST TUGAS AKTIF -->
+    <div id="taskList"></div>
+
+    <!-- ================= BOX HISTORI KEMBAR (BERDAMPINGAN/BERURUTAN) ================= -->
+    <div class="todo-history-section" style="margin-top: 50px; max-width: 1200px; margin-left: auto; margin-right: auto;">
+      
+      <!-- 1. RIWAYAT TUGAS BERHASIL -->
+      <div style="margin-bottom: 40px;">
+        <h3 style="color: #10b981; margin-bottom: 20px; font-size: 22px; font-weight: 800;">📜 Riwayat Tugas Selesai</h3>
+        <div id="todoHistoryList"></div>
+      </div>
+
+      <!-- 2. RIWAYAT TUGAS GAGAL (OVERDUE) -->
+      <div>
+        <h3 style="color: #ef4444; margin-bottom: 20px; font-size: 22px; font-weight: 800;">⚠️ Daftar Tugas Hangus (Lewat Deadline)</h3>
+        <div id="todoGagalList"></div>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- LOADING CORE ENGINE -->
+ <script type="module" src="/src/main.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta name="description" content="MindSpace: Aplikasi produktivitas mahasiswa untuk mengatur jadwal kuliah, tugas, kesehatan, dan fokus belajar dengan notifikasi pintar.">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindSpace Home</title>
+
+  <link rel="stylesheet" href="/src/home.css">
+  
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon.png">
+  
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://*.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
+
+<body>
+
+  <header class="home-header">
+    <div class="logo-area">
+      <h1>MindSpace 🌸</h1>
+    </div>
+
+    <nav class="navbar" aria-label="Menu Navigasi Utama">
+      <a href="home.html">Beranda</a>
+      <a href="jadwal.html">Jadwal</a>
+      <a href="todo.html">To-Do List</a>
+      <a href="wellness.html">Wellness</a>
+      <a href="focus.html">Focus Mode</a>
+    </nav>
+
+    <div class="profile-section">
+      <button class="profile-image" onclick="toggleMenu()" aria-label="Buka Menu Profil" aria-haspopup="true">
+        <img src="/icon.png" alt="Foto Profil Pengukur Waktu">
+      </button>
+
+      <div class="profile-dropdown" id="profileDropdown">
+        <div class="dropdown-top">
+          <h3 id="profileName">User</h3>
+          <p id="profileEmail">user@gmail.com</p>
+        </div>
+        <button onclick="openProfile()">👤 Profil</button>
+        <button onclick="privacySecurity()">🛡 Privasi & Keamanan</button>
+        <button onclick="changePassword()">🔒 Ubah Password</button>
+        <button onclick="logout()">🚪 Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero-section">
+      <div class="hero-text">
+        <h1>Atur Waktu &amp; Sayangi Dirimu 🌸</h1>
+        <p>
+          MindSpace membantu mahasiswa mengatur jadwal kuliah, deadline tugas, kesehatan,
+          dan fokus belajar agar hidup lebih seimbang dan produktif.
+        </p>
+        <button onclick="scrollDashboard()">Mulai Sekarang</button>
+      </div>
+    </section>
+
+    <section class="dashboard-section" id="dashboardSection">
+      <h2>Dashboard Hari Ini ✨</h2>
+
+      <div class="dashboard-grid">
+        <div class="dashboard-card" onclick="window.location.href='jadwal.html'" role="link" tabindex="0" aria-label="Lihat Jadwal Kuliah Hari Ini">
+          <h3>📚 Jadwal Hari Ini</h3>
+          <p>Klik untuk melihat jadwal kuliahmu dengan sistem 20 sampai 5 menit peringatan berkala sebelum jadwal dimulai.</p>
+        </div>
+
+        <div class="dashboard-card" onclick="window.location.href='todo.html'" role="link" tabindex="0" aria-label="Cek Deadline Tugas Kuliah">
+          <h3>📝 Deadline Tugas</h3>
+          <p>Cek tugas yang mendekati deadline dengan alarm 5 menit sebelum deadline.</p>
+        </div>
+
+        <div class="dashboard-card" onclick="window.location.href='wellness.html'" role="link" tabindex="0" aria-label="Buka Log Target Wellness Kesehatan">
+          <h3>💧 Wellness</h3>
+          <p>Jangan lupa minum air dan makan tepat waktu alarm on-time.</p>
+        </div>
+
+        <div class="dashboard-card" onclick="window.location.href='focus.html'" role="link" tabindex="0" aria-label="Masuk ke Sesi Belajar Focus Mode">
+          <h3>⏰ Focus Mode</h3>
+          <p>Fokus belajar lebih produktif.</p>
+        </div>
+      </div>
+
+      <div class="quotes-box">
+        <blockquote style="border: none; padding: 0; margin: 0; font-style: normal;">
+          “Produktif tidak harus menyiksa diri 😊”
+        </blockquote>
+      </div>
+    </section>
+  </main>
+
+  <div style="text-align: center; width: 100%;">
+    <button id="btnInstalPWA">📲 🌸 Instal MindSpace</button>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta name="description" content="MindSpace: Aplikasi produktivitas mahasiswa untuk mengatur jadwal kuliah, tugas, kesehatan, dan fokus belajar dengan notifikasi pintar.">
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/src/focus.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Focus Mode</title>
+  <!-- Diseragamkan ke style.css utama agar gradasi birunya menyatu sempurna -->
+  <link rel="stylesheet" href="focus.css">
+  <link rel="manifest" href="manifest.json">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://*.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
+
+</head>
+
+<body>
+
+  <header class="home-header">
+    <div class="logo-area">
+      <h1>MindSpace 🌸</h1>
+    </div>
+
+    <nav class="navbar">
+      <a href="home.html">Beranda</a>
+      <a href="jadwal.html">Jadwal</a>
+      <a href="todo.html">To-Do List</a>
+      <a href="wellness.html">Wellness</a>
+      <a href="focus.html">Focus Mode</a>
+    </nav>
+  </header>
+
+  <section class="focus-section">
+    <h2>⏰ Focus Mode</h2>
+
+    <div class="focus-form">
+      <input type="number" id="focusMinutes" placeholder="Durasi belajar (menit)">
+      <input type="text" id="focusTarget" placeholder="Target belajar">
+      <textarea id="focusNote" placeholder="Catatan hasil belajar"></textarea>
+    </div>
+
+    <div class="focus-layout-wrapper">
+  
+      <div class="timer-box">
+        <h1 id="timerDisplay">00:00</h1>
+        <div class="timer-buttons">
+          <button id="btnMulaiFocus" onclick="startFocusTimer()">Mulai</button>
+          <button class="btn-secondary" onclick="resetFocusTimer()">Reset</button>
+        </div>
+      </div> 
+
+      <div class="focus-target-box">
+        <div class="target-sub-box">
+          <h3>🎯 Target Belajar</h3>
+          <p id="targetDisplay">Belum ada target belajar.</p>
+        </div>
+        
+        <div class="box-divider"></div>
+
+        <div class="note-sub-box">
+          <h3>📝 Catatan Belajar</h3>
+          <p id="noteDisplay">Belum ada catatan.</p>
+        </div>
+      </div> 
+
+    </div> <div class="focus-history-section">
+      <h3>📜 Jurnal Riwayat Fokus</h3>
+      <div id="focusHistoryList"></div>
+    </div>
+
+  </section>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

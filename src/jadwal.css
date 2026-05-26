@@ -1,0 +1,470 @@
+/* ================= RESET ================= */
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background: #f4f6ff;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden; /* Gembok anti-bocor kanan kiri */
+}
+
+/* ================= HEADER & NAVBAR (PREMIUM ORIGINAL COLOR) ================= */
+.home-header {
+  width: 100%; /* Paksa full 100% menuhin lebar total layar */
+  padding: 22px 50px;
+  /* Kembali ke warna gradasi original lo yang soft premium */
+  background: linear-gradient(135deg, #a5b4ff 0%, #dce2ff 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 999;
+  box-shadow: 0 4px 20px rgba(75, 92, 255, 0.15); /* Shadow disesuaikan ke biru */
+  left: 0;
+  right: 0;
+}
+
+.logo-area h1 {
+  color: white;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  text-shadow: 0 2px 4px rgba(75, 92, 255, 0.2);
+}
+
+/* NAVBAR */
+.navbar {
+  display: flex;
+  gap: 30px;
+}
+
+.navbar a {
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 700;
+  font-size: 16px;
+  transition: 0.3s;
+  white-space: nowrap;
+}
+
+.navbar a:hover {
+  color: white;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+}
+
+/* PROFILE DROPDOWN SAFETY DESIGN */
+.profile-section {
+  position: relative;
+}
+
+.profile-image {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2.5px solid white;
+  cursor: pointer;
+  background: white;
+  transition: 0.2s;
+}
+
+.profile-image:hover {
+  transform: scale(1.05);
+}
+
+.profile-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* DROPDOWN BOX (Original Style dipertebal) */
+.profile-dropdown {
+  position: absolute;
+  top: 60px;
+  right: 0;
+  width: 250px;
+  background: white;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.15);
+  display: none;
+}
+
+.dropdown-top {
+  padding: 18px;
+  background: #f5f7ff;
+  border-bottom: 1px solid #eef1ff;
+}
+
+.dropdown-top h3 {
+  color: #4b5cff;
+  margin-bottom: 5px;
+}
+
+.dropdown-top p {
+  font-size: 13px;
+  color: #666;
+}
+
+.profile-dropdown button {
+  width: 100%;
+  border: none;
+  background: white;
+  padding: 15px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14.5px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.profile-dropdown button:hover {
+  background: #eef1ff;
+  color: #4b5cff;
+  padding-left: 20px;
+}
+
+
+/* ================= HERO SECTION (PADAT & BERISI) ================= */
+.hero-section {
+  padding: 60px 40px 30px 40px;
+  text-align: center;
+  max-width: 900px;
+  margin: auto;
+}
+
+.hero-text h1 {
+  font-size: 45px;
+  color: #4b5cff;
+  margin-bottom: 18px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.hero-text p {
+  max-width: 700px;
+  margin: auto;
+  line-height: 1.7;
+  color: #555;
+  font-size: 17px;
+}
+
+.hero-text button {
+  margin-top: 25px;
+  padding: 15px 35px;
+  border: none;
+  background: #4b5cff;
+  color: white;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  transition: 0.25s;
+  box-shadow: 0 6px 20px rgba(75, 92, 255, 0.25);
+}
+
+.hero-text button:hover {
+  background: #3949db;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(75, 92, 255, 0.35);
+}
+
+
+/* ================= DASHBOARD SUMMARY (GAGAH & PREMAN) ================= */
+.dashboard-section {
+  padding: 40px 40px 20px 40px;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.dashboard-section h2 {
+  text-align: left;
+  color: #4b5cff;
+  margin-bottom: 30px;
+  font-size: 28px;
+  font-weight: 800;
+  position: relative;
+  padding-left: 15px;
+}
+
+.dashboard-section h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  height: 28px;
+  width: 5px;
+  background: #4b5cff;
+  border-radius: 3px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.dashboard-card {
+  background: white;
+  padding: 28px;
+  border-radius: 24px; /* Samakan karakter kelengkungan gagah */
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.05);
+  border: 1px solid #eef1ff;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  border-color: #4b5cff;
+  box-shadow: 0 15px 30px rgba(75, 92, 255, 0.12);
+}
+
+.dashboard-card h3 {
+  color: #4b5cff;
+  margin-bottom: 12px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.dashboard-card p {
+  color: #666;
+  line-height: 1.6;
+  font-size: 14.5px;
+}
+
+/* QUOTES BOX PREMIUM */
+.quotes-box {
+  margin-top: 40px;
+  background: #dfe6ff;
+  padding: 20px 30px;
+  border-radius: 18px;
+  text-align: center;
+  color: #4b5cff;
+  font-weight: 600;
+  font-size: 15px;
+  border-left: 6px solid #4b5cff;
+  box-shadow: 0 8px 20px rgba(75, 92, 255, 0.04);
+}
+
+
+/* ================= JADWAL KULIAH (PADAT, BERISI & MAKSIMAL) ================= */
+.schedule-section {
+  padding: 40px 40px 80px 40px;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.schedule-section h2 {
+  text-align: center;
+  color: #4b5cff;
+  margin-bottom: 45px;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* FORM INPUT JADWAL JADI LEBIH GAGAH */
+.schedule-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+  margin-bottom: 50px;
+  background: white;
+  padding: 30px;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.05);
+  border: 1px solid #eef1ff;
+}
+
+.schedule-form input,
+.schedule-form select {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  outline: none;
+  font-size: 15.5px;
+  color: #1e293b;
+  font-weight: 500;
+  transition: all 0.25s ease;
+}
+
+.schedule-form input:focus,
+.schedule-form select:focus {
+  border-color: #4b5cff; /* Dikembalikan ke warna biru utama */
+  background: white;
+  box-shadow: 0 0 0 4px rgba(75, 92, 255, 0.15);
+}
+
+/* Tombol Tambah Jadwal */
+.schedule-form button {
+  background: #4b5cff; /* Menggunakan warna solid biru utama */
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(75, 92, 255, 0.2);
+}
+
+.schedule-form button:hover {
+  background: #3949db; /* Warna hover biru gelap ori */
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(75, 92, 255, 0.3);
+}
+
+/* ================= TABEL JADWAL KULIAH SUPER BERISI ================= */
+/* ================= TABEL JADWAL KULIAH SUPER BERISI (REVISI: DETIL GARIS ESTETIK) ================= */
+.schedule-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: white;
+  
+  /* Sudut kotak kokoh */
+  border-radius: 14px; 
+  overflow: hidden;
+  box-shadow: 0 12px 35px rgba(75, 92, 255, 0.06);
+  
+  /* GARIS TEPI LUAR TABEL */
+  border: 1.5px solid #dfe6ff; 
+}
+
+/* Header Tabel */
+.schedule-table th {
+  background: #4b5cff;
+  color: white;
+  padding: 22px 24px;
+  font-size: 17px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.5px;
+  
+  /* GARIS PEMBATAS VERTIKAL DI HEADER */
+  border-right: 1px solid rgba(255, 255, 255, 0.2); 
+}
+
+/* Hilangkan garis vertikal di kolom header paling kanan agar tidak menabrak border luar */
+.schedule-table th:last-child {
+  border-right: none;
+}
+
+/* Kolom / Isi Tabel */
+.schedule-table td {
+  background: white;
+  padding: 20px 24px;
+  text-align: center;
+  color: #334155;
+  font-size: 16px;
+  font-weight: 500;
+  
+  /* GARIS PEMBATAS VERTIKAL & HORIZONTAL DI ISI TABEL */
+  border-bottom: 1px solid #eef1ff;
+  border-right: 1px solid #eef1ff; 
+  
+  transition: all 0.2s ease;
+}
+
+/* Hilangkan garis vertikal di kolom data paling kanan */
+.schedule-table td:last-child {
+  border-right: none;
+}
+
+/* Kolom Hari (Teks Tebal) */
+.schedule-table td strong {
+  color: #4b5cff;
+  font-weight: 700;
+  font-size: 16.5px;
+}
+
+/* Hover per baris data */
+.schedule-table tr:hover td {
+  background: #f5f7ff;
+  color: #0f172a;
+}
+
+/* Hilangkan semua garis bawah di baris paling terakhir agar tidak dobel dengan border luar */
+.schedule-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Tombol Hapus */
+.schedule-table button {
+  padding: 10px 18px;
+  border: none;
+  background: #fee2e2;
+  color: #ef4444;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 10px; 
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.schedule-table button:hover {
+  background: #ef4444;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+@media (max-width: 768px) {
+  /* 1. Gembok saklek level html & body biar gak bisa geser kanan sama sekali */
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* 2. JINAKKAN HEADER (Biar gak melar keluar layar HP) */
+  .home-header {
+    padding: 15px 15px; /* Sempitkan padding kiri-kanan dari 50px ke 15px */
+    width: 100%;
+    box-sizing: border-box; /* Paksa padding dihitung di dalam lebar, bukan nambah lebar */
+    display: flex;
+    flex-direction: column; /* Ubah logo dan menu jadi susunan atas-bawah biar gak sesak */
+    gap: 15px;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Rapikan area logo di HP */
+  .logo-area h1 {
+    font-size: 22px;
+    white-space: normal; /* Izinkan teks patah baris kalau nama aplikasinya kepanjangan */
+  }
+
+  /* Rapatkan navbar menu di HP */
+  .navbar {
+    gap: 15px; /* Perkecil jarak antar menu biar gak offscreen */
+    justify-content: center;
+    width: 100%;
+  }
+
+  .navbar a {
+    font-size: 14.5px;
+  }
+}
+
+
+.schedule-table tbody th[scope="row"] {
+    background-color: #e0f2fe !important; /* Warna biru muda pastel yang soft dan lucu */
+    color: #0369a1 !important;            /* Warna teks biru tua agar kontrasnya lolos audit Accessibility */
+    text-align: center;
+    font-weight: 700;
+}
+
+/* Opsional: Biar transisi warna card tabel lu senada kalau disentuh kursor */
+.schedule-table tbody tr:hover th[scope="row"] {
+    background-color: #bae6fd !important; /* Biru muda sedikit lebih tegas pas di-hover */
+}

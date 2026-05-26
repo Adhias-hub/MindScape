@@ -1,0 +1,352 @@
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background: #f4f6ff;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden; /* Gembok anti-bocor kanan kiri */
+}
+
+/* ================= HEADER & NAVBAR (PREMIUM ORIGINAL COLOR) ================= */
+.home-header {
+  width: 100%; /* Paksa full 100% menuhin lebar total layar */
+  padding: 22px 50px;
+  /* Kembali ke warna gradasi original lo yang soft premium */
+  background: linear-gradient(135deg, #a5b4ff 0%, #dce2ff 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 999;
+  box-shadow: 0 4px 20px rgba(75, 92, 255, 0.15); /* Shadow disesuaikan ke biru */
+  left: 0;
+  right: 0;
+}
+
+.logo-area h1 {
+  color: white;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  text-shadow: 0 2px 4px rgba(75, 92, 255, 0.2);
+}
+
+/* NAVBAR */
+.navbar {
+  display: flex;
+  gap: 30px;
+}
+
+.navbar a {
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 700;
+  font-size: 16px;
+  transition: 0.3s;
+  white-space: nowrap;
+}
+
+.navbar a:hover {
+  color: white;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+}
+
+/* PROFILE DROPDOWN SAFETY DESIGN */
+.profile-section {
+  position: relative;
+}
+
+.profile-image {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2.5px solid white;
+  cursor: pointer;
+  background: white;
+  transition: 0.2s;
+}
+
+.profile-image:hover {
+  transform: scale(1.05);
+}
+
+.profile-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* DROPDOWN BOX (Original Style dipertebal) */
+.profile-dropdown {
+  position: absolute;
+  top: 60px;
+  right: 0;
+  width: 250px;
+  background: white;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.15);
+  display: none;
+}
+
+.dropdown-top {
+  padding: 18px;
+  background: #f5f7ff;
+  border-bottom: 1px solid #eef1ff;
+}
+
+.dropdown-top h3 {
+  color: #4b5cff;
+  margin-bottom: 5px;
+}
+
+.dropdown-top p {
+  font-size: 13px;
+  color: #666;
+}
+
+.profile-dropdown button {
+  width: 100%;
+  border: none;
+  background: white;
+  padding: 15px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14.5px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.profile-dropdown button:hover {
+  background: #eef1ff;
+  color: #4b5cff;
+  padding-left: 20px;
+}
+
+/* ================= TODO SECTION (REVISI JUARA LAYOUT SAMA RATA) ================= */
+
+.todo-section {
+  padding: 40px 40px 60px 40px;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.todo-section h2 {
+  text-align: center;
+  color: #4b5cff;
+  margin-bottom: 40px;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* ================= FORM INPUT TODO (UKURAN SAMA RATA 100% + GAP ANTI-TABRAKAN) ================= */
+.todo-form {
+  display: grid;
+  /* KUNCI UTAMA: repeat(4, minmax(0, 1fr)) membagi 4 kolom SAMA RATA 
+     untuk input kalender, catatan, jam, dan tombol tambah tugas */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  
+  /* GAP TOTAL: Jarak antar elemen (horizontal dan vertikal) konsisten 20px */
+  gap: 20px; 
+  
+  margin-bottom: 50px;
+  background: white;
+  padding: 35px;
+  border-radius: 24px;
+  box-shadow: 0 12px 35px rgba(75, 92, 255, 0.06);
+  border: 1px solid #eef1ff;
+  align-items: stretch; /* Memastikan tinggi input dan tombol benar-benar sama rata */
+}
+
+/* Memastikan semua element input (text, date, time) memiliki ukuran box yang sama */
+.todo-form input {
+  box-sizing: border-box; /* Mencegah ukuran bengkak karena padding */
+  height: 58px; /* Mengunci tinggi agar sama persis dengan tombol */
+  padding: 0 18px;
+  border-radius: 16px;
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  outline: none;
+  font-size: 16px;
+  color: #1e293b;
+  font-weight: 500;
+  transition: all 0.25s ease;
+  width: 100%; /* Paksa memenuhi kotak grid masing-masing tanpa bocor */
+}
+
+.todo-form input:focus {
+  border-color: #4b5cff;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(75, 92, 255, 0.15);
+}
+
+/* TOMBOL TAMBAH TUGAS (UKURAN DAN TINGGI KEMBAR DENGAN INPUT) */
+.todo-form button {
+  box-sizing: border-box;
+  height: 58px; /* Tinggi KEMBAR KEMBAR dengan input */
+  padding: 0 20px; 
+  background: #4b5cff;
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 16px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 20px rgba(75, 92, 255, 0.2);
+  width: 100%; /* Memenuhi kolom ke-4 grid */
+}
+
+.todo-form button:hover {
+  background: #3949db;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(75, 92, 255, 0.3);
+}
+
+/* Media Query Tambahan: Agar saat dibuka di HP tidak maksa 4 kolom (jadi jelek/sempit) */
+@media (max-width: 768px) {
+  .todo-form {
+    grid-template-columns: 1fr; /* Berjejer ke bawah saat di layar HP */
+  }
+}
+
+/* ================= TASK CARDS GRID (GAP PER TUGAS AMAN) ================= */
+.todo-grid {
+  display: grid;
+  /* Menggunakan auto-fill agar flexibel, dan minimal lebar card 300px */
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  
+  /* KUNCI UTAMA: Mengatur jarak antar kolom (24px) dan memaksa jarak antar baris/bawah (28px) */
+  column-gap: 24px;
+  row-gap: 28px; 
+  
+  width: 100%;
+}
+
+/* TASK CARD */
+.task-card {
+  background: white;
+  padding: 28px;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.05);
+  border: 1px solid #eef1ff;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  
+  
+  margin-bottom: 8px; 
+}
+
+
+.todo-grid > .task-card:last-child {
+  margin-bottom: 0;
+}
+.task-card:hover {
+  transform: translateY(-5px);
+  border-color: #4b5cff;
+  box-shadow: 0 15px 30px rgba(75, 92, 255, 0.12);
+}
+
+.task-card h3 {
+  color: #4b5cff;
+  margin-bottom: 12px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.task-card p {
+  color: #666;
+  line-height: 1.6;
+  font-size: 15px;
+  margin-bottom: 15px;
+}
+
+/* BUTTONS AREA DI DALAM CARD */
+.task-buttons {
+  margin-top: auto;
+  display: flex;
+  gap: 12px;
+}
+
+.task-buttons button {
+  flex: 1;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 14.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.task-buttons .done-btn {
+  background: #e8f5e9;
+  color: #4CAF50;
+}
+
+.task-buttons .done-btn:hover {
+  background: #4CAF50;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.25);
+}
+
+.task-buttons .delete-btn {
+  background: #fee2e2;
+  color: #ff6b6b;
+}
+
+.task-buttons .delete-btn:hover {
+  background: #ff6b6b;
+  color: white;
+  transform: translateY
+}
+
+@media (max-width: 768px) {
+  /* 1. Gembok saklek level html & body biar gak bisa geser kanan sama sekali */
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* 2. JINAKKAN HEADER (Biar gak melar keluar layar HP) */
+  .home-header {
+    padding: 15px 15px; /* Sempitkan padding kiri-kanan dari 50px ke 15px */
+    width: 100%;
+    box-sizing: border-box; /* Paksa padding dihitung di dalam lebar, bukan nambah lebar */
+    display: flex;
+    flex-direction: column; /* Ubah logo dan menu jadi susunan atas-bawah biar gak sesak */
+    gap: 15px;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Rapikan area logo di HP */
+  .logo-area h1 {
+    font-size: 22px;
+    white-space: normal; /* Izinkan teks patah baris kalau nama aplikasinya kepanjangan */
+  }
+
+  /* Rapatkan navbar menu di HP */
+  .navbar {
+    gap: 15px; /* Perkecil jarak antar menu biar gak offscreen */
+    justify-content: center;
+    width: 100%;
+  }
+
+  .navbar a {
+    font-size: 14.5px;
+  }
+}

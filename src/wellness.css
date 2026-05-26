@@ -1,0 +1,403 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background: #f4f6ff;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden; /* Gembok anti-bocor kanan kiri */
+}
+
+/* ================= HEADER & NAVBAR (PREMIUM ORIGINAL COLOR) ================= */
+.home-header {
+  width: 100%; /* Paksa full 100% menuhin lebar total layar */
+  padding: 22px 50px;
+  /* Kembali ke warna gradasi original lo yang soft premium */
+  background: linear-gradient(135deg, #a5b4ff 0%, #dce2ff 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 999;
+  box-shadow: 0 4px 20px rgba(75, 92, 255, 0.15); /* Shadow disesuaikan ke biru */
+  left: 0;
+  right: 0;
+}
+
+.logo-area h1 {
+  color: white;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  text-shadow: 0 2px 4px rgba(75, 92, 255, 0.2);
+}
+
+/* NAVBAR */
+.navbar {
+  display: flex;
+  gap: 30px;
+}
+
+.navbar a {
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 700;
+  font-size: 16px;
+  transition: 0.3s;
+  white-space: nowrap;
+}
+
+.navbar a:hover {
+  color: white;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+}
+
+/* PROFILE DROPDOWN SAFETY DESIGN */
+.profile-section {
+  position: relative;
+}
+
+.profile-image {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2.5px solid white;
+  cursor: pointer;
+  background: white;
+  transition: 0.2s;
+}
+
+.profile-image:hover {
+  transform: scale(1.05);
+}
+
+.profile-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* DROPDOWN BOX (Original Style dipertebal) */
+.profile-dropdown {
+  position: absolute;
+  top: 60px;
+  right: 0;
+  width: 250px;
+  background: white;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.15);
+  display: none;
+}
+
+.dropdown-top {
+  padding: 18px;
+  background: #f5f7ff;
+  border-bottom: 1px solid #eef1ff;
+}
+
+.dropdown-top h3 {
+  color: #4b5cff;
+  margin-bottom: 5px;
+}
+
+.dropdown-top p {
+  font-size: 13px;
+  color: #666;
+}
+
+.profile-dropdown button {
+  width: 100%;
+  border: none;
+  background: white;
+  padding: 15px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14.5px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.profile-dropdown button:hover {
+  background: #eef1ff;
+  color: #4b5cff;
+  padding-left: 20px;
+}
+
+/* ================= WELLNESS SECTION (GAGAH, PADAT & MODERN) ================= */
+.wellness-section {
+  padding: 40px 40px 60px 40px; /* Padding disesuaikan agar compact dan padat */
+  max-width: 1200px;
+  margin: auto;
+}
+
+.wellness-section h2 {
+  text-align: center;
+  color: #4b5cff;
+  margin-bottom: 40px;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* TARGET WATER BOX (Dibuat Bold & Berisi Ala Widget Premium) */
+.water-target {
+  background: #dfe6ff; /* Warna aksen biru soft original */
+  color: #4b5cff;
+  padding: 22px;
+  border-radius: 20px; /* Roundness tebal proporsional */
+  text-align: center;
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 35px;
+  border-left: 6px solid #4b5cff; /* Aksen bar kiri biar tegas */
+  box-shadow: 0 8px 25px rgba(75, 92, 255, 0.06);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+/* FORM INPUT WELLNESS (Satu Vibe dengan Form Jadwal) */
+.wellness-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-bottom: 40px;
+  background: white;
+  padding: 30px;
+  border-radius: 24px; /* Gembok melengkung 24px gagah */
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.05);
+  border: 1px solid #eef1ff;
+  align-items: center; /* Memastikan semua input sebaris lurus secara vertikal */
+}
+
+.wellness-form input,
+.wellness-form select {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  outline: none;
+  font-size: 15.5px;
+  color: #1e293b;
+  font-weight: 500;
+  transition: all 0.25s ease;
+}
+
+.wellness-form input:focus,
+.wellness-form select:focus {
+  border-color: #4b5cff;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(75, 92, 255, 0.15);
+}
+
+/* Tombol Tambah Log Kesehatan (Desktop Mode) */
+.wellness-form button {
+  background: #4b5cff;
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(75, 92, 255, 0.2);
+  
+  /* KUNCI PERBAIKAN UKURAN TOMBOL LAPTOP / DESKTOP */
+  display: inline-block;       /* Mengunci karakteristik box model tombol */
+  align-self: center;          /* Mencegah tombol ditarik melar (stretched) ke atas/bawah oleh grid */
+  padding: 16px 24px;          /* Memberikan ruang dalam yang konsisten dengan input & select */
+  white-space: nowrap;         /* Menjaga teks tombol tetap dalam satu baris gagah */
+}
+
+.wellness-form button:hover {
+  background: #3949db;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(75, 92, 255, 0.3);
+}
+
+/* ================= WELLNESS CARDS CONTAINER & GRID ================= */
+.wellness-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  column-gap: 20px;
+  row-gap: 28px; /* Memaksa jarak vertikal 28px saat card turun ke baris baru */
+  width: 100%;
+}
+
+/* CARD LOG KESEHATAN (Padat, Tebal & Berisi) */
+.wellness-card {
+  background: white;
+  padding: 28px;
+  border-radius: 24px; /* Konsisten 24px melengkung mewah */
+  margin-bottom: 8px; 
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.05);
+  border: 1px solid #eef1ff;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.wellness-grid > .wellness-card:last-child {
+  margin-bottom: 0;
+}
+
+.wellness-card:hover {
+  transform: translateY(-5px);
+  border-color: #4b5cff;
+  box-shadow: 0 15px 30px rgba(75, 92, 255, 0.12);
+}
+
+.wellness-card h3 {
+  color: #4b5cff;
+  margin-bottom: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wellness-card p {
+  color: #666;
+  line-height: 1.6;
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+
+/* BUTTONS AREA INSIDE CARD */
+.wellness-buttons {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+}
+
+.wellness-buttons button {
+  flex: 1; /* Biar tombolnya seimbang membagi space */
+  padding: 12px 18px;
+  border: none;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 14.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Tombol Selesai (Original Green) */
+.wellness-buttons .done-btn {
+  background: #e8f5e9;
+  color: #4CAF50;
+}
+
+.wellness-buttons .done-btn:hover {
+  background: #4CAF50;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.25);
+}
+
+/* Tombol Hapus (Original Red) */
+.wellness-buttons .delete-btn {
+  background: #fee2e2;
+  color: #ff6b6b;
+}
+
+.wellness-buttons .delete-btn:hover {
+  background: #ff6b6b;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.25);
+}
+
+/* STATE COMPLETED (Efek coret tipis elegant) */
+.completed {
+  opacity: 0.55;
+  text-decoration: line-through;
+  filter: grayscale(30%);
+}
+
+/* ================= PREVENTIF RESPONSIF HP (ANTI-BOCOR KANAN) ================= */
+@media (max-width: 768px) {
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  .home-header {
+    padding: 15px 15px;
+    width: 100%;
+    box-sizing: border-box;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .logo-area h1 {
+    font-size: 22px;
+    white-space: normal;
+  }
+
+  .navbar {
+    gap: 15px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .navbar a {
+    font-size: 14.5px;
+  }
+
+  .wellness-section {
+    padding: 20px 15px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .wellness-section h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+
+  .wellness-form {
+    padding: 20px;
+    gap: 12px;
+    border-radius: 20px;
+    width: 100%;
+    box-sizing: border-box;
+    grid-template-columns: 1fr; /* Paksa inputan dan tombol jadi satu kolom lurus ke bawah */
+  }
+
+  .wellness-form input,
+  .wellness-form select {
+    width: 100%;
+    height: 50px;
+    padding: 12px;
+    font-size: 14.5px;
+    box-sizing: border-box;
+  }
+
+  /* OPTIMALISASI TOMBOL DI LAYER MOBILE (Dibuat Full Width & Proporsional) */
+  .wellness-form button {
+    display: inline-block;
+    width: 100%;
+    min-height: 50px;           /* Menggunakan min-height agar tidak tercekik */
+    height: auto;               /* Membiarkan height fleksibel mengikuti isi */
+    padding: 14px 20px;
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 8px;
+    white-space: nowrap;
+    box-sizing: border-box;
+    text-align: center;
+  }
+}

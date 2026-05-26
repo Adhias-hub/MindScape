@@ -1,0 +1,222 @@
+/* ================= LOGIN & REGISTER (MINIMALIS & MODERN) ================= */
+
+.auth-container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* Background ungu pastel minimalis murni */
+  background: linear-gradient(135deg, #f3f4f6 0%, #e0e7ff 100%);
+}
+
+.auth-box {
+  width: 380px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 40px;
+  border-radius: 24px;
+  /* Efek bayangan halus/soft shadow ala Apple & Google modern */
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.auth-box h1 {
+  text-align: center;
+  color: #4b5cff; /* Aksen Ungu MindSpace */
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.auth-box p {
+  text-align: center;
+  color: #6b7280;
+  margin-bottom: 30px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* INPUT SECTION */
+.input-box {
+  margin-bottom: 20px;
+}
+
+.input-box label {
+  display: block;
+  margin-bottom: 6px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.input-box input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+  outline: none;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.input-box input:focus {
+  border-color: #4b5cff;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(75, 92, 255, 0.12);
+}
+
+/* LINK LUPA PASSWORD & SPACING FORM */
+.forgot-password {
+  text-align: right;
+  margin-top: 15px;    /* Kasih jarak dari tombol Login di atasnya */
+  margin-bottom: 20px; /* Kasih jarak ke separator / tombol Google di bawahnya */
+}
+
+.forgot-password a {
+  color: #4b5cff;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.forgot-password a:hover { 
+  text-decoration: underline; 
+}
+/* SEPARATOR "ATAU" PADA LOGIN */
+.auth-box .separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 12px;
+  margin: 22px 0;
+}
+.auth-box .separator::before,
+.auth-box .separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e5e7eb;
+}
+.auth-box .separator:not(:empty)::before { margin-right: .5em; }
+.auth-box .separator:not(:empty)::after { margin-left: .5em; }
+
+/* UTILITY BUTTONS (LOGIN & DAFTAR UTAMA) */
+.btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  background: #4b5cff; /* Ungu Utama */
+  color: white;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(75, 92, 255, 0.2);
+}
+
+.btn:hover {
+  background: #3949db;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(75, 92, 255, 0.3);
+}
+
+/* TOMBOL GOOGLE (Google Brand Standard) */
+.btn-google {
+  width: 100%;
+  padding: 14px;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb; /* Abu-abu kontras, gak nabrak putihnya box */
+  color: #374151;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.25s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.btn-google:hover {
+  background: #ffffff; /* Berubah putih cerah pas dideketin */
+  border-color: #4b5cff; /* Aksen ungu tipis */
+  color: #4b5cff;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(75, 92, 255, 0.1);
+}
+
+/* TEXT SWITCH FOOTER (Belum punya akun? / Sudah punya akun?) */
+.switch-text {
+  margin-top: 25px;
+  text-align: center;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.switch-text a {
+  color: #4b5cff;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.switch-text a:hover {
+  text-decoration: underline;
+}
+
+/* ================= RESET ================= */
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial, sans-serif;
+}
+
+body{
+  background:#f4f6ff;
+}
+
+@media (max-width: 768px) {
+  /* 1. Gembok saklek level html & body biar gak bisa geser kanan sama sekali */
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* 2. JINAKKAN HEADER (Biar gak melar keluar layar HP) */
+  .home-header {
+    padding: 15px 15px; /* Sempitkan padding kiri-kanan dari 50px ke 15px */
+    width: 100%;
+    box-sizing: border-box; /* Paksa padding dihitung di dalam lebar, bukan nambah lebar */
+    display: flex;
+    flex-direction: column; /* Ubah logo dan menu jadi susunan atas-bawah biar gak sesak */
+    gap: 15px;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Rapikan area logo di HP */
+  .logo-area h1 {
+    font-size: 22px;
+    white-space: normal; /* Izinkan teks patah baris kalau nama aplikasinya kepanjangan */
+  }
+
+  /* Rapatkan navbar menu di HP */
+  .navbar {
+    gap: 15px; /* Perkecil jarak antar menu biar gak offscreen */
+    justify-content: center;
+    width: 100%;
+  }
+
+  .navbar a {
+    font-size: 14.5px;
+  }
+}

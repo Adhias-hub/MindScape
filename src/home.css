@@ -1,0 +1,366 @@
+/* ================= RESET ================= */
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background: #f4f6ff;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden; /* Gembok anti-bocor kanan kiri */
+}
+
+/* ================= HEADER & NAVBAR (PREMIUM ORIGINAL COLOR) ================= */
+.home-header {
+  width: 100%; /* Paksa full 100% menuhin lebar total layar */
+  padding: 22px 50px;
+  /* Kembali ke warna gradasi original lo yang soft premium */
+  background: linear-gradient(135deg, #a5b4ff 0%, #dce2ff 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 999;
+  box-shadow: 0 4px 20px rgba(75, 92, 255, 0.15); /* Shadow disesuaikan ke biru */
+  left: 0;
+  right: 0;
+}
+
+.logo-area h1 {
+  color: white;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  text-shadow: 0 2px 4px rgba(75, 92, 255, 0.2);
+}
+
+/* NAVBAR */
+.navbar {
+  display: flex;
+  gap: 30px;
+}
+
+.navbar a {
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 700;
+  font-size: 16px;
+  transition: 0.3s;
+  white-space: nowrap;
+}
+
+.navbar a:hover {
+  color: white;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+}
+
+/* PROFILE DROPDOWN SAFETY DESIGN */
+.profile-section {
+  position: relative;
+}
+
+.profile-image {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2.5px solid white;
+  cursor: pointer;
+  background: white;
+  transition: 0.2s;
+}
+
+.profile-image:hover {
+  transform: scale(1.05);
+}
+
+.profile-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* DROPDOWN BOX (Original Style dipertebal) */
+.profile-dropdown {
+  position: absolute;
+  top: 60px;
+  right: 0;
+  width: 250px;
+  background: white;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.15);
+  display: none;
+}
+
+.dropdown-top {
+  padding: 18px;
+  background: #f5f7ff;
+  border-bottom: 1px solid #eef1ff;
+}
+
+.dropdown-top h3 {
+  color: #4b5cff;
+  margin-bottom: 5px;
+}
+
+.dropdown-top p {
+  font-size: 13px;
+  color: #666;
+}
+
+.profile-dropdown button {
+  width: 100%;
+  border: none;
+  background: white;
+  padding: 15px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14.5px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.profile-dropdown button:hover {
+  background: #eef1ff;
+  color: #4b5cff;
+  padding-left: 20px;
+}
+
+
+
+
+/* ================= HERO (COMPACT & PROPOSIONAL) ================= */
+.hero-section {
+  /* Di-kompres dari 90px menjadi 50px agar hemat ruang vertikal */
+  padding: 50px 20px 30px 20px; 
+  text-align: center;
+  max-width: 1000px;
+  margin: auto;
+}
+
+.hero-text h1 {
+  /* Dikecilkan sedikit dari 55px ke 45px agar tidak terlalu masif */
+  font-size: 45px;
+  color: #4b5cff;
+  margin-bottom: 15px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+.hero-text p {
+  max-width: 650px;
+  margin: auto;
+  line-height: 1.6;
+  color: #555;
+  font-size: 16.5px;
+}
+
+.hero-text button {
+  margin-top: 25px; /* Jarak dikurangi biar rapat */
+  padding: 14px 35px;
+  border: none;
+  background: #4b5cff;
+  color: white;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 20px rgba(75, 92, 255, 0.2);
+}
+
+.hero-text button:hover {
+  background: #3949db;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(75, 92, 255, 0.35);
+}
+
+/* ================= DASHBOARD (GRID PADAT ANTI-RENGGANG) ================= */
+.dashboard-section {
+  /* Di-kompres agar naik mendekati hero section */
+  padding: 20px 40px 40px 40px;
+  max-width: 1100px; /* Batasi lebar maksimal biar grid tidak molor ke samping */
+  margin: auto;
+}
+
+.dashboard-section h2 {
+  text-align: center;
+  color: #4b5cff;
+  margin-bottom: 30px;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.dashboard-grid {
+  display: grid;
+  /* REVISI UTAMA: Naikkan minmax ke 450px agar di layar PC otomatis 
+     membentuk susunan 2 Kolom x 2 Baris yang padat dan kokoh */
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 25px; /* Jarak antar card dibuat lebih lega dan proporsional */
+}
+
+.dashboard-card {
+  background: white;
+  padding: 30px; /* Padding dalam dipertebal biar isi teks terasa nyaman */
+  border-radius: 24px; /* Samakan dengan tema lengkungan mewah layout lainnya */
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.05);
+  border: 1px solid #eef1ff;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  text-align: left; /* Teks rata kiri di dalam card jauh lebih rapi */
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  border-color: #4b5cff;
+  box-shadow: 0 15px 30px rgba(75, 92, 255, 0.12);
+}
+
+.dashboard-card h3 {
+  color: #4b5cff;
+  margin-bottom: 10px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.dashboard-card p {
+  color: #666;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+/* QUOTES PREMIUM BOX */
+.quotes-box {
+  margin-top: 40px;
+  background: #dfe6ff;
+  padding: 22px 30px;
+  border-radius: 18px;
+  text-align: center;
+  color: #4b5cff;
+  font-weight: 600;
+  font-size: 15px;
+  border-left: 6px solid #4b5cff; /* Aksen bar kiri biar satu tema dengan Focus & Wellness */
+  box-shadow: 0 8px 25px rgba(75, 92, 255, 0.04);
+}
+
+/* RESPONSIVE: Ganti ke 1 kolom penuh jika dibuka di layar HP */
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero-text h1 {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* 1. Gembok saklek level html & body biar gak bisa geser kanan sama sekali */
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* 2. JINAKKAN HEADER (Biar gak melar keluar layar HP) */
+  .home-header {
+    padding: 15px 15px; /* Sempitkan padding kiri-kanan dari 50px ke 15px */
+    width: 100%;
+    box-sizing: border-box; /* Paksa padding dihitung di dalam lebar, bukan nambah lebar */
+    display: flex;
+    flex-direction: column; /* Ubah logo dan menu jadi susunan atas-bawah biar gak sesak */
+    gap: 15px;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Rapikan area logo di HP */
+  .logo-area h1 {
+    font-size: 22px;
+    white-space: normal; /* Izinkan teks patah baris kalau nama aplikasinya kepanjangan */
+  }
+
+  /* Rapatkan navbar menu di HP */
+  .navbar {
+    gap: 15px; /* Perkecil jarak antar menu biar gak offscreen */
+    justify-content: center;
+    width: 100%;
+  }
+
+  .navbar a {
+    font-size: 14.5px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* ... kodingan html, body, dan .home-header yang lain tetap sama ... */
+
+  .home-header {
+    padding: 15px 15px;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* KUNCI BARU 1: Kasih ruang yang pas buat section profil di HP */
+  .profile-section {
+    width: 100%;
+    display: flex;
+    justify-content: center; /* Paksa foto profil (logo UPI) tetep di tengah murni */
+    position: relative;
+  }
+
+  /* KUNCI BARU 2: Desain Ulang Posisi Kotak Dropdown Pas di HP */
+  .profile-dropdown {
+    position: absolute;
+    top: 55px; /* Diturunkan pas di bawah bulatan logo UPI */
+    right: 50%; /* Geser ke tengah */
+    transform: translateX(50%); /* Trik sakti biar dropdown pas Center murni di layar HP */
+    width: 280px; /* Lebarkan sedikit biar teks Donatt & menu gak sumpek */
+    z-index: 1000; /* Pastikan dia melayang paling atas, gak kehalang elemen dashboard bawah */
+    box-shadow: 0 15px 35px rgba(75, 92, 255, 0.25); /* Pertegas shadow biar kontras */
+  }
+}
+
+#btnInstalPWA {
+  /* Posisi & Layout */
+  padding: 12px 24px;
+  margin: 20px 0; /* Kasih napas atas bawah */
+  display: none; /* Biar tetap bisa di-toggle lewat JS */
+  
+  /* Estetika Premium */
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  
+  /* Efek Animasi & Shadow */
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+  transition: all 0.3s ease;
+  
+  /* Opsional: Biar makin estetik di mobile */
+  align-items: center;
+  gap: 8px;
+}
+
+#btnInstalPWA:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 25px rgba(99, 102, 241, 0.4);
+  background: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
+}
+
+#btnInstalPWA:active {
+  transform: translateY(0);
+}

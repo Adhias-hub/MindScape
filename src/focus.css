@@ -1,0 +1,381 @@
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background: #f4f6ff;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden; /* Gembok anti-bocor kanan kiri */
+}
+
+/* ================= HEADER & NAVBAR (PREMIUM ORIGINAL COLOR) ================= */
+.home-header {
+  width: 100%; /* Paksa full 100% menuhin lebar total layar */
+  padding: 22px 50px;
+  /* Kembali ke warna gradasi original lo yang soft premium */
+  background: linear-gradient(135deg, #a5b4ff 0%, #dce2ff 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 999;
+  box-shadow: 0 4px 20px rgba(75, 92, 255, 0.15); /* Shadow disesuaikan ke biru */
+  left: 0;
+  right: 0;
+}
+
+.logo-area h1 {
+  color: white;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  text-shadow: 0 2px 4px rgba(75, 92, 255, 0.2);
+}
+
+/* NAVBAR */
+.navbar {
+  display: flex;
+  gap: 30px;
+}
+
+.navbar a {
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 700;
+  font-size: 16px;
+  transition: 0.3s;
+  white-space: nowrap;
+}
+
+.navbar a:hover {
+  color: white;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+}
+
+/* PROFILE DROPDOWN SAFETY DESIGN */
+.profile-section {
+  position: relative;
+}
+
+.profile-image {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2.5px solid white;
+  cursor: pointer;
+  background: white;
+  transition: 0.2s;
+}
+
+.profile-image:hover {
+  transform: scale(1.05);
+}
+
+.profile-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* DROPDOWN BOX (Original Style dipertebal) */
+.profile-dropdown {
+  position: absolute;
+  top: 60px;
+  right: 0;
+  width: 250px;
+  background: white;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.15);
+  display: none;
+}
+
+.dropdown-top {
+  padding: 18px;
+  background: #f5f7ff;
+  border-bottom: 1px solid #eef1ff;
+}
+
+.dropdown-top h3 {
+  color: #4b5cff;
+  margin-bottom: 5px;
+}
+
+.dropdown-top p {
+  font-size: 13px;
+  color: #666;
+}
+
+.profile-dropdown button {
+  width: 100%;
+  border: none;
+  background: white;
+  padding: 15px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14.5px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.profile-dropdown button:hover {
+  background: #eef1ff;
+  color: #4b5cff;
+  padding-left: 20px;
+}
+
+
+/* ================= GLOBAL SECTION ================= */
+.focus-section {
+  padding: 40px 40px 60px 40px;
+  max-width: 1200px;
+  margin: auto;
+  text-align: center;
+}
+
+.focus-section h2 {
+  color: #4b5cff;
+  margin-bottom: 40px;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* ================= FORM INPUT TARGET FOCUS ================= */
+.focus-form {
+  max-width: 850px; 
+  margin: 0 auto 40px auto;
+  display: grid;
+  gap: 18px;
+  background: white;
+  padding: 30px;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.05);
+  border: 1px solid #eef1ff;
+}
+
+.focus-form input,
+.focus-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  outline: none;
+  font-size: 15.5px;
+  color: #1e293b;
+  font-weight: 500;
+  transition: all 0.25s ease;
+}
+
+.focus-form textarea {
+  height: 100px;
+  resize: none;
+}
+
+.focus-form input:focus,
+.focus-form textarea:focus {
+  border-color: #4b5cff;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(75, 92, 255, 0.15);
+}
+
+/* ================= CONTAINER UTAMA KIRI-KANAN (SINKRON & PROPORSIONAL) ================= */
+.focus-layout-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr; /* Kiri ramping (Timer), Kanan luas (Target Widget) */
+  gap: 30px;
+  max-width: 850px; /* Samakan dengan lebar Form biar lurus simetris */
+  margin: 0 auto 50px auto; /* Ditambah margin bawah biar gak nempel ke riwayat */
+  align-items: stretch; /* Paksa tinggi kiri dan kanan sama rata */
+}
+
+/* ================= TIMER DISPLAY BOX (KIRI) ================= */
+.timer-box {
+  background: white;
+  padding: 40px 24px;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.05);
+  border: 1px solid #eef1ff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; 
+  align-items: center;
+  gap: 20px;
+}
+
+/* Angka Timer */
+.timer-box h1 {
+  font-size: 64px; 
+  color: #4b5cff;
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  text-shadow: 0 3px 8px rgba(75, 92, 255, 0.08);
+  line-height: 1;
+}
+
+/* BUTTON CONTROLS WRAPPER */
+.timer-buttons {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 240px; 
+  justify-content: center;
+}
+
+.timer-buttons button {
+  flex: 1; 
+  padding: 14px 0; 
+  border: none;
+  border-radius: 14px;
+  background: #4b5cff;
+  color: white;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 700;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(75, 92, 255, 0.18);
+  white-space: nowrap; 
+}
+
+.timer-buttons button:hover {
+  background: #3949db;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(75, 92, 255, 0.25);
+}
+
+.timer-buttons .btn-secondary {
+  background: #dfe6ff;
+  color: #4b5cff;
+  box-shadow: none;
+}
+
+.timer-buttons .btn-secondary:hover {
+  background: #cbd5e1;
+  color: #1e293b;
+}
+
+/* ================= TARGET FOCUS BOX WIDGET (KANAN) ================= */
+.focus-target-box {
+  background: white; /* Diubah jadi putih bersih biar senada dengan kotak kiri */
+  padding: 35px;
+  border-radius: 24px;
+  border-left: 6px solid #4b5cff; /* Aksen tiang biru tebal penanda info */
+  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.05);
+  border-top: 1px solid #eef1ff;
+  border-right: 1px solid #eef1ff;
+  border-bottom: 1px solid #eef1ff;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* Aliran teks rapi dari atas */
+  gap: 15px;
+}
+
+.target-sub-box, .note-sub-box {
+  width: 100%;
+}
+
+.target-sub-box h3,
+.note-sub-box h3 {
+  color: #4b5cff;
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.target-sub-box p,
+.note-sub-box p {
+  color: #475569;
+  line-height: 1.6;
+  font-size: 15px;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Garis pembatas estetik di dalam widget kanan */
+.box-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 10px 0;
+  width: 100%;
+}
+
+/* ================= HISTORI JURNAL BOTTOM (CENTERED) ================= */
+.focus-history-section {
+  max-width: 850px; /* Lebar saklek sama dengan Form dan Wrapper di atasnya */
+  margin: 50px auto 0 auto; /* KUNCI 1: auto kiri kanan paksa box di tengah layar */
+  padding: 0 10px; /* Jarak aman tipis di kanan kiri */
+}
+
+.focus-history-section h3 {
+  color: #4b5cff;
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 22px;
+  letter-spacing: -0.5px;
+  text-align: center; /* KUNCI 2: Paksa tulisan judul jurnal tegak lurus di tengah */
+}
+
+/* Memastikan item riwayat di dalamnya juga ikut rapi */
+#focusHistoryList {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* Biar baris list riwayatnya melebar penuh dan rapi */
+}
+
+/* ================= RESPONSIVE LAYOUT (UNTUK HP) ================= */
+@media (max-width: 768px) {
+  .focus-layout-wrapper {
+    grid-template-columns: 1fr; /* Jadi satu kolom bertumpuk di HP */
+    gap: 24px;
+  }
+}
+
+
+@media (max-width: 768px) {
+  /* 1. Gembok saklek level html & body biar gak bisa geser kanan sama sekali */
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* 2. JINAKKAN HEADER (Biar gak melar keluar layar HP) */
+  .home-header {
+    padding: 15px 15px; /* Sempitkan padding kiri-kanan dari 50px ke 15px */
+    width: 100%;
+    box-sizing: border-box; /* Paksa padding dihitung di dalam lebar, bukan nambah lebar */
+    display: flex;
+    flex-direction: column; /* Ubah logo dan menu jadi susunan atas-bawah biar gak sesak */
+    gap: 15px;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Rapikan area logo di HP */
+  .logo-area h1 {
+    font-size: 22px;
+    white-space: normal; /* Izinkan teks patah baris kalau nama aplikasinya kepanjangan */
+  }
+
+  /* Rapatkan navbar menu di HP */
+  .navbar {
+    gap: 15px; /* Perkecil jarak antar menu biar gak offscreen */
+    justify-content: center;
+    width: 100%;
+  }
+
+  .navbar a {
+    font-size: 14.5px;
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "short_name": "MindSpace",
+  "name": "Mind Space",
+"icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/10474/10474662.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/10474/10474662.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": "./home.html",
+  "background_color": "#4b5cff",
+  "theme_color": "#4b5cff",
+  "display": "standalone",
+  "orientation": "portrait"
+}
