@@ -401,7 +401,7 @@ window.addEventListener("DOMContentLoaded", () => {
   if (Notification.permission !== "granted") {
     Notification.requestPermission();
   }
-  displaySchedules(); // SOLUSI BUG 2: Panggil ini biar tabel langsung terisi pas web dibuka!
+  // SOLUSI BUG 2: Panggil ini biar tabel langsung terisi pas web dibuka!
   jalankanSatpamOtomatis();
 });
 
@@ -605,7 +605,7 @@ function jalankanAlarmTodoOtomatis() {
 
 
 window.addEventListener("DOMContentLoaded", () => {
-  displayTasks(); 
+
   displayTodoHistory(); 
   displayGagalHistory(); 
   jalankanAlarmTodoOtomatis(); // <--- WAJIB TAMBAHKAN BARIS INI BIAR ALARMNYA JALAN!
@@ -800,7 +800,7 @@ window.displayWellnessHistory = function() {
 // TRIGGER LOAD UTAMA (Pasang di DOMContentLoaded halaman Wellness)
 window.addEventListener("DOMContentLoaded", () => {
   jalankanSatpamWellnessOtomatis();
-  displayWellness();
+  if (typeof displayWellness === "function") displayWellness();
   displayWellnessHistory();
 });
 
@@ -1169,10 +1169,6 @@ window.addEventListener("DOMContentLoaded", () => {
   jalankanSatpamWellnessOtomatis();  // Jaga Wellness (On Time)
   cekSesiTimerPasRefresh();          // <-- JAGA TIMER GAK HILANG PAS REFRESH (Pilar Baru!)
 
-  // Render sisa data
-  displayTasks();
-  displaySchedules();
-  displayWellness();
 });
 
 window.addEventListener("DOMContentLoaded", () => {
