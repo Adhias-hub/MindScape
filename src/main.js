@@ -31,35 +31,36 @@ onAuthStateChanged(auth, (user) => {
   const isLoginPage = window.location.pathname.includes("index.html") || window.location.pathname === "/";
 
   if (user) {
-    console.log("User aktif:", user.email);
+    console.log("Satpam Auth: User terdeteksi aktif ->", user.email);
     
     if (isHomePage) {
-      // 1. Ambil data internal bawaan struktur lama kamu berdasarkan UID
+      // 1. Tarik data Fitur Lama dari LocalStorage berdasarkan UID murni
       schedules = JSON.parse(localStorage.getItem(`schedules_${user.uid}`)) || [];
       tasks = JSON.parse(localStorage.getItem(`tasks_${user.uid}`)) || [];
       wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${user.uid}`)) || [];
       
-      // 2. Ambil data internal fitur baru Lavender kamu berdasarkan UID
+      // 2. Tarik data Fitur Baru Lavender dari LocalStorage berdasarkan UID murni
       dataJadwal = JSON.parse(localStorage.getItem(`jadwalKuliah_${user.uid}`)) || [];
       dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${user.uid}`)) || [];
       dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${user.uid}`)) || [];
-      displayWellness();
       
-      // 3. Jalankan fungsi render bawaan struktur lama (Beri proteksi if typeof)
-      if (typeof displaySchedules === "function") displaySchedules();
-      if (typeof displayTasks === "function") displayTasks();
-      if (typeof displayWellness === "function") displayWellness();
-
-      // 4. Jalankan juga fungsi render komponen baru Lavender kamu di sini
+      // 3. AMANKAN RENDER: Paksa gambar ulang ke HTML detik ini juga setelah data UID murni berhasil dimuat!
       if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
       if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
       if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
+      
+      // Pemicu histori & pendukung (Jika ada)
+      if (typeof displayTodoHistory === "function") displayTodoHistory();
+      if (typeof displayGagalHistory === "function") displayGagalHistory();
+      if (typeof displayWellnessHistory === "function") displayWellnessHistory();
+      if (typeof displayFocusHistory === "function") displayFocusHistory();
     }
     
     if (isLoginPage) {
       window.location.href = "home.html";
     }
   } else {
+    // Jika Firebase memastikan tidak ada user login setelah reload
     if (isHomePage) {
       alert("Akses ditolak! Silakan login terlebih dahulu.");
       window.location.href = "index.html";
@@ -1468,13 +1469,26 @@ function tampilkanTodoDashboard() {
   });
 }
 
-// Fungsi hapus to-do jika tugas sudah selesai dikerjakan
+// Fungsi hapus to-do jika tugas sudah selesai dikerjakan (Gembok UID Aman)
 function hapusTodo(idTodo) {
-  const dataTodoLokal = JSON.parse(localStorage.getItem('todoTugas')) || [];
-  const hasilFilterTodo = dataTodoLokal.filter(t => t.id !== idTodo);
-  localStorage.setItem(`todoTugas_${auth.currentUser.uid}`, JSON.stringify(hasilFilterTodo));
+  // 1. Pastikan user sudah login dan ambil UID-nya
+  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+  if (!uidAman) {
+    console.error("Gagal menghapus: User tidak terotentikasi.");
+    return;
+  }
+  // 2. Tarik data murni milik UID tersebut dari localStorage
+  const dataTodoLokal = JSON.parse(localStorage.getItem(`todoTugas_${uidAman}`)) || []; 
+  // 3. Filter data untuk membuang item berdasarkan ID unik Lavender
+  const hasilFilterTodo = dataTodoLokal.filter(t => t.id !== idTodo); 
+  // 4. Kunci kembali ke localStorage menggunakan UID yang sama
+  localStorage.setItem(`todoTugas_${uidAman}`, JSON.stringify(hasilFilterTodo));
+  // 5. Segarkan tampilan UI di layar
   tampilkanTodoDashboard();
 }
+// Pastikan fungsi ini diekspos ke global window agar bisa diakses oleh onclick HTML
+window.hapusTodo = hapusTodo;
+
 
 
 
