@@ -1594,11 +1594,6 @@ function triggerNotifTodoOffline(namaTugas) {
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  tampilkanTodoDashboard();
-});
-
-
 // =========================================================================
 // 1. STRUKTUR UTAMA SEGMENT WELLNESS LOG (LAVENDER PREMIUM) WITH OFFLINE NOTIF
 // =========================================================================
