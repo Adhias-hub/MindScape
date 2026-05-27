@@ -43,6 +43,7 @@ onAuthStateChanged(auth, (user) => {
       dataJadwal = JSON.parse(localStorage.getItem(`jadwalKuliah_${user.uid}`)) || [];
       dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${user.uid}`)) || [];
       dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${user.uid}`)) || [];
+      displayWellness();
       
       // 3. Jalankan fungsi render bawaan struktur lama (Beri proteksi if typeof)
       if (typeof displaySchedules === "function") displaySchedules();
@@ -406,20 +407,11 @@ function jalankanSatpamOtomatis() {
   }, 30000); // 🔥 SOLUSI SAKLEK: Interval diubah ke 30 detik agar hemat RAM & baterai perangkat
 }
 
-// PEMICU AUTOMATIS UTAMA (SUDAH DI-REPAIR SAKLEK)
-window.addEventListener("DOMContentLoaded", () => {
-  if (Notification.permission !== "granted") {
-    Notification.requestPermission();
-  }
-  // SOLUSI BUG 2: Panggil ini biar tabel langsung terisi pas web dibuka!
-  jalankanSatpamOtomatis();
-});
+
 
 /* ================= EXPOSE TO GLOBAL ================= */
 window.addSchedule = addSchedule;
 window.deleteSchedule = deleteSchedule;
-
-
 
 
 
@@ -615,12 +607,7 @@ function jalankanAlarmTodoOtomatis() {
 }
 
 
-window.addEventListener("DOMContentLoaded", () => {
 
-  displayTodoHistory(); 
-  displayGagalHistory(); 
-  jalankanAlarmTodoOtomatis(); // <--- WAJIB TAMBAHKAN BARIS INI BIAR ALARMNYA JALAN!
-});
 
 /* ================= EXPOSE TO GLOBAL ================= */
 window.addTask = addTask;
@@ -679,103 +666,102 @@ function triggerNotifTugasGagal(judulTugas) {
 
 
 /* ================= MANAGEMENT DATA (WELLNESS) ================= */
-wellnessData = JSON.parse(localStorage.getItem("wellnessData")) || [];
+// Hapus inisialisasi global tanpa UID di atas agar tidak memicu kebocoran data
 
-function displayWellness(){
-  let wellnessList = document.getElementById("wellnessList");
-  if(!wellnessList) return;
+window.displayWellness = function() {
+  const wellnessList = document.getElementById("wellnessList");
+  if (!wellnessList) return;
   wellnessList.innerHTML = "";
 
-  // 1. Ambil dari kamar LOGS (Lavender Baru)
+  if (!auth.currentUser) return;
+
+  // Ambil data dari kamar log yang benar
   let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
 
-  // 2. Urutkan berdasarkan jam (menggunakan properti 'jam')
-  dataWellnessLokal.sort((a, b) => a.jam.localeCompare(b.jam));
+  // Urutkan berdasarkan waktu
+  dataWellnessLokal.sort((a, b) => a.time.localeCompare(b.time));
 
-  // 3. Render menggunakan properti yang sinkron (aktivitas & jam)
-  dataWellnessLokal.forEach((item, index) => {
+  dataWellnessLokal.forEach((item) => {
     if (!item.completed) {
       wellnessList.innerHTML += `
         <div class="wellness-card">
-          <h3>💧 ${item.aktivitas}</h3>
-          <p>⏰ Waktu: <strong>${item.jam} WIB</strong></p>
+          <h3>💧 ${item.type}</h3>
+          <p>⏰ Waktu: <strong>${item.time} WIB</strong></p>
           <p>🌸 Catatan: ${item.note || "-"}</p>
-          <div class="wellness-buttons">
-            <button class="done-btn" onclick="completeWellness(${index})">Selesai</button>
-            <button class="delete-btn" onclick="deleteWellness(${index})">Hapus</button>
+          <div class="wellness-buttons" style="display: inline-block;">
+            <button class="done-btn" onclick="completeWellness(${item.id})">Selesai</button>
+            <button class="delete-btn" onclick="deleteWellness(${item.id})">Hapus</button>
           </div>
         </div>`;
     }
   });
 }
 
-function addWellness(){
-  let type = document.getElementById("wellnessType").value;
-  let time = document.getElementById("wellnessTime").value; 
-  let note = document.getElementById("wellnessNote").value;
-
-  if(type === "" || time === ""){
-    alert("Isi reminder & waktu!");
+window.addWellness = function() {
+  if (!auth.currentUser) {
+    alert("Lu harus login dulu, yaa!");
     return;
   }
 
-  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-  
-  // SAKLEK: Properti diubah menjadi 'aktivitas' dan 'jam' agar sinkron dengan fungsi render dashboard kamu
-  dataWellness.push({ 
-    id: 'well_' + Date.now(), // Tambahkan ID unik bawaan Lavender murni lu
-    aktivitas: type, 
-    jam: time, 
-    note: note, 
-    completed: false 
+  const uidAman = auth.currentUser.uid;
+  const type = document.getElementById("wellnessType")?.value;
+  const time = document.getElementById("wellnessTime")?.value;
+  const note = document.getElementById("wellnessNote")?.value || "";
+
+  if (!type || !time) {
+    alert("Aktivitas dan Jam wajib diisi!");
+    return;
+  }
+
+  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+
+  dataWellnessLokal.push({
+    id: Date.now(),
+    type: type,
+    time: time,
+    note: note,
+    completed: false
   });
-  
-  localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellness));
-  
-  if (typeof tampilkanWellnessDashboard === "function") {
-    tampilkanWellnessDashboard();
-  }
-  
-  if (typeof displayWellnessHistory === "function") {
-    displayWellnessHistory(); 
-  }
-  
-  if (typeof sendNotification === "function") {
-    sendNotification("💧 Wellness Reminder", "Reminder berhasil ditambahkan!");
-  }
 
-  document.getElementById("wellnessType").value = "";
-  document.getElementById("wellnessTime").value = "";
-  document.getElementById("wellnessNote").value = "";
-}
-
-
-
-function completeWellness(index){
-  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-  // Tarik data paling fresh sebelum diubah statusnya
-  dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+  localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
   
-  if (dataWellness[index]) {
-    dataWellness[index].completed = true; 
-    localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellness));
-  }
-  
-  tampilkanWellnessDashboard(); // Gunakan fungsi render barumu
+  // Reset Form
+  if(document.getElementById("wellnessType")) document.getElementById("wellnessType").value = "";
+  if(document.getElementById("wellnessTime")) document.getElementById("wellnessTime").value = "";
+  if(document.getElementById("wellnessNote")) document.getElementById("wellnessNote").value = "";
+
+  displayWellness();
   if (typeof displayWellnessHistory === "function") displayWellnessHistory();
 }
 
-function deleteWellness(index){
-  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-  dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
-  
-  dataWellness.splice(index, 1);
-  localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellness));
-  
-  tampilkanWellnessDashboard(); // Gunakan fungsi render barumu
-  if (typeof displayWellnessHistory === "function") displayWellnessHistory();
+window.completeWellness = function(id) {
+  if (!auth.currentUser) return;
+  const uidAman = auth.currentUser.uid;
+  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+
+  const index = dataWellnessLokal.findIndex(item => item.id === id);
+  if (index !== -1) {
+    dataWellnessLokal[index].completed = true;
+    localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
+    displayWellness();
+    if (typeof displayWellnessHistory === "function") displayWellnessHistory();
+  }
 }
 
+window.deleteWellness = function(id) {
+  if (!auth.currentUser) return;
+  const uidAman = auth.currentUser.uid;
+  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+
+  // Cari berdasarkan ID agar tidak salah menghapus item saat array bergeser
+  const index = dataWellnessLokal.findIndex(item => item.id === id);
+  if (index !== -1) {
+    dataWellnessLokal.splice(index, 1);
+    localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
+    displayWellness();
+    if (typeof displayWellnessHistory === "function") displayWellnessHistory();
+  }
+}
 
 function jalankanSatpamWellnessOtomatis() {
   setInterval(() => {
@@ -784,18 +770,17 @@ function jalankanSatpamWellnessOtomatis() {
     const sekarang = new Date();
     const jamMenitSekarangStr = `${String(sekarang.getHours()).padStart(2, '0')}:${String(sekarang.getMinutes()).padStart(2, '0')}`;
     
-    // Tarik data dari kamar log yang benar (wellnessLogs_)
     const pengingatWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
 
     pengingatWellness.forEach((item) => {
-      // Sesuaikan properti dari 'time' jadi 'jam', dan 'type' jadi 'aktivitas'
-      if (!item.completed && item.jam === jamMenitSekarangStr) {
+      // PERBAIKAN: Gunakan item.time dan item.type agar sinkron dengan data input!
+      if (!item.completed && item.time === jamMenitSekarangStr) {
         if (Notification.permission === "granted") {
-          const keyNotifWellness = `notif_well_${auth.currentUser.uid}_${item.id}_${item.jam}`;
+          const keyNotifWellness = `notif_well_${auth.currentUser.uid}_${item.id}_${item.time}`;
           
           if (!sessionStorage.getItem(keyNotifWellness)) {
             new Notification(`💧 TIME FOR WELLNESS`, {
-              body: `Waktunya aktivitas: "${item.aktivitas}"`,
+              body: `Waktunya aktivitas: "${item.type}"`,
               icon: 'https://cdn-icons-png.flaticon.com/512/3011/3011285.png',
               requireInteraction: true 
             });
@@ -808,7 +793,7 @@ function jalankanSatpamWellnessOtomatis() {
 }
 
 /**
- * C. WELLNESS HISTORY HANDLER (Histori Harian + Tombol Hapus Jejak)
+ * C. WELLNESS HISTORY HANDLER
  */
 window.displayWellnessHistory = function() {
   const historyList = document.getElementById("wellnessHistoryList");
@@ -816,8 +801,7 @@ window.displayWellnessHistory = function() {
   historyList.innerHTML = "";
   if (!auth.currentUser) return;
 
-  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-  // KUNCI AMAN: Arahkan ke kamar log yang baru
+  const uidAman = auth.currentUser.uid;
   const wellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
   const wellnessSelesai = wellnessLokal.filter(item => item.completed);
 
@@ -826,8 +810,7 @@ window.displayWellnessHistory = function() {
     return;
   }
 
-  // Gunakan data mentah agar tombol 'Hapus Jejak' menembak index yang tepat ke localStorage
-  wellnessLokal.forEach((item, index) => {
+  wellnessLokal.forEach((item) => {
     if (item.completed) {
       historyList.innerHTML += `
         <div class="history-item-box" style="background: #faf5ff; padding: 14px 18px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #8b5cf6; display: flex; justify-content: space-between; align-items: center;">
@@ -835,8 +818,7 @@ window.displayWellnessHistory = function() {
             <span style="font-weight: 700; color: #1e293b;">${item.type} (${item.time})</span>
             <p style="font-size: 12px; color: #7c3aed; margin-top: 4px;">💙 Sudah terpenuhi hari ini</p>
           </div>
-          <!-- TOMBOL HAPUS JEJAK HISTORI WELLNESS -->
-          <button onclick="deleteWellness(${index})" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">
+          <button onclick="deleteWellness(${item.id})" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">
             Hapus Jejak
           </button>
         </div>`;
@@ -844,12 +826,7 @@ window.displayWellnessHistory = function() {
   });
 }
 
-// TRIGGER LOAD UTAMA (Pasang di DOMContentLoaded halaman Wellness)
-window.addEventListener("DOMContentLoaded", () => {
-  jalankanSatpamWellnessOtomatis();
-  if (typeof displayWellness === "function") displayWellness();
-  displayWellnessHistory();
-});
+
 
 /* ================= EXPOSE TO GLOBAL ================= */
 window.addWellness = addWellness;
@@ -1220,30 +1197,6 @@ onMessage(messaging, (payload) => {
   alert(`📢 ${payload.notification.title}\n\n${payload.notification.body}`);
 });
 
-
-
-
-window.addEventListener("DOMContentLoaded", () => {
-  if (Notification.permission !== "granted") {
-    Notification.requestPermission();
-  }
-  
-  jalankanSatpamOtomatis();          // Jaga Jadwal & To-Do
-  jalankanSatpamWellnessOtomatis();  // Jaga Wellness (On Time)
-  cekSesiTimerPasRefresh();          // <-- JAGA TIMER GAK HILANG PAS REFRESH (Pilar Baru!)
-
-});
-
-window.addEventListener("DOMContentLoaded", () => {
-  // Cek dan bersihkan riwayat Wellness jika sudah ganti hari sebelum dirender
-  bersihkanWellnessGantiHariOtomatis();
-
-  // Render komponen history secara kondisional tergantung elemen halaman yang aktif
-  if (document.getElementById("todoHistoryList")) displayTodoHistory();
-  if (document.getElementById("wellnessHistoryList")) displayWellnessHistory();
-  if (document.getElementById("focusHistoryList")) displayFocusHistory();
-});
-
 /**
  * A. UTILITY: SATPAM PENJAGA WAKTU GANTI HARI (Khusus Wellness 1 Hari Saklek)
  */
@@ -1267,73 +1220,8 @@ document.addEventListener("DOMContentLoaded", () => {
   displayFocusHistory();
 });
 
-
-window.addEventListener("DOMContentLoaded", () => {
-  aktifkanNotificationFCM(); // <--- WAJIB DIPANGGIL DI SINI
-});
-window.addEventListener("DOMContentLoaded", () => {
-  if (Notification.permission !== "granted") {
-    Notification.requestPermission();
-  }
-  
-  // --- DAFTARKAN SERVICE WORKER & KIRIM CONFIG AMAN ---
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/firebase-messaging-sw.js')
-    .then((reg) => {
-      console.log('Service Worker berhasil didaftarkan dengan scope:', reg.scope);
-
-      // Fungsi untuk mengirimkan config dari .env secara aman
-      const kirimConfigKeSW = () => {
-        if (reg.active) {
-          reg.active.postMessage({
-            type: 'SET_FIREBASE_CONFIG',
-            config: {
-              apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-              authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-              projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-              storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-              messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-              appId: import.meta.env.VITE_FIREBASE_APP_ID
-            }
-          });
-        }
-      };
-
-      // Jika Service Worker sudah langsung aktif, kirim config-nya
-      if (reg.active) {
-        kirimConfigKeSW();
-      } else {
-        // Jika sedang menginstal atau memperbarui, tunggu sampai statusnya aktif (activated)
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'activated') {
-              kirimConfigKeSW();
-            }
-          });
-        });
-      }
-
-    })
-    .catch((err) => {
-      console.error('Service Worker gagal didaftarkan:', err);
-    });
-}
-
-  jalankanSatpamOtomatis();          
-  jalankanSatpamWellnessOtomatis();  
-  cekSesiTimerPasRefresh();          
-
-  displayTasks();
-  displaySchedules();
-  displayWellness();
-});
-
 // Dan jangan lupa ekspos ke global jika tombol HTML mau ikutan manggil
 window.aktifkanNotificationFCM = aktifkanNotificationFCM;
-
-
-
 
 let deferredPrompt; // 1. Variabel penampung pemicu instalasi
 
@@ -1862,3 +1750,108 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+window.addEventListener("DOMContentLoaded", () => {
+  // 1. MINTA IZIN NOTIFIKASI (Cukup Sekali Saja)
+  if (Notification.permission !== "granted") {
+    Notification.requestPermission();
+  }
+
+  // 2. BERSIHKAN DATA EXPIRED SEBELUM DI-RENDER
+  if (typeof bersihkanWellnessGantiHariOtomatis === "function") {
+    bersihkanWellnessGantiHariOtomatis();
+  }
+
+  // 3. AKTIFKAN SEGERA ALARM & SATPAM BACKING-PROCESS
+  if (typeof jalankanSatpamOtomatis === "function") jalankanSatpamOtomatis();
+  if (typeof jalankanSatpamWellnessOtomatis === "function") jalankanSatpamWellnessOtomatis();
+  if (typeof jalankanAlarmTodoOtomatis === "function") jalankanAlarmTodoOtomatis();
+  if (typeof cekSesiTimerPasRefresh === "function") cekSesiTimerPasRefresh();
+  if (typeof aktifkanNotificationFCM === "function") aktifkanNotificationFCM();
+
+  // 4. DAFTARKAN SERVICE WORKER SECARA AMAN (ANTI-AIRPLANE MODE)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/firebase-messaging-sw.js')
+      .then((reg) => {
+        console.log('Service Worker berhasil didaftarkan dengan scope:', reg.scope);
+        
+        const kirimConfigKeSW = () => {
+          if (reg.active) {
+            reg.active.postMessage({
+              type: 'SET_FIREBASE_CONFIG',
+              config: {
+                apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+                authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+                projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+                storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+                messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+                appId: import.meta.env.VITE_FIREBASE_APP_ID
+              }
+            });
+          }
+        };
+
+        if (reg.active) {
+          kirimConfigKeSW();
+        } else {
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'activated') {
+                kirimConfigKeSW();
+              }
+            });
+          });
+        }
+      })
+      .catch((err) => {
+        console.error('Service Worker gagal didaftarkan:', err);
+      });
+  }
+
+  // 5. INITIAL RENDER DATA (Jika user statusnya terotentikasi saat load pertama)
+  const jalankanRenderAwalSemuaData = () => {
+    if (!auth.currentUser) return;
+    
+    if (typeof displayTasks === "function") displayTasks();
+    if (typeof displaySchedules === "function") displaySchedules();
+    if (typeof displayWellness === "function") displayWellness();
+    
+    if (document.getElementById("todoHistoryList") && typeof displayTodoHistory === "function") displayTodoHistory();
+    if (typeof displayGagalHistory === "function") displayGagalHistory();
+    if (document.getElementById("wellnessHistoryList") && typeof displayWellnessHistory === "function") displayWellnessHistory();
+    if (document.getElementById("focusHistoryList") && typeof displayFocusHistory === "function") displayFocusHistory();
+  };
+
+  // Pancing render awal (kasih toleransi delay kecil menunggu Auth State Firebase stabil)
+  setTimeout(jalankanRenderAwalSemuaData, 200);
+
+  // 6. SOLUSI JITU PINDAH HALAMAN (CEGAT NAVIGASI MENU APAPUN)
+  // Kode ini melacak tombol navigasi, sidebar link, atau tombol berpindah tab menu Anda
+  document.querySelectorAll('nav a, .sidebar-menu a, [data-page], .menu-link, .nav-item').forEach(tombol => {
+    tombol.addEventListener("click", () => {
+      // Dapatkan nama halaman tujuan (misal: "wellness", "scheduler", "focus")
+      const targetPage = tombol.getAttribute("href")?.replace("#", "") || tombol.getAttribute("data-page");
+      if (!targetPage) return;
+
+      // Beri jeda 50ms agar sistem SPA Anda mengganti display block/none HTML terlebih dahulu
+      setTimeout(() => {
+        if (!auth.currentUser) return;
+
+        console.log(`Menuju halaman: ${targetPage}. Melakukan render ulang data...`);
+        
+        // Pemicu Render Ulang Sesuai Menu yang Sedang Dibuka Aktif
+        if (targetPage === "wellness") {
+          if (typeof displayWellness === "function") displayWellness();
+          if (typeof displayWellnessHistory === "function") displayWellnessHistory();
+        } else if (targetPage === "scheduler" || targetPage === "dashboard") {
+          if (typeof displaySchedules === "function") displaySchedules();
+          if (typeof displayTasks === "function") displayTasks();
+          if (typeof displayTodoHistory === "function") displayTodoHistory();
+          if (typeof displayGagalHistory === "function") displayGagalHistory();
+        } else if (targetPage === "focus") {
+          if (typeof displayFocusHistory === "function") displayFocusHistory();
+        }
+      }, 60);
+    });
+  });
+});
