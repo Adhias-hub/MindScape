@@ -14,13 +14,11 @@
 
 <body>
 
-  <!-- ================= HEADER ================= -->
   <header class="home-header">
     <div class="logo-area">
       <h1>MindSpace 🌸</h1>
     </div>
 
-    <!-- NAVBAR (Accessibility Fix: Menambahkan label penjelas navigasi) -->
     <nav class="navbar" aria-label="Menu Navigasi Utama">
       <a href="home.html">Beranda</a>
       <a href="jadwal.html">Jadwal</a>
@@ -30,12 +28,10 @@
     </nav>
   </header>
 
-  <!-- ================= MAIN CONTENT ================= -->
   <main>
     <section class="schedule-section">
       <h2>📚 Jadwal Kuliah</h2>
 
-      <!-- FORM INPUT (Accessibility Fix: Menambahkan label tersembunyi/placeholder valid untuk Screen Reader) -->
       <div class="schedule-form" role="form" aria-label="Form Tambah Jadwal Kuliah">
         
         <input type="text" id="courseInput" placeholder="Nama Mata Kuliah" aria-label="Nama Mata Kuliah">
@@ -50,34 +46,35 @@
           <option value="Sabtu">Sabtu</option>
         </select>
 
-        <input type="time" id="startTime" aria-label="Jam Mulai Kuliah">
-        <input type="time" id="endTime" aria-label="Jam Selesai Kuliah">
+        <input type="text" id="startTime" placeholder="Jam Dimulai" aria-label="Jam Mulai Kuliah" 
+               onfocus="(this.type='time')" onblur="if(!this.value)this.type='text'">
+               
+        <input type="text" id="endTime" placeholder="Jam Berakhir" aria-label="Jam Selesai Kuliah" 
+               onfocus="(this.type='time')" onblur="if(!this.value)this.type='text'">
+
         <input type="text" id="noteInput" placeholder="Catatan (Ruangan/Dosen)" aria-label="Catatan Tambahan">
 
         <button onclick="addSchedule()">Tambah Jadwal</button>
       </div>
 
-      <!-- TABEL DATA -->
       <div class="table-responsive-wrapper">
+        <table class="schedule-table">
+          <caption class="visually-hidden" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;">Daftar Jadwal Kuliah Mingguan</caption>
+          
+          <thead>
+            <tr>
+              <th scope="col">Hari</th>
+              <th scope="col">Mata Kuliah</th>
+              <th scope="col">Jam</th>
+              <th scope="col">Catatan</th>
+              <th scope="col">Aksi</th>
+            </tr>
+          </thead>
 
-  <table class="schedule-table">
-    <caption class="visually-hidden" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;">Daftar Jadwal Kuliah Mingguan</caption>
-    
-    <thead>
-      <tr>
-        <th scope="col">Hari</th>
-        <th scope="col">Mata Kuliah</th>
-        <th scope="col">Jam</th>
-        <th scope="col">Catatan</th>
-        <th scope="col">Aksi</th>
-      </tr>
-    </thead>
-
-    <tbody id="scheduleList">
-      </tbody>
-  </table>
-
-</div>
+          <tbody id="scheduleList">
+            </tbody>
+        </table>
+      </div>
     </section>
   </main>
 

@@ -78,7 +78,11 @@
         <option>Minum Air</option>
         <option>Makan</option>
       </select>
-      <input type="time" id="wellnessTime">
+      
+      <!-- TRIK SAKLEK PLACEHOLDER WAKTU WELLNESS CHECK-IN 🔒 -->
+      <input type="text" id="wellnessTime" placeholder="Pilih Jam Reminder"
+             onfocus="(this.type='time')" onblur="if(!this.value)this.type='text'">
+             
       <input type="text" id="wellnessNote" placeholder="Pesan motivasi">
       <button onclick="addWellness()">Tambah Reminder</button>
     </div>

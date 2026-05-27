@@ -78,8 +78,14 @@
     <!-- FORM -->
     <div class="todo-form">
       <input type="text" id="taskInput" placeholder="Nama tugas">
-      <input type="date" id="deadlineDate">
-      <input type="time" id="deadlineTime">
+      
+      <!-- TRIK SAKLEK PLACEHOLDER TANGGAL & JAM DEADLINE 🔒 -->
+      <input type="text" id="deadlineDate" placeholder="Tanggal Batas Tugas"
+             onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'">
+             
+      <input type="text" id="deadlineTime" placeholder="Jam Batas Tugas"
+             onfocus="(this.type='time')" onblur="if(!this.value)this.type='text'">
+             
       <input type="text" id="taskNote" placeholder="Catatan tugas">
       <button onclick="addTask()">Tambah Tugas</button>
     </div>
@@ -87,7 +93,7 @@
     <!-- LIST TUGAS AKTIF -->
     <div id="taskList"></div>
 
-    <!-- ================= BOX HISTORI KEMBAR (MODIFIKASI: SINKRONISASI TOMBOL & WRAPPER) ================= -->
+    <!-- ================= BOX HISTORI KEMBAR ================= -->
     <div class="todo-history-section" style="margin-top: 50px; max-width: 1200px; margin-left: auto; margin-right: auto;">
       
       <!-- 1. Tombol Pemicu Utama Berada di Luar Kontainer yang Sembunyi -->
