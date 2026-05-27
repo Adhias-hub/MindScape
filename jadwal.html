@@ -33,26 +33,41 @@
       <h2>📚 Jadwal Kuliah</h2>
 
       <div class="schedule-form" role="form" aria-label="Form Tambah Jadwal Kuliah">
-        <input type="text" id="courseInput" placeholder="Nama Mata Kuliah" aria-label="Nama Mata Kuliah">
+  <input type="text" id="courseInput" placeholder="Nama Mata Kuliah" aria-label="Nama Mata Kuliah">
 
-        <select id="dayInput" aria-label="Pilih Hari Kuliah">
-          <option value="">Pilih Hari</option>
-          <option value="Senin">Senin</option>
-          <option value="Selasa">Selasa</option>
-          <option value="Rabu">Rabu</option>
-          <option value="Kamis">Kamis</option>
-          <option value="Jumat">Jumat</option>
-          <option value="Sabtu">Sabtu</option>
-        </select>
+  <select id="dayInput" aria-label="Pilih Hari Kuliah">
+    <option value="">Pilih Hari</option>
+    <option value="Senin">Senin</option>
+    <option value="Selasa">Selasa</option>
+    <option value="Rabu">Rabu</option>
+    <option value="Kamis">Kamis</option>
+    <option value="Jumat">Jumat</option>
+    <option value="Sabtu">Sabtu</option>
+  </select>
 
-        <input type="time" id="startTime" aria-label="Jam Mulai Kuliah">
-               
-        <input type="time" id="endTime" aria-label="Jam Selesai Kuliah">
+  <input 
+    type="text" 
+    id="startTime" 
+    placeholder="Jam Mulai Kuliah ⏰" 
+    aria-label="Jam Mulai Kuliah"
+    onfocus="(this.type='time')" 
+    onblur="if(!this.value) this.type='text'"
+    required
+  >
+         
+  <input 
+    type="text" 
+    id="endTime" 
+    placeholder="Jam Selesai (Opsional) 🔒" 
+    aria-label="Jam Selesai Kuliah"
+    onfocus="(this.type='time')" 
+    onblur="if(!this.value) this.type='text'"
+  >
 
-        <input type="text" id="noteInput" placeholder="Catatan (Ruangan/Dosen)" aria-label="Catatan Tambahan">
+  <input type="text" id="noteInput" placeholder="Catatan (Ruangan/Dosen)" aria-label="Catatan Tambahan">
 
-        <button id="btnTambahJadwal">Tambah Jadwal</button>
-      </div>
+  <button id="btnTambahJadwal">Tambah Jadwal</button>
+</div>
 
       <div class="table-responsive-wrapper">
         <table class="schedule-table">

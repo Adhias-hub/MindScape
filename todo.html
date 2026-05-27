@@ -72,16 +72,32 @@
     <h2>📝 To-Do List</h2>
 
     <div class="todo-form" role="form" aria-label="Form Tambah Tugas">
-      <input type="text" id="taskInput" placeholder="Nama tugas" aria-label="Nama Tugas">
-      
-      <input type="date" id="deadlineDate" aria-label="Tanggal Batas Tugas">
-           
-      <input type="time" id="deadlineTime" aria-label="Jam Batas Tugas">
-           
-      <input type="text" id="taskNote" placeholder="Catatan tugas" aria-label="Catatan Tugas">
-      
-      <button id="btnTambahTugas">Tambah Tugas</button>
-    </div>
+  <input type="text" id="taskInput" placeholder="Nama tugas" aria-label="Nama Tugas">
+  
+  <input 
+    type="text" 
+    id="deadlineDate" 
+    placeholder="Pilih Batas Tanggal 📅" 
+    aria-label="Tanggal Batas Tugas"
+    onfocus="(this.type='date')" 
+    onblur="if(!this.value) this.type='text'"
+    required
+  >
+       
+  <input 
+    type="text" 
+    id="deadlineTime" 
+    placeholder="Set Jam Deadline ⏰" 
+    aria-label="Jam Batas Tugas"
+    onfocus="(this.type='time')" 
+    onblur="if(!this.value) this.type='text'"
+    required
+  >
+       
+  <input type="text" id="taskNote" placeholder="Catatan tugas" aria-label="Catatan Tugas">
+  
+  <button id="btnTambahTugas">Tambah Tugas</button>
+</div>
 
     <div id="taskList"></div>
 
