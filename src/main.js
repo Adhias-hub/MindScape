@@ -719,9 +719,22 @@ function addWellness(){
     return;
   }
 
-  wellnessData.push({ type: type, time: time, note: note, completed: false });
-  localStorage.setItem(`wellnessData_${auth.currentUser.uid}`, JSON.stringify(wellnessData));
-  displayWellnessHistory(); // Ikut refresh jika ada data baru masuk
+  // AMAN: Ambil token UID dan gunakan array global 'dataWellness'
+  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+  
+  dataWellness.push({ type: type, time: time, note: note, completed: false });
+  
+  // KUNCI SINKRON: Simpan ke kunci 'wellnessLogs_UID' agar bisa dibaca fungsi render
+  localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellness));
+  
+  // Langsung jalankan fungsi render dashboard biar card-nya langsung muncul di layar tanpa reload
+  if (typeof tampilkanWellnessDashboard === "function") {
+    tampilkanWellnessDashboard();
+  }
+  
+  if (typeof displayWellnessHistory === "function") {
+    displayWellnessHistory(); 
+  }
   
   if (typeof sendNotification === "function") {
     sendNotification("💧 Wellness Reminder", "Reminder berhasil ditambahkan!");
@@ -731,6 +744,7 @@ function addWellness(){
   document.getElementById("wellnessTime").value = "";
   document.getElementById("wellnessNote").value = "";
 }
+
 
 // SEKARANG REFRESH OTOMATIS SAAT DIKLIK SELESAI
 function completeWellness(index){
