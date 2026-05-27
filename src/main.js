@@ -35,9 +35,9 @@ onAuthStateChanged(auth, (user) => {
     
     if (isHomePage) {
       // 1. Tarik data Fitur Lama dari LocalStorage berdasarkan UID murni
-      schedules = JSON.parse(localStorage.getItem(`schedules_${user.uid}`)) || [];
-      tasks = JSON.parse(localStorage.getItem(`tasks_${user.uid}`)) || [];
-      wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${user.uid}`)) || [];
+      // schedules = JSON.parse(localStorage.getItem(`schedules_${user.uid}`)) || [];
+      // tasks = JSON.parse(localStorage.getItem(`tasks_${user.uid}`)) || [];
+      // wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${user.uid}`)) || [];
       
       // 2. Tarik data Fitur Baru Lavender dari LocalStorage berdasarkan UID murni
       dataJadwal = JSON.parse(localStorage.getItem(`jadwalKuliah_${user.uid}`)) || [];
@@ -427,41 +427,8 @@ function formatTampilanTanggal(dateString) {
   return `${hari}-${bulan}-${tahun} Pukul ${jam}`;
 }
 
-// function displayTasks(){
-//   periksaDeadlineOtomatis();
-//   let taskList = document.getElementById("taskList");
-//   if(!taskList) return;
-//   taskList.innerHTML = "";
-
-//  tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
-
-//   // Urutkan berdasarkan deadline terdekat
-//   tasks.sort((a, b) => {
-//     const waktuA = new Date(a.deadline).getTime() || Infinity;
-//     const waktuB = new Date(b.deadline).getTime() || Infinity;
-//     return waktuA - waktuB;
-//   });
-
-//   const sekarang = new Date().getTime();
-
-//   // Render HANYA tugas yang belum selesai DAN belum kelewat deadline
-//   tasks.forEach((task, index)=>{
-//     const waktuDeadline = new Date(task.deadline).getTime() || Infinity;
-    
-//     if (!task.completed && waktuDeadline >= sekarang) {
-//       taskList.innerHTML += `
-//         <div class="task-card">
-//           <h3>${task.name}</h3>
-//           <p>📅 Deadline: <strong>${formatTampilanTanggal(task.deadline)}</strong></p>
-//           <p>📝 ${task.note || "-"}</p>
-//           <div class="task-buttons">
-//             <button class="done-btn" onclick="completeTask(${index})">Selesai</button>
-//             <button class="delete-btn" onclick="deleteTask(${index})">Hapus</button>
-//           </div>
-//         </div>`;
-//     }
-//   });
-// }
+function displayTasks(){  
+}
 
 function addTask(){
   let taskName = document.getElementById("taskInput").value.trim();
@@ -1774,33 +1741,7 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-window.completeWellness = function(id) {
-  if (!auth.currentUser) return;
-  const uidAman = auth.currentUser.uid;
-  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
 
-  const index = dataWellnessLokal.findIndex(item => item.id === id);
-  if (index !== -1) {
-    dataWellnessLokal[index].completed = true;
-    localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
-    if (typeof displayWellness === "function") displayWellness();
-    if (typeof displayWellnessHistory === "function") displayWellnessHistory();
-  }
-}
-
-window.deleteWellness = function(id) {
-  if (!auth.currentUser) return;
-  const uidAman = auth.currentUser.uid;
-  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
-
-  const index = dataWellnessLokal.findIndex(item => item.id === id);
-  if (index !== -1) {
-    dataWellnessLokal.splice(index, 1);
-    localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
-    if (typeof displayWellness === "function") displayWellness();
-    if (typeof displayWellnessHistory === "function") displayWellnessHistory();
-  }
-}
 
 window.addEventListener("DOMContentLoaded", () => {
   // 1. MINTA IZIN NOTIFIKASI
