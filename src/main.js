@@ -1774,8 +1774,36 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+window.completeWellness = function(id) {
+  if (!auth.currentUser) return;
+  const uidAman = auth.currentUser.uid;
+  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+
+  const index = dataWellnessLokal.findIndex(item => item.id === id);
+  if (index !== -1) {
+    dataWellnessLokal[index].completed = true;
+    localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
+    if (typeof displayWellness === "function") displayWellness();
+    if (typeof displayWellnessHistory === "function") displayWellnessHistory();
+  }
+}
+
+window.deleteWellness = function(id) {
+  if (!auth.currentUser) return;
+  const uidAman = auth.currentUser.uid;
+  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+
+  const index = dataWellnessLokal.findIndex(item => item.id === id);
+  if (index !== -1) {
+    dataWellnessLokal.splice(index, 1);
+    localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
+    if (typeof displayWellness === "function") displayWellness();
+    if (typeof displayWellnessHistory === "function") displayWellnessHistory();
+  }
+}
+
 window.addEventListener("DOMContentLoaded", () => {
-  // 1. MINTA IZIN NOTIFIKASI (Cukup Sekali Saja)
+  // 1. MINTA IZIN NOTIFIKASI
   if (Notification.permission !== "granted") {
     Notification.requestPermission();
   }
@@ -1792,7 +1820,7 @@ window.addEventListener("DOMContentLoaded", () => {
   if (typeof cekSesiTimerPasRefresh === "function") cekSesiTimerPasRefresh();
   if (typeof aktifkanNotificationFCM === "function") aktifkanNotificationFCM();
 
-  // 4. DAFTARKAN SERVICE WORKER SECARA AMAN (ANTI-AIRPLANE MODE)
+  // 4. DAFTARKAN SERVICE WORKER SECARA AMAN
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/firebase-messaging-sw.js')
       .then((reg) => {
@@ -1832,7 +1860,7 @@ window.addEventListener("DOMContentLoaded", () => {
       });
   }
 
-  // 5. INITIAL RENDER DATA (Jika user statusnya terotentikasi saat load pertama)
+  // 5. INITIAL RENDER DATA (Saat pertama kali web dibuka)
   const jalankanRenderAwalSemuaData = () => {
     if (!auth.currentUser) return;
     
@@ -1846,24 +1874,20 @@ window.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById("focusHistoryList") && typeof displayFocusHistory === "function") displayFocusHistory();
   };
 
-  // Pancing render awal (kasih toleransi delay kecil menunggu Auth State Firebase stabil)
-  setTimeout(jalankanRenderAwalSemuaData, 200);
+  // Toleransi delay kecil menunggu Auth State Firebase siap sepenuhnya
+  setTimeout(jalankanRenderAwalSemuaData, 250);
 
-  // 6. SOLUSI JITU PINDAH HALAMAN (CEGAT NAVIGASI MENU APAPUN)
-  // Kode ini melacak tombol navigasi, sidebar link, atau tombol berpindah tab menu Anda
+  // 6. SOLUSI JITU PINDAH HALAMAN (ANTI-DATA-HILANG)
   document.querySelectorAll('nav a, .sidebar-menu a, [data-page], .menu-link, .nav-item').forEach(tombol => {
     tombol.addEventListener("click", () => {
-      // Dapatkan nama halaman tujuan (misal: "wellness", "scheduler", "focus")
       const targetPage = tombol.getAttribute("href")?.replace("#", "") || tombol.getAttribute("data-page");
       if (!targetPage) return;
 
-      // Beri jeda 50ms agar sistem SPA Anda mengganti display block/none HTML terlebih dahulu
       setTimeout(() => {
         if (!auth.currentUser) return;
 
-        console.log(`Menuju halaman: ${targetPage}. Melakukan render ulang data...`);
+        console.log(`Menuju halaman: ${targetPage}. Merender ulang data...`);
         
-        // Pemicu Render Ulang Sesuai Menu yang Sedang Dibuka Aktif
         if (targetPage === "wellness") {
           if (typeof displayWellness === "function") displayWellness();
           if (typeof displayWellnessHistory === "function") displayWellnessHistory();
@@ -1875,7 +1899,7 @@ window.addEventListener("DOMContentLoaded", () => {
         } else if (targetPage === "focus") {
           if (typeof displayFocusHistory === "function") displayFocusHistory();
         }
-      }, 60);
+      }, 70); // Sedikit ditambah jeda biar transisi HTML beres dulu
     });
   });
 });
