@@ -46,9 +46,8 @@ onAuthStateChanged(auth, (user) => {
     // =========================================================================
     // STEP 1: AMBIL DATA SEKALI SAJA DI AWAL MENGGUNAKAN KUNCI LAVENDER PREMIUM
     // =========================================================================
-    // PERBAIKAN: Menyamakan kunci 'todoTugas_' agar sinkron dengan fungsi Lavender Premium
     const jadwalLokal = JSON.parse(localStorage.getItem(`jadwalKuliah_${user.uid}`)) || [];
-    const todoLokal = JSON.parse(localStorage.getItem(`todoTugas_${user.uid}`)) || [];
+    const todoLokal = JSON.parse(localStorage.getItem(`todoTugas_${user.uid}`)) || []; // Ubah 'tasks_' jadi 'todoTugas_'
     const wellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${user.uid}`)) || [];
 
     schedules = jadwalLokal;
@@ -478,7 +477,7 @@ function displayTasks() {
 
   if (!auth.currentUser) return;
 
-  tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
+  tasks = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
 
   const sekarang = new Date().getTime();
 
@@ -1773,6 +1772,32 @@ function triggerNotifFocusOffline() {
 
 
 window.addEventListener("DOMContentLoaded", () => {
+
+  // Jalankan otomatis fungsi pembersih ganti hari dan render semua histori saat halaman dimuat
+document.addEventListener("DOMContentLoaded", () => {
+  
+  // PERBAIKAN UNTUK VERCEL: Tunggu sampai auth.currentUser benar-benar terisi dari server Firebase
+  const tungguAuthDanRender = () => {
+    if (auth.currentUser) {
+      bersihkanWellnessGantiHariOtomatis();
+      displayTodoHistory();
+      displayWellnessHistory();
+      displayFocusHistory();
+      
+      // Paksa render ulang dashboard Lavender Premium setelah refresh selesai
+      if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+      if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
+      if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
+      console.log("Semua data berhasil dirender ulang setelah reload! ✨");
+    } else {
+      // Jika Firebase belum siap, cek lagi dalam 150 milidetik (looping tanpa bikin lag)
+      setTimeout(tungguAuthDanRender, 150);
+    }
+  };
+
+  tungguAuthDanRender();
+});
+
   // 1. MINTA IZIN NOTIFIKASI
   if (Notification.permission !== "granted") {
     Notification.requestPermission();
@@ -1845,6 +1870,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     console.log("Render awal semua data berhasil disinkronkan!");
   };
+  
 
   // TETAP JALANKAN TIMEOUT DI SINI AGAR TIDAK BALAPAN SAAT RELOAD
   setTimeout(jalankanRenderAwalSemuaData, 300);
