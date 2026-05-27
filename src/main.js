@@ -1772,147 +1772,44 @@ function triggerNotifFocusOffline() {
 
 
 window.addEventListener("DOMContentLoaded", () => {
-
-  // Jalankan otomatis fungsi pembersih ganti hari dan render semua histori saat halaman dimuat
-document.addEventListener("DOMContentLoaded", () => {
-  
-  // PERBAIKAN UNTUK VERCEL: Tunggu sampai auth.currentUser benar-benar terisi dari server Firebase
-  const tungguAuthDanRender = () => {
-    if (auth.currentUser) {
-      bersihkanWellnessGantiHariOtomatis();
-      displayTodoHistory();
-      displayWellnessHistory();
-      displayFocusHistory();
-      
-      // Paksa render ulang dashboard Lavender Premium setelah refresh selesai
-      if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
-      if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
-      if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
-      console.log("Semua data berhasil dirender ulang setelah reload! ✨");
-    } else {
-      // Jika Firebase belum siap, cek lagi dalam 150 milidetik (looping tanpa bikin lag)
-      setTimeout(tungguAuthDanRender, 150);
-    }
-  };
-
-  tungguAuthDanRender();
-});
-
-  // 1. MINTA IZIN NOTIFIKASI
-  if (Notification.permission !== "granted") {
-    Notification.requestPermission();
-  }
-
-  // 2. BERSIHKAN DATA EXPIRED SEBELUM DI-RENDER
-  if (typeof bersihkanWellnessGantiHariOtomatis === "function") {
-    bersihkanWellnessGantiHariOtomatis();
-  }
-
-  // 3. AKTIFKAN SEGERA ALARM & SATPAM BACKING-PROCESS
+  // 1. Inisialisasi awal (Notifikasi, Service Worker, Alarm)
+  if (Notification.permission !== "granted") Notification.requestPermission();
   if (typeof jalankanSatpamOtomatis === "function") jalankanSatpamOtomatis();
   if (typeof jalankanSatpamWellnessOtomatis === "function") jalankanSatpamWellnessOtomatis();
   if (typeof jalankanAlarmTodoOtomatis === "function") jalankanAlarmTodoOtomatis();
   if (typeof cekSesiTimerPasRefresh === "function") cekSesiTimerPasRefresh();
-  if (typeof aktifkanNotificationFCM === "function") aktifkanNotificationFCM();
-
-  // 4. DAFTARKAN SERVICE WORKER SECARA AMAN
-  if ('serviceWorker' in navigator) {
-    const configParams = new URLSearchParams({
-      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      appId: import.meta.env.VITE_FIREBASE_APP_ID
-    }).toString();
-
-    navigator.serviceWorker.register(`/firebase-messaging-sw.js?${configParams}`)
-      .then((reg) => {
-        console.log('Service Worker berhasil didaftarkan dengan scope:', reg.scope);
-        if (typeof aktifkanNotificationFCM === "function") {
-          aktifkanNotificationFCM();
-        }
-      })
-      .catch((err) => {
-        console.error('Service Worker gagal didaftarkan:', err);
-      });
-  }
-
-  // 5. INITIAL RENDER DATA (Saat pertama kali web dibuka / di-reload)
-  const jalankanRenderAwalSemuaData = () => {
+  
+  // 2. Fungsi Tunggal untuk Sinkronisasi Data (Dipanggil saat Auth siap)
+  window.sinkronisasiDanRender = () => {
     if (!auth.currentUser) return;
     
-    console.log("Menyelaraskan nama kunci LocalStorage sebelum render awal...");
-
-    // ================= SINKRONISASI KUNCI LOCALSTORAGE (FIX ZERO MISTAKE 🔥) =================
-    // 1. Sinkronisasi To-Do List (Memastikan memakai 'tasks_')
+    // Pastikan kunci LocalStorage konsisten di sini (Pilih salah satu: tasks_ atau todoTugas_)
+    // Kamu pakai 'tasks_', 'schedules_', dan 'wellnessData_'. Pastikan ini SAMA di seluruh file!
     tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
-    dataTodo = tasks; 
+    dataTodo = tasks;
 
-    // 2. Sinkronisasi Jadwal Kuliah (FIX: Menyamakan dari jadwalKuliah_ ke schedules_)
     schedules = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
     dataJadwal = schedules;
 
-    // 3. Sinkronisasi Wellness Logs (FIX: Menyamakan dari wellnessLogs_ ke wellnessData_)
     wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${auth.currentUser.uid}`)) || [];
     dataWellness = wellnessData;
-    // =========================================================================================
 
-    // PERBAIKAN SINKRONISASI: Menghubungkan ke fungsi baru bertema Lavender Premium
-    if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
-    if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
-    if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
-    
-    if (document.getElementById("todoHistoryList") && typeof displayTodoHistory === "function") displayTodoHistory();
-    if (typeof displayGagalHistory === "function") displayGagalHistory();
-    if (document.getElementById("wellnessHistoryList") && typeof displayWellnessHistory === "function") displayWellnessHistory();
-    if (document.getElementById("focusHistoryList") && typeof displayFocusHistory === "function") displayFocusHistory();
-
-    console.log("Render awal semua data berhasil disinkronkan!");
+    // Render Semua
+    [tampilkanTodoDashboard, tampilkanJadwalDashboard, tampilkanWellnessDashboard, displayTodoHistory, displayGagalHistory, displayWellnessHistory, displayFocusHistory].forEach(fn => {
+        if (typeof fn === "function") fn();
+    });
+    console.log("Data sinkron & dirender!");
   };
-  
 
-  // TETAP JALANKAN TIMEOUT DI SINI AGAR TIDAK BALAPAN SAAT RELOAD
-  setTimeout(jalankanRenderAwalSemuaData, 300);
+  // 3. Pemicu Render (Gunakan onAuthStateChanged yang sudah ada di atas filemu, 
+  // tapi panggil window.sinkronisasiDanRender() di dalamnya)
+  // Tambahkan setTimeout di sini untuk memastikan DOM sudah siap saat Auth terdeteksi
+  setTimeout(window.sinkronisasiDanRender, 500);
 
-  // 6. SOLUSI JITU PINDAH HALAMAN (ANTI-DATA-HILANG)
-  document.querySelectorAll('nav a, .sidebar-menu a, [data-page], .menu-link, .nav-item').forEach(tombol => {
+  // 4. Navigasi (Tetap gunakan logika yang sudah kamu buat, tapi arahkan ke sinkronisasi)
+  document.querySelectorAll('nav a, .sidebar-menu a, [data-page]').forEach(tombol => {
     tombol.addEventListener("click", () => {
-      const targetPage = tombol.getAttribute("href")?.replace("#", "") || tombol.getAttribute("data-page");
-      if (!targetPage) return;
-
-      setTimeout(() => {
-        if (!auth.currentUser) return;
-
-        console.log(`Menuju halaman: ${targetPage}. Menyelaraskan ulang memori & merender visual...`);
-        
-        // ================= FORCE RE-READ SEBELUM PINDAH HALAMAN (FIX ZERO MISTAKE 🔥) =================
-        tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
-        dataTodo = tasks;
-
-        schedules = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
-        dataJadwal = schedules;
-
-        wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${auth.currentUser.uid}`)) || [];
-        dataWellness = wellnessData;
-        // =============================================================================================
-        
-        // PERBAIKAN SINKRONISASI: Menghubungkan navigasi ke fungsi render visual Lavender Premium
-        if (targetPage === "wellness") {
-          if (typeof displayWellness === "function") displayWellness();
-          if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
-          if (typeof displayWellnessHistory === "function") displayWellnessHistory();
-        } else if (targetPage === "scheduler" || targetPage === "dashboard" || targetPage === "todo") {
-          if (typeof displaySchedules === "function") displaySchedules();
-          if (typeof displayTasks === "function") displayTasks();
-          if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
-          if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
-          if (typeof displayTodoHistory === "function") displayTodoHistory();
-          if (typeof displayGagalHistory === "function") displayGagalHistory();
-        } else if (targetPage === "focus") {
-          if (typeof displayFocusHistory === "function") displayFocusHistory();
-        }
-      }, 100); // Menggunakan jeda 100ms agar rendering DOM halaman target berjalan mulus
+      setTimeout(window.sinkronisasiDanRender, 200);
     });
   });
 });
