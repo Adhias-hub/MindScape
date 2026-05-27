@@ -35,6 +35,12 @@ onAuthStateChanged(auth, (user) => {
   const isFocusPage = path.includes("focus.html");
   const isLoginPage = path.includes("index.html") || path === "/";
 
+  // TAMBAHAN AMAN: Jika terdeteksi user sudah login tapi kesasar di halaman login, langsung kunci pindah ke home!
+  if (user && isLoginPage) {
+    window.location.replace("home.html");
+    return;
+  }
+
   if (user) {
     console.log("Satpam Auth: User aktif ->", user.email);
 
@@ -62,7 +68,7 @@ onAuthStateChanged(auth, (user) => {
     // 1. ROUTING HALAMAN JADWAL INTERNAL
     if (isSchedulePage) {
       if (typeof displaySchedules === "function") displaySchedules();
-      if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard(); // Jaga-jaga jika fungsi Lavender dipakai di halaman ini
+      if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard(); 
     }
     
     // 2. ROUTING HALAMAN TO-DO LIST INTERNAL
@@ -70,14 +76,14 @@ onAuthStateChanged(auth, (user) => {
       if (typeof displayTasks === "function") displayTasks();
       if (typeof displayTodoHistory === "function") displayTodoHistory();
       if (typeof displayGagalHistory === "function") displayGagalHistory();
-      if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard(); // Jaga-jaga jika fungsi Lavender dipakai di halaman ini
+      if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard(); 
     }
     
     // 3. ROUTING HALAMAN WELLNESS INTERNAL
     if (isWellnessPage) {
       if (typeof displayWellness === "function") displayWellness();
       if (typeof displayWellnessHistory === "function") displayWellnessHistory();
-      if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard(); // Jaga-jaga jika fungsi Lavender dipakai di halaman ini
+      if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard(); 
     }
     
     // 4. ROUTING HALAMAN FOCUS MODE
@@ -93,17 +99,16 @@ onAuthStateChanged(auth, (user) => {
       if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
     }
 
-    if (isLoginPage) window.location.href = "home.html";
-
   } else {
-    // Tendang balik ke login jika coba mengakses halaman dalam tanpa akun
+    // =========================================================================
+    // JURUS TENDANG SAKLEK (HANYA MENGUBAH WINDOW.LOCATION MENJADI .REPLACE) 🔒
+    // =========================================================================
     if (isHomePage || isSchedulePage || isTodoPage || isWellnessPage || isFocusPage || path.includes("dashboard")) {
       alert("Akses ditolak! Silakan login terlebih dahulu.");
-      window.location.href = "index.html";
+      window.location.replace("index.html"); // Menggunakan replace agar history URL terhapus dan gak bisa di-back
     }
   }
 });
-
 
 /* ================= REGISTER (STRATA AMAN FIREBASE) ================= */
 function register() {
@@ -786,7 +791,7 @@ window.displayWellness = function() {
 
 window.addWellness = function() {
   if (!auth.currentUser) {
-    alert("Lu harus login dulu, yaa!");
+    alert("Maaf harus login dulu, yaa!");
     return;
   }
 
