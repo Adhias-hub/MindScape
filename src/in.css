@@ -1,28 +1,40 @@
-/* ================= LOGIN & REGISTER (MINIMALIS & MODERN) ================= */
+/* ================= 1. RESET GLOBAL (WAJIB DI PALING ATAS) ================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Kunci utama agar padding tidak merusak lebar elemen */
+  font-family: Arial, sans-serif;
+}
 
+body {
+  background: #f4f6ff;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* ================= 2. LOGIN & REGISTER (DESKTOP VERSION) ================= */
 .auth-container {
   width: 100%;
   height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  /* Background ungu pastel minimalis murni */
   background: linear-gradient(135deg, #f3f4f6 0%, #e0e7ff 100%);
 }
 
 .auth-box {
-  width: 380px;
+  width: 100%;
+  max-width: 420px; /* Diperlebar sedikit dari 380px agar lebih lega di desktop */
   background: rgba(255, 255, 255, 0.95);
   padding: 40px;
   border-radius: 24px;
-  /* Efek bayangan halus/soft shadow ala Apple & Google modern */
   box-shadow: 0 10px 30px rgba(75, 92, 255, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
 .auth-box h1 {
   text-align: center;
-  color: #4b5cff; /* Aksen Ungu MindSpace */
+  color: #4b5cff;
   font-size: 32px;
   font-weight: 800;
   margin-bottom: 8px;
@@ -67,11 +79,11 @@
   box-shadow: 0 0 0 4px rgba(75, 92, 255, 0.12);
 }
 
-/* LINK LUPA PASSWORD & SPACING FORM */
+/* UTILITY BUTTONS */
 .forgot-password {
   text-align: right;
-  margin-top: 15px;    /* Kasih jarak dari tombol Login di atasnya */
-  margin-bottom: 20px; /* Kasih jarak ke separator / tombol Google di bawahnya */
+  margin-top: 15px;
+  margin-bottom: 20px;
 }
 
 .forgot-password a {
@@ -85,7 +97,7 @@
 .forgot-password a:hover { 
   text-decoration: underline; 
 }
-/* SEPARATOR "ATAU" PADA LOGIN */
+
 .auth-box .separator {
   display: flex;
   align-items: center;
@@ -94,21 +106,22 @@
   font-size: 12px;
   margin: 22px 0;
 }
+
 .auth-box .separator::before,
 .auth-box .separator::after {
   content: '';
   flex: 1;
   border-bottom: 1px solid #e5e7eb;
 }
+
 .auth-box .separator:not(:empty)::before { margin-right: .5em; }
 .auth-box .separator:not(:empty)::after { margin-left: .5em; }
 
-/* UTILITY BUTTONS (LOGIN & DAFTAR UTAMA) */
 .btn {
   width: 100%;
   padding: 14px;
   border: none;
-  background: #4b5cff; /* Ungu Utama */
+  background: #4b5cff;
   color: white;
   border-radius: 14px;
   cursor: pointer;
@@ -124,12 +137,11 @@
   box-shadow: 0 6px 20px rgba(75, 92, 255, 0.3);
 }
 
-/* TOMBOL GOOGLE (Google Brand Standard) */
 .btn-google {
   width: 100%;
   padding: 14px;
   border: 1.5px solid #e5e7eb;
-  background: #f9fafb; /* Abu-abu kontras, gak nabrak putihnya box */
+  background: #f9fafb;
   color: #374151;
   border-radius: 14px;
   cursor: pointer;
@@ -140,18 +152,16 @@
   justify-content: center;
   gap: 10px;
   transition: all 0.25s ease;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
 }
 
 .btn-google:hover {
-  background: #ffffff; /* Berubah putih cerah pas dideketin */
-  border-color: #4b5cff; /* Aksen ungu tipis */
+  background: #ffffff;
+  border-color: #4b5cff;
   color: #4b5cff;
   transform: translateY(-1px);
   box-shadow: 0 5px 12px rgba(75, 92, 255, 0.1);
 }
 
-/* TEXT SWITCH FOOTER (Belum punya akun? / Sudah punya akun?) */
 .switch-text {
   margin-top: 25px;
   text-align: center;
@@ -170,76 +180,51 @@
   text-decoration: underline;
 }
 
-/* ================= RESET ================= */
-
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:Arial, sans-serif;
-}
-
-body{
-  background:#f4f6ff;
-}
-
-@media (max-width: 768px) {
-  /* 1. Gembok saklek level html & body biar gak bisa geser kanan sama sekali */
-  html, body {
-    width: 100%;
-    overflow-x: hidden;
-    position: relative;
-  }
-
-  /* ================= JINAKKAN AREA LOGIN/AUTH BIAR GAK KEPENUHAN 🔒 ================= */
+/* ================= 3. MEDIA QUERIES (RESPONSIVE HP) ================= */
+@media (max-width: 480px) {
   .auth-container {
-    padding: 20px 15px; /* Beri ruang napas atas-bawah dan kanan-kiri di HP */
-    height: auto;       /* Izinkan tinggi adaptif kalau layar HP terlalu pendek */
+    padding: 20px 16px; 
+    height: auto;       
     min-height: 100vh;
   }
 
   .auth-box {
-    width: 100%;        /* Paksa lebar box mengikuti lebar HP (fleksibel) */
-    max-width: 350px;   /* Kunci lebar maksimal biar gak kekecilan atau kegedean */
-    padding: 30px 20px; /* Sempitkan padding dalam dari 40px ke 20px biar space luas */
+    width: 100%;        
+    max-width: 100%;    /* ✅ PERBAIKAN: Kotak akan melebar manis memanfaatkan sisa space HP */
+    padding: 32px 24px; /* Rasio kenyamanan padding disesuaikan */
     border-radius: 20px;
   }
 
   .auth-box h1 {
-    font-size: 26px;    /* Perkecil ukuran judul MindSpace dikit biar gak sesak */
+    font-size: 28px;    
     margin-bottom: 6px;
   }
 
   .auth-box p {
-    margin-bottom: 20px; /* Kurangi space kosong yang gak perlu */
+    margin-bottom: 24px; 
     font-size: 13px;
   }
 
   .input-box {
-    margin-bottom: 15px; /* Rapatkan jarak antar input form */
+    margin-bottom: 16px; 
   }
 
   .input-box input {
-    padding: 12px 14px;  /* Sempitkan input biar lebih tipis dan rapi di HP */
-    font-size: 13.5px;
-  }
-
-  .forgot-password {
-    margin-top: 10px;
-    margin-bottom: 15px;
+    padding: 12px 14px;  
+    font-size: 14px;
   }
 
   .btn, .btn-google {
-    padding: 12px;       /* Sesuaikan ketebalan tombol utama & Google di HP */
-    font-size: 14px;
+    padding: 13px;       
+    font-size: 14.5px;
   }
-  /* ================================================================================= */
+}
 
-  /* 2. JINAKKAN HEADER (Biar gak melar keluar layar HP) */
+/* Responsivitas untuk area Navigasi Dashboard */
+@media (max-width: 768px) {
   .home-header {
-    padding: 15px 15px; 
+    padding: 15px; 
     width: 100%;
-    box-sizing: border-box; 
     display: flex;
     flex-direction: column; 
     gap: 15px;
@@ -247,13 +232,11 @@ body{
     text-align: center;
   }
 
-  /* Rapikan area logo di HP */
   .logo-area h1 {
     font-size: 22px;
     white-space: normal; 
   }
 
-  /* Rapatkan navbar menu di HP */
   .navbar {
     gap: 15px; 
     justify-content: center;
@@ -263,15 +246,4 @@ body{
   .navbar a {
     font-size: 14.5px;
   }
-}
-.auth-box {
-  width: 380px;
-  max-width: 100%;             /* 1. KUNCI: Biar gak melar melampaui batas di layar mana pun */
-  box-sizing: border-box;       /* 2. KUNCI: Biar padding gak bikin box-nya melar keluar */
-  background: rgba(255, 255, 255, 0.95);
-  padding: 40px;
-  border-radius: 24px;
-  /* Efek bayangan halus/soft shadow ala Apple & Google modern */
-  box-shadow: 0 10px 30px rgba(75, 92, 255, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.8);
 }
