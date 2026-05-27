@@ -17,8 +17,15 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-/* ================= AUTH LISTENER (SATPAM HALAMAN) ================= */
-// Cek status login secara real-time
+let schedules = [];
+let tasks = [];
+let wellnessData = [];
+
+let dataJadwal = [];
+let dataTodo = [];
+let dataWellness = [];
+
+/* ================= FIND & UPDATE THIS BLOCK ================= */
 onAuthStateChanged(auth, (user) => {
   const isHomePage = window.location.pathname.includes("home.html");
   const isLoginPage = window.location.pathname.includes("index.html") || window.location.pathname === "/";
@@ -26,38 +33,35 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     console.log("User aktif:", user.email);
     
-    // =========================================================================
-    // 🔥 AUTO-SWITCH DATA LOKAL BERDASARKAN USER UID (LOGIKA BARU LU)
-    // =========================================================================
     if (isHomePage) {
-      // Ambil data spesifik milik UID user yang login
+      // 1. Ambil data internal bawaan struktur lama kamu berdasarkan UID
       schedules = JSON.parse(localStorage.getItem(`schedules_${user.uid}`)) || [];
       tasks = JSON.parse(localStorage.getItem(`tasks_${user.uid}`)) || [];
       wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${user.uid}`)) || [];
       
-      const savedTimer = localStorage.getItem(`activeFocusTimer_${user.uid}`);
-      // Panggil fungsi display bawaan lu biar UI langsung sinkron terupdate!
+      // 2. Ambil data internal fitur baru Lavender kamu berdasarkan UID
+      dataJadwalKuliah = JSON.parse(localStorage.getItem(`jadwalKuliah_${user.uid}`)) || [];
+      dataTodoTugas = JSON.parse(localStorage.getItem(`todoTugas_${user.uid}`)) || [];
+      dataWellnessLogs = JSON.parse(localStorage.getItem(`wellnessLogs_${user.uid}`)) || [];
+      
+      // 3. Jalankan fungsi render bawaan struktur lama (Beri proteksi if typeof)
       if (typeof displaySchedules === "function") displaySchedules();
       if (typeof displayTasks === "function") displayTasks();
       if (typeof displayWellness === "function") displayWellness();
-    }
-    // =========================================================================
-    
-    // Tampilkan data ke UI jika elemennya ada di halaman saat ini (Definisinya wajib ada, King!)
-    const pEmail = document.getElementById("profileEmail");
-    const pName = document.getElementById("profileName");
-    
-    if (pEmail) pEmail.innerText = user.email;
-    if (pName) pName.innerText = user.displayName || localStorage.getItem("name") || "User";
 
-    // Jika user sudah login tapi malah buka halaman login, lempar ke home
+      // 4. Jalankan juga fungsi render komponen baru Lavender kamu di sini
+      if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
+      if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+      if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
+    }
+    
     if (isLoginPage) {
       window.location.href = "home.html";
     }
   } else {
-    // Jika user belum login tapi nekat buka home.html, tendang ke login
     if (isHomePage) {
       alert("Akses ditolak! Silakan login terlebih dahulu.");
+      window.location.href = "index.html";
     }
   }
 });
@@ -134,11 +138,21 @@ function loginDenganGoogle() {
     });
 }
 
-/* ================= LOGOUT ================= */
+/* ================= FIND AND UPDATE THIS LOGOUT FUNCTION ================= */
 function logout() {
   signOut(auth).then(() => {
+    // 🔥 SOLUSI SAKLEK: Bersihkan sisa array di RAM browser agar tidak bocor antar akun
+    schedules = [];
+    tasks = [];
+    wellnessData = [];
+    dataJadwalKuliah = [];
+    dataTodoTugas = [];
+    dataWellnessLogs = [];
+    
     alert("Logout berhasil!");
     window.location.href = "index.html";
+  }).catch((err) => {
+    console.error("Gagal logout:", err);
   });
 }
 
@@ -248,7 +262,7 @@ function scrollDashboard() {
 }
 
 /* ================= MANAGEMENT DATA (JADWAL) ================= */
-let schedules = JSON.parse(localStorage.getItem("schedules")) || [];
+schedules = JSON.parse(localStorage.getItem("schedules")) || [];
 
 const dayOrder = {
   "Senin": 1, "Selasa": 2, "Rabu": 3, "Kamis": 4, "Jumat": 5, "Sabtu": 6, "Minggu": 7
@@ -336,31 +350,29 @@ function jalankanSatpamOtomatis() {
   };
 
   setInterval(() => {
+    
+    if (!auth.currentUser) return; // Proteksi jika belum login
+
     const sekarang = new Date();
     const hariIniAngka = sekarang.getDay();
-    const tanggalKunciStr = sekarang.toDateString(); // Kunci tanggal harian (Contoh: "Tue May 26 2026")
+    const tanggalKunciStr = sekarang.toDateString(); 
     const jamSekarangMenit = (sekarang.getHours() * 60) + sekarang.getMinutes();
     
+    // Gembok UID Aman
     const jadwalAktif = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
 
     jadwalAktif.forEach((jadwal) => {
       if (kamusHari[jadwal.day] === hariIniAngka) {
         const [jamMulai, menitMulai] = jadwal.start.split(":").map(Number);
         const menitKuliahMulai = (jamMulai * 60) + menitMulai;
-        
-        // HITUNG SELISIH MENIT REAL-TIME
         const selisihMenitJadwal = menitKuliahMulai - jamSekarangMenit;
-
-        // Bikin ID unik untuk matkul ini hari ini agar minggu depan bisa bunyi lagi
         const idKunciNotif = `${tanggalKunciStr}_${jadwal.course}_${jadwal.start}`;
 
-        // KONDISI SAKLEK H-20 MENIT
         if (selisihMenitJadwal === 20) {
           if (!gembokJadwalH20[idKunciNotif]) {
-            gembokJadwalH20[idKunciNotif] = true; // Kunci detik pertama di memori RAM!
-
+            gembokJadwalH20[idKunciNotif] = true;
             if (Notification.permission === "granted") {
-              const keyNotifJadwal = `notif_jadwal_${jadwal.course}_${jadwal.start}_20`;
+              const keyNotifJadwal = `notif_jadwal_${auth.currentUser.uid}_${jadwal.course}_20`;
               if (!sessionStorage.getItem(keyNotifJadwal)) {
                 new Notification(`⏰ H-20 JADWAL: ${jadwal.course}`, {
                   body: `Ayo, ${jadwal.course} bakal mulai dalam 20 menit lagi! Jangan telat, yaa!`,
@@ -372,14 +384,11 @@ function jalankanSatpamOtomatis() {
             }
           }
         }
-        
-        // KONDISI SAKLEK H-5 MENIT
         else if (selisihMenitJadwal === 5) {
           if (!gembokJadwalH5[idKunciNotif]) {
-            gembokJadwalH5[idKunciNotif] = true; // Kunci detik pertama di memori RAM!
-
+            gembokJadwalH5[idKunciNotif] = true;
             if (Notification.permission === "granted") {
-              const keyNotifJadwal = `notif_jadwal_${jadwal.course}_${jadwal.start}_5`;
+              const keyNotifJadwal = `notif_jadwal_${auth.currentUser.uid}_${jadwal.course}_5`;
               if (!sessionStorage.getItem(keyNotifJadwal)) {
                 new Notification(`🚨 H-5 JADWAL: ${jadwal.course}`, {
                   body: `Gass masuk! 5 menit lagi kelas ${jadwal.course} dimulai! Jangan nyasar!`,
@@ -393,7 +402,7 @@ function jalankanSatpamOtomatis() {
         }
       }
     });
-  }, 1000); // Satpam keliling tiap 1 detik murni murni offline
+  }, 30000); // 🔥 SOLUSI SAKLEK: Interval diubah ke 30 detik agar hemat RAM & baterai perangkat
 }
 
 // PEMICU AUTOMATIS UTAMA (SUDAH DI-REPAIR SAKLEK)
@@ -415,7 +424,7 @@ window.deleteSchedule = deleteSchedule;
 
 /* ================= MANAGEMENT DATA (TODO TASKS) ================= */
 
-let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 
 function formatTampilanTanggal(dateString) {
   if (!dateString) return "-";
@@ -562,6 +571,7 @@ window.displayGagalHistory = function() {
 
 function jalankanAlarmTodoOtomatis() {
   setInterval(() => {
+    if (!auth.currentUser) return;
     const sekarang = new Date();
     const tanggalKunciStr = sekarang.toDateString();
     const timestampSekarang = sekarang.getTime();
@@ -668,7 +678,7 @@ function triggerNotifTugasGagal(judulTugas) {
 
 
 /* ================= MANAGEMENT DATA (WELLNESS) ================= */
-let wellnessData = JSON.parse(localStorage.getItem("wellnessData")) || [];
+wellnessData = JSON.parse(localStorage.getItem("wellnessData")) || [];
 
 function displayWellness(){
   let wellnessList = document.getElementById("wellnessList");
@@ -740,14 +750,18 @@ function deleteWellness(index){
 
 function jalankanSatpamWellnessOtomatis() {
   setInterval(() => {
+    if (!auth.currentUser) return; // Proteksi jika belum login
+
     const sekarang = new Date();
     const jamMenitSekarangStr = `${String(sekarang.getHours()).padStart(2, '0')}:${String(sekarang.getMinutes()).padStart(2, '0')}`;
+    
+    // 🔥 SOLUSI SAKLEK: Narik data mutlak dari UID yang sedang aktif agar tidak bocor
     const pengingatWellness = JSON.parse(localStorage.getItem(`wellnessData_${auth.currentUser.uid}`)) || [];
 
     pengingatWellness.forEach((item) => {
       if (!item.completed && item.time === jamMenitSekarangStr) {
         if (Notification.permission === "granted") {
-          const keyNotifWellness = `notif_well_${item.type}_${item.time}`;
+          const keyNotifWellness = `notif_well_${auth.currentUser.uid}_${item.type}_${item.time}`;
           
           if (!sessionStorage.getItem(keyNotifWellness)) {
             new Notification(`💧 TIME FOR WELLNESS: ${item.type}`, {
@@ -760,7 +774,7 @@ function jalankanSatpamWellnessOtomatis() {
         }
       }
     });
-  }, 30000); 
+  }, 30000); // Menggunakan jeda 30 detik yang aman
 }
 
 /**
@@ -887,6 +901,7 @@ function jalankanHitungMundur(endTime, targetText, noteText, initialDuration) {
   clearInterval(focusInterval);
   
   focusInterval = setInterval(() => {
+    if (!auth.currentUser) return;
     const sekarang = new Date().getTime();
     const selisihMilidetik = endTime - sekarang;
     let sisaDetikTotal = Math.ceil(selisihMilidetik / 1000);
@@ -1089,12 +1104,11 @@ function sendNotification(title, message){
 
 /* ================= INITIAL LOAD DATA ON STARTUP ================= */
 // Panggil penayangan data otomatis saat file diload pertama kali
-displaySchedules();
-displayTasks();
-displayWellness();
+//displaySchedules();
+//displayTasks();
+//displayWellness();
 
 /* ================= JALUR EKSPOR WINDOW GLOBAL ================= */
-//
 window.showRegister = showRegister;
 window.showLogin = showLogin;
 window.register = register;
@@ -1118,6 +1132,22 @@ window.startFocusTimer = startFocusTimer;
 window.resetFocusTimer = resetFocusTimer;
 window.changePassword = changePassword;
 window.aktifkanNotificationFCM = aktifkanNotificationFCM;
+
+// Fungsi Fitur Baru Lavender (Sudah terdaftar aman ✅)
+window.tambahJadwalKuliah = tambahJadwalKuliah;
+window.tampilkanJadwalDashboard = tampilkanJadwalDashboard;
+window.hapusJadwal = hapusJadwal;
+
+window.tambahTodoTugas = tambahTodoTugas;
+window.tampilkanTodoDashboard = tampilkanTodoDashboard;
+window.hapusTodo = hapusTodo;
+
+window.tambahWellnessLog = tambahWellnessLog;
+window.tampilkanWellnessDashboard = tampilkanWellnessDashboard;
+window.hapusWellness = hapusWellness;
+
+window.mulaiFocusMode = mulaiFocusMode;
+window.stopFocusMode = stopFocusMode;
 
 
 
@@ -1374,9 +1404,9 @@ function tampilkanJadwalDashboard() {
 
 // Fungsi hapus jadwal jika kuliahnya udah lulus atau libur
 function hapusJadwal(idJadwal) {
-  let dataJadwal = JSON.parse(localStorage.getItem('jadwalKuliah')) || [];
-  dataJadwal = dataJadwal.filter(j => j.id !== idJadwal);
-  localStorage.setItem('jadwalKuliah', JSON.stringify(dataJadwal));
+  const dataJadwalLokal = JSON.parse(localStorage.getItem('jadwalKuliah')) || [];
+  const hasilFilter = dataJadwalLokal.filter(j => j.id !== idJadwal);
+  localStorage.setItem('jadwalKuliah', JSON.stringify(hasilFilter));
   tampilkanJadwalDashboard();
 }
 
@@ -1387,6 +1417,7 @@ function hapusJadwal(idJadwal) {
 let rentangWaktuTerakhir = ""; // Gembok biar gak spam notif di menit yang sama
 
 setInterval(() => {
+  if (!auth.currentUser) return;
   const sekarang = new Date();
   
   // 1. Pemetaan hari sistem JavaScript
@@ -1401,10 +1432,10 @@ setInterval(() => {
   if (rentangWaktuTerakhir === kunciMenit) return;
 
   // 3. Tarik data jadwal kuliah dari LocalStorage
-  const dataJadwal = JSON.parse(localStorage.getItem('jadwalKuliah')) || [];
+ const ambilDataJadwalLokal = JSON.parse(localStorage.getItem('jadwalKuliah')) || [];
 
   // 4. Lakukan scanning tiap jadwal kuliah yang terdaftar
-  dataJadwal.forEach(jadwal => {
+  ambilDataJadwalLokal.forEach(jadwal => {
     // Hanya cek jadwal yang HARI-NYA cocok dengan hari ini
     if (jadwal.hari === hariIni) {
       
@@ -1504,11 +1535,12 @@ function tampilkanTodoDashboard() {
 
 // Fungsi hapus to-do jika tugas sudah selesai dikerjakan
 function hapusTodo(idTodo) {
-  let dataTodo = JSON.parse(localStorage.getItem('todoTugas')) || [];
-  dataTodo = dataTodo.filter(t => t.id !== idTodo);
-  localStorage.setItem('todoTugas', JSON.stringify(dataTodo));
+  const dataTodoLokal = JSON.parse(localStorage.getItem('todoTugas')) || [];
+  const hasilFilterTodo = dataTodoLokal.filter(t => t.id !== idTodo);
+  localStorage.setItem('todoTugas', JSON.stringify(hasilFilterTodo));
   tampilkanTodoDashboard();
 }
+
 
 
 // =========================================================================
@@ -1517,6 +1549,7 @@ function hapusTodo(idTodo) {
 let gembokTodoTerakhir = ""; // Biar gak spam notif berulang-ulang di menit yang sama
 
 setInterval(() => {
+  if (!auth.currentUser) return;
   const sekarang = new Date();
   
   // Ambil data waktu sekarang dalam format Timestamp Milidetik
@@ -1627,9 +1660,9 @@ function tampilkanWellnessDashboard() {
 
 // Fungsi hapus log atau tandai kelar untuk hari itu
 function hapusWellness(idWellness) {
-  let dataWellness = JSON.parse(localStorage.getItem('wellnessLogs')) || [];
-  dataWellness = dataWellness.filter(w => w.id !== idWellness);
-  localStorage.setItem('wellnessLogs', JSON.stringify(dataWellness));
+  const dataWellnessLokal = JSON.parse(localStorage.getItem('wellnessLogs')) || [];
+  const hasilFilterWellness = dataWellnessLokal.filter(w => w.id !== idWellness);
+  localStorage.setItem('wellnessLogs', JSON.stringify(hasilFilterWellness));
   tampilkanWellnessDashboard();
 }
 
@@ -1640,6 +1673,7 @@ function hapusWellness(idWellness) {
 let gembokWellnessTerakhir = ""; // Kunci preventif biar gak spam notif di menit yang sama
 
 setInterval(() => {
+  if (!auth.currentUser) return;
   const sekarang = new Date();
   
   // Ambil jam dan menit lokal saat ini secara real-time (Format HH:MM)
@@ -1706,6 +1740,7 @@ function mulaiFocusMode(menitDurasi) {
   
   // Jalankan satpam hitung mundur tiap 1 detik murni lokal
   timerFokus = setInterval(() => {
+    if (!auth.currentUser) return;
     if (sisaDetikFokus <= 0) {
       // KUNCI UTAMA: Waktu habis! Hentikan timer dan tembak Notif Lokal seketika
       clearInterval(timerFokus);
