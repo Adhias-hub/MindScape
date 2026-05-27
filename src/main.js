@@ -329,9 +329,9 @@ function displaySchedules() {
   
   if (!auth.currentUser) return;
 
-  // Ambil data paling fresh dari localStorage sesuai UID user aktif
-  schedules = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
-  urutkanJadwalSesuaiHari(); // Urutkan dulu secara internal sebelum digambar ke HTML
+  // 🔥 PERBAIKAN DI SINI: Samakan kuncinya pakai 'jadwalKuliah_' agar sinkron se-aplikasi!
+  schedules = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
+  urutkanJadwalSesuaiHari(); 
 
   if (schedules.length === 0) {
     scheduleList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Belum ada jadwal kuliah.</td></tr>`;
@@ -369,13 +369,13 @@ function addSchedule() {
   if (!auth.currentUser) return;
 
   // SINKRONISASI KRITIS: Tarik data fresh dari UID aktif dulu sebelum di-push agar tidak menimpa data user lain
-  schedules = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
+  schedules = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
   
   schedules.push({ course, day, start, end, note });
   
   // Urutkan array-nya dulu, baru simpan ke localStorage secara permanen berdasarkan UID
   urutkanJadwalSesuaiHari();
-  localStorage.setItem(`schedules_${auth.currentUser.uid}`, JSON.stringify(schedules));
+  localStorage.setItem(`jadwalKuliah_${auth.currentUser.uid}`, JSON.stringify(schedules));
   
   displaySchedules();
 
@@ -391,12 +391,12 @@ function deleteSchedule(index) {
   if (!auth.currentUser) return;
 
   // SINKRONISASI KRITIS: Pastikan array di memori sinkron dengan data asli di localstorage sebelum di-splice
-  schedules = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
+  schedules = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
   urutkanJadwalSesuaiHari();
 
   // Sekarang index dari HTML dan urutan array lokal dijamin 100% sinkron dan aman!
   schedules.splice(index, 1);
-  localStorage.setItem(`schedules_${auth.currentUser.uid}`, JSON.stringify(schedules));
+  localStorage.setItem(`jadwalKuliah_${auth.currentUser.uid}`, JSON.stringify(schedules));
   displaySchedules();
 }
 
