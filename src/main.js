@@ -17,9 +17,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-//let schedules = [];
-//let tasks = [];
-//let wellnessData = [];
+let schedules = [];
+let tasks = [];
+let wellnessData = [];
 
 let dataJadwal = [];
 let dataTodo = [];
@@ -27,41 +27,71 @@ let dataWellness = [];
 
 /* ================= FIND & UPDATE THIS BLOCK ================= */
 onAuthStateChanged(auth, (user) => {
-  const isHomePage = window.location.pathname.includes("home.html");
-  const isLoginPage = window.location.pathname.includes("index.html") || window.location.pathname === "/";
+  const path = window.location.pathname;
+  const isHomePage = path.includes("home.html");
+  const isSchedulePage = path.includes("jadwal.html");
+  const isTodoPage = path.includes("todo.html");
+  const isWellnessPage = path.includes("wellness.html");
+  const isFocusPage = path.includes("focus.html");
+  const isLoginPage = path.includes("index.html") || path === "/";
 
   if (user) {
-    console.log("Satpam Auth: User terdeteksi aktif ->", user.email);
+    console.log("Satpam Auth: User aktif ->", user.email);
+
+    if (path.includes("home.html") || path.includes("dashboard")) {
+   schedules = JSON.parse(localStorage.getItem(`schedules_${user.uid}`)) || [];
+   tasks = JSON.parse(localStorage.getItem(`tasks_${user.uid}`)) || [];
+   wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${user.uid}`)) || [];
+
+  if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
+  if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+  if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
+}
     
-    if (isHomePage) {
-      // 1. Tarik data Fitur Lama dari LocalStorage berdasarkan UID murni
-      // schedules = JSON.parse(localStorage.getItem(`schedules_${user.uid}`)) || [];
-      // tasks = JSON.parse(localStorage.getItem(`tasks_${user.uid}`)) || [];
-      // wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${user.uid}`)) || [];
-      
-      // 2. Tarik data Fitur Baru Lavender dari LocalStorage berdasarkan UID murni
-      dataJadwal = JSON.parse(localStorage.getItem(`jadwalKuliah_${user.uid}`)) || [];
-      dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${user.uid}`)) || [];
-      dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${user.uid}`)) || [];
-      
-      // 3. AMANKAN RENDER: Paksa gambar ulang ke HTML detik ini juga setelah data UID murni berhasil dimuat!
-      if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
-      if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
-      if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
-      
-      // Pemicu histori & pendukung (Jika ada)
+    // 1. ROUTING HALAMAN JADWAL
+    if (isSchedulePage) {
+      dataJadwal = JSON.parse(localStorage.getItem(`schedules_${user.uid}`)) || [];
+      if (typeof displaySchedules === "function") displaySchedules();
+    }
+    
+    // 2. ROUTING HALAMAN TO-DO LIST
+    if (isTodoPage) {
+      dataTodo = JSON.parse(localStorage.getItem(`tasks_${user.uid}`)) || [];
+      if (typeof displayTasks === "function") displayTasks();
       if (typeof displayTodoHistory === "function") displayTodoHistory();
       if (typeof displayGagalHistory === "function") displayGagalHistory();
-      if (typeof displayWellnessHistory === "function") displayWellnessHistory();
-      if (typeof displayFocusHistory === "function") displayFocusHistory();
     }
     
-    if (isLoginPage) {
-      window.location.href = "home.html";
+    // 3. ROUTING HALAMAN WELLNESS
+    if (isWellnessPage) {
+      dataWellness = JSON.parse(localStorage.getItem(`wellnessData_${user.uid}`)) || [];
+      if (typeof displayWellness === "function") displayWellness();
+      if (typeof displayWellnessHistory === "function") displayWellnessHistory();
     }
+    
+    // 4. ROUTING HALAMAN FOCUS MODE
+    if (isFocusPage) {
+      if (typeof displayFocusHistory === "function") displayFocusHistory();
+      if (typeof cekSesiTimerPasRefresh === "function") cekSesiTimerPasRefresh();
+    }
+    
+    // 5. ROUTING HALAMAN DASHBOARD UTAMA
+   if (isHomePage) {
+  // DISERAGAMKAN KUNCINYA SAKLEK BIAR SINKRON SAMA HALAMAN INTERNAL 🔥
+  dataJadwal = JSON.parse(localStorage.getItem(`schedules_${user.uid}`)) || [];
+  dataTodo = JSON.parse(localStorage.getItem(`tasks_${user.uid}`)) || [];
+  dataWellness = JSON.parse(localStorage.getItem(`wellnessData_${user.uid}`)) || [];
+  
+  if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
+  if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+  if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
+}
+
+    if (isLoginPage) window.location.href = "home.html";
+
   } else {
-    // Jika Firebase memastikan tidak ada user login setelah reload
-    if (isHomePage) {
+    // Tendang balik ke login jika coba mengakses halaman dalam tanpa akun
+    if (isHomePage || isSchedulePage || isTodoPage || isWellnessPage || isFocusPage) {
       alert("Akses ditolak! Silakan login terlebih dahulu.");
       window.location.href = "index.html";
     }
@@ -265,13 +295,13 @@ function scrollDashboard() {
 }
 
 /* ================= MANAGEMENT DATA (JADWAL) ================= */
-schedules = JSON.parse(localStorage.getItem("schedules")) || [];
+let schedules = [];
 
 const dayOrder = {
   "Senin": 1, "Selasa": 2, "Rabu": 3, "Kamis": 4, "Jumat": 5, "Sabtu": 6, "Minggu": 7
 };
 
-// FUNGSI BARU: Memastikan array schedules selalu terurut rapi di memori
+// FUNGSI: Memastikan array schedules selalu terurut rapi di memori
 function urutkanJadwalSesuaiHari() {
   schedules.sort((a, b) => {
     let orderA = dayOrder[a.day] || 99;
@@ -286,19 +316,24 @@ function displaySchedules() {
   if (!scheduleList) return;
   scheduleList.innerHTML = "";
   
-  // Ambil data paling fresh dari localstorage
-schedules = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
+  if (!auth.currentUser) return;
+
+  // Ambil data paling fresh dari localStorage sesuai UID user aktif
+  schedules = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
   urutkanJadwalSesuaiHari(); // Urutkan dulu secara internal sebelum digambar ke HTML
+
+  if (schedules.length === 0) {
+    scheduleList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Belum ada jadwal kuliah.</td></tr>`;
+    return;
+  }
 
   schedules.forEach((schedule, index) => {
     scheduleList.innerHTML += `
       <tr>
-        <!-- Accessibility Fix: td hari diubah jadi th ber-scope row agar ramah screen reader -->
         <th scope="row"><strong>${schedule.day}</strong></th>
         <td>${schedule.course}</td>
         <td>${schedule.start} - ${schedule.end}</td>
         <td>${schedule.note || "-"}</td>
-        <!-- Accessibility Fix: Tombol hapus dikasih aria-label penjelas agar tidak dinilai tombol buta -->
         <td>
           <button onclick="deleteSchedule(${index})" class="btn-delete" aria-label="Hapus jadwal mata kuliah ${schedule.course}">
             Hapus
@@ -309,25 +344,31 @@ schedules = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)
 }
 
 function addSchedule() {
-  let course = document.getElementById("courseInput").value;
+  let course = document.getElementById("courseInput").value.trim();
   let day = document.getElementById("dayInput").value; 
   let start = document.getElementById("startTime").value;
   let end = document.getElementById("endTime").value;
-  let note = document.getElementById("noteInput").value;
+  let note = document.getElementById("noteInput").value.trim();
 
   if (course === "" || day === "" || start === "" || end === "") {
     alert("Isi semua data jadwal!");
     return;
   }
 
+  if (!auth.currentUser) return;
+
+  // SINKRONISASI KRITIS: Tarik data fresh dari UID aktif dulu sebelum di-push agar tidak menimpa data user lain
+  schedules = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
+  
   schedules.push({ course, day, start, end, note });
   
-  // SOLUSI BUG 1: Urutkan array-nya dulu, baru simpan ke localStorage secara permanen
+  // Urutkan array-nya dulu, baru simpan ke localStorage secara permanen berdasarkan UID
   urutkanJadwalSesuaiHari();
   localStorage.setItem(`schedules_${auth.currentUser.uid}`, JSON.stringify(schedules));
   
   displaySchedules();
 
+  // Reset Input Form
   document.getElementById("courseInput").value = "";
   document.getElementById("dayInput").value = "";
   document.getElementById("startTime").value = "";
@@ -336,7 +377,13 @@ function addSchedule() {
 }
 
 function deleteSchedule(index) {
-  // Sekarang index dari HTML dan urutan array lokal sudah 100% sinkron dan aman!
+  if (!auth.currentUser) return;
+
+  // SINKRONISASI KRITIS: Pastikan array di memori sinkron dengan data asli di localstorage sebelum di-splice
+  schedules = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
+  urutkanJadwalSesuaiHari();
+
+  // Sekarang index dari HTML dan urutan array lokal dijamin 100% sinkron dan aman!
   schedules.splice(index, 1);
   localStorage.setItem(`schedules_${auth.currentUser.uid}`, JSON.stringify(schedules));
   displaySchedules();
@@ -346,14 +393,12 @@ let gembokJadwalH20 = {};
 let gembokJadwalH5  = {};
 let gembokTodoH5    = {};
 
-
 function jalankanSatpamOtomatis() {
   const kamusHari = {
     "Minggu": 0, "Senin": 1, "Selasa": 2, "Rabu": 3, "Kamis": 4, "Jumat": 5, "Sabtu": 6
   };
 
   setInterval(() => {
-    
     if (!auth.currentUser) return; // Proteksi jika belum login
 
     const sekarang = new Date();
@@ -361,7 +406,7 @@ function jalankanSatpamOtomatis() {
     const tanggalKunciStr = sekarang.toDateString(); 
     const jamSekarangMenit = (sekarang.getHours() * 60) + sekarang.getMinutes();
     
-    // Gembok UID Aman
+    // Ambil data terjaga murni berdasarkan UID user aktif
     const jadwalAktif = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
 
     jadwalAktif.forEach((jadwal) => {
@@ -371,14 +416,15 @@ function jalankanSatpamOtomatis() {
         const selisihMenitJadwal = menitKuliahMulai - jamSekarangMenit;
         const idKunciNotif = `${tanggalKunciStr}_${jadwal.course}_${jadwal.start}`;
 
-        if (selisihMenitJadwal === 20) {
+        // PERBAIKAN LOGIKA: Menggunakan rentang toleransi agar notifikasi tidak terlewat jika interval 30 detik bergeser
+        if (selisihMenitJadwal <= 20 && selisihMenitJadwal > 18) {
           if (!gembokJadwalH20[idKunciNotif]) {
             gembokJadwalH20[idKunciNotif] = true;
             if (Notification.permission === "granted") {
               const keyNotifJadwal = `notif_jadwal_${auth.currentUser.uid}_${jadwal.course}_20`;
               if (!sessionStorage.getItem(keyNotifJadwal)) {
                 new Notification(`⏰ H-20 JADWAL: ${jadwal.course}`, {
-                  body: `Ayo, ${jadwal.course} bakal mulai dalam 20 menit lagi! Jangan telat, yaa!`,
+                  body: `Ayo, ${jadwal.course} bakal mulai dalam sekitar 20 menit lagi! Jangan telat, yaa!`,
                   icon: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
                   requireInteraction: true 
                 });
@@ -387,14 +433,14 @@ function jalankanSatpamOtomatis() {
             }
           }
         }
-        else if (selisihMenitJadwal === 5) {
+        else if (selisihMenitJadwal <= 5 && selisihMenitJadwal > 0) {
           if (!gembokJadwalH5[idKunciNotif]) {
             gembokJadwalH5[idKunciNotif] = true;
             if (Notification.permission === "granted") {
               const keyNotifJadwal = `notif_jadwal_${auth.currentUser.uid}_${jadwal.course}_5`;
               if (!sessionStorage.getItem(keyNotifJadwal)) {
                 new Notification(`🚨 H-5 JADWAL: ${jadwal.course}`, {
-                  body: `Gass masuk! 5 menit lagi kelas ${jadwal.course} dimulai! Jangan nyasar!`,
+                  body: `Gass masuk! Kurang dari 5 menit lagi kelas ${jadwal.course} dimulai! Jangan nyasar!`,
                   icon: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
                   requireInteraction: true 
                 });
@@ -405,20 +451,18 @@ function jalankanSatpamOtomatis() {
         }
       }
     });
-  }, 30000); // 🔥 SOLUSI SAKLEK: Interval diubah ke 30 detik agar hemat RAM & baterai perangkat
+  }, 30000); // Interval 30 detik aman karena logika pencocokan menggunakan rentang waktu (bukan '===')
 }
-
-
 
 /* ================= EXPOSE TO GLOBAL ================= */
 window.addSchedule = addSchedule;
 window.deleteSchedule = deleteSchedule;
 
 
-
 /* ================= MANAGEMENT DATA (TODO TASKS) ================= */
 
-tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+// 1. INISIALISASI VARIABEL GLOBAL (Murni Array Kosong, Tidak Mencampur Key Polosan)
+let tasks = [];
 
 function formatTampilanTanggal(dateString) {
   if (!dateString) return "-";
@@ -427,47 +471,118 @@ function formatTampilanTanggal(dateString) {
   return `${hari}-${bulan}-${tahun} Pukul ${jam}`;
 }
 
-function displayTasks(){  
+function displayTasks() {  
+  let taskList = document.getElementById("taskList"); 
+  if (!taskList) return;
+  taskList.innerHTML = "";
+
+  if (!auth.currentUser) return;
+
+  tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
+
+  const sekarang = new Date().getTime();
+
+  if (tasks.length === 0) {
+    taskList.innerHTML = `<p style="color: #94a3b8; font-style: italic;">Tenang, belum ada tugas yang numpuk. 🔥</p>`;
+    return;
+  }
+
+  tasks.forEach((item) => {
+    const waktuDeadline = new Date(item.deadline).getTime();
+    if (!item.completed && waktuDeadline >= sekarang) {
+      taskList.innerHTML += `
+        <div class="task-card" id="${item.id}" style="padding: 16px; margin-bottom: 12px; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+          <h3 style="margin: 0; font-size: 18px; color: #1e293b;">🌸 ${item.name}</h3>
+          <p style="margin: 6px 0; font-size: 14px; color: #64748b;"><strong>Deadline:</strong> ${formatTampilanTanggal(item.deadline)} WIB</p>
+          
+          <div class="task-buttons" style="display: flex; gap: 8px; margin-top: 12px;">
+            <button class="done-btn" onclick="completeTask('${item.id}')" style="background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">Selesai</button>
+            <button class="delete-btn" onclick="deleteTask('${item.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">Hapus</button>
+          </div>
+        </div>
+      `;
+    }
+  });
 }
 
-function addTask(){
-  let taskName = document.getElementById("taskInput").value.trim();
-  let dateVal = document.getElementById("deadlineDate").value; 
-  let timeVal = document.getElementById("deadlineTime").value; 
-  let note = document.getElementById("taskNote").value.trim();
+function addTask() {
+  let taskInput = document.getElementById("taskInput");
+  let dateInput = document.getElementById("deadlineDate");
+  let timeInput = document.getElementById("deadlineTime");
 
-  if(taskName === "" || dateVal === "" || timeVal === ""){
+  if (!taskInput || !dateInput || !timeInput) return;
+
+  let taskName = taskInput.value.trim();
+  let dateVal = dateInput.value; 
+  let timeVal = timeInput.value; 
+
+  if (taskName === "" || dateVal === "" || timeVal === "") {
     alert("Isi nama tugas, tanggal, beserta jam deadlinenya!");
     return;
   }
 
-  let deadlineGabungan = `${dateVal}T${timeVal}`;
+  if (!auth.currentUser) return;
 
-  tasks.push({ name: taskName, deadline: deadlineGabungan, note: note, completed: false });
+  // Ambil data lama langsung pakai standar auth.currentUser.uid
+  tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
+
+  // Gabungkan tanggal dan jam menjadi format ISO standar untuk mempermudah manipulasi Date
+  const fullDeadlineString = `${dateVal}T${timeVal}`;
+
+  // Masukkan objek dengan struktur properti yang seragam (name dan deadline)
+  tasks.push({
+    id: 'todo_' + Date.now(),
+    name: taskName,
+    deadline: fullDeadlineString,
+    completed: false        
+  });
+
+  // Simpan ke localStorage berdasarkan UID aktif
   localStorage.setItem(`tasks_${auth.currentUser.uid}`, JSON.stringify(tasks));
   
+  // Refresh tampilan halaman dan dashboard sekaligus
   displayTasks();
-  displayGagalHistory(); // Refresh list gagal jika ada urutan baru
+  if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
 
-  document.getElementById("taskInput").value = "";
-  document.getElementById("deadlineDate").value = "";
-  document.getElementById("deadlineTime").value = "";
-  document.getElementById("taskNote").value = "";
+  // Reset Input Form secara aman
+  taskInput.value = "";
+  dateInput.value = "";
+  timeInput.value = "";
 }
 
-function completeTask(index){
-  tasks[index].completed = true;
-  localStorage.setItem(`tasks_${auth.currentUser.uid}`, JSON.stringify(tasks));
-  displayTasks();
-  displayTodoHistory();
+// Terbuka penuh ke window scope agar terbebas dari belenggu modul isolasi JavaScript
+window.completeTask = function(taskId) {
+  if (!auth.currentUser) return;
+
+  tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
+  const targetIndex = tasks.findIndex(task => task.id === taskId);
+  
+  if (targetIndex !== -1) {
+    tasks[targetIndex].completed = true;
+    localStorage.setItem(`tasks_${auth.currentUser.uid}`, JSON.stringify(tasks));
+    
+    displayTasks();
+    if (typeof displayTodoHistory === "function") displayTodoHistory();
+    if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+  }
 }
 
-function deleteTask(index){
-  tasks.splice(index, 1);
-  localStorage.setItem(`tasks_${auth.currentUser.uid}`, JSON.stringify(tasks));
-  displayTasks();
-  displayTodoHistory();
-  displayGagalHistory(); // Update semua jenis histori
+// Terbuka penuh ke window scope agar terbebas dari belenggu modul isolasi JavaScript
+window.deleteTask = function(taskId) {
+  if (!auth.currentUser) return;
+
+  tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
+  const targetIndex = tasks.findIndex(task => task.id === taskId);
+  
+  if (targetIndex !== -1) {
+    tasks.splice(targetIndex, 1);
+    localStorage.setItem(`tasks_${auth.currentUser.uid}`, JSON.stringify(tasks));
+    
+    displayTasks();
+    if (typeof displayTodoHistory === "function") displayTodoHistory();
+    if (typeof displayGagalHistory === "function") displayGagalHistory(); 
+    if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+  }
 }
 
 // --- HISTORI 1: TUGAS SELESAI ---
@@ -476,7 +591,9 @@ window.displayTodoHistory = function() {
   if (!historyList) return;
   historyList.innerHTML = "";
 
- const tasksLokal = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
+  if (!auth.currentUser) return;
+
+  const tasksLokal = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
   const tugasSelesai = tasksLokal.filter(task => task.completed);
 
   if (tugasSelesai.length === 0) {
@@ -484,7 +601,7 @@ window.displayTodoHistory = function() {
     return;
   }
 
-  tasksLokal.forEach((task, index) => {
+  tasksLokal.forEach((task) => {
     if (task.completed) {
       historyList.innerHTML += `
         <div class="history-item-box" style="background: #f8fafc; padding: 14px 18px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #10b981; display: flex; justify-content: space-between; align-items: center;">
@@ -492,7 +609,7 @@ window.displayTodoHistory = function() {
             <span style="font-weight: 700; color: #1e293b; text-decoration: line-through;">${task.name}</span>
             <p style="font-size: 12px; color: #64748b; margin-top: 4px;">✅ Selesai dikerjakan</p>
           </div>
-          <button onclick="deleteTask(${index})" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">Hapus Jejak</button>
+          <button onclick="deleteTask('${task.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">Hapus Jejak</button>
         </div>`;
     }
   });
@@ -504,6 +621,8 @@ window.displayGagalHistory = function() {
   if (!gagalList) return;
   gagalList.innerHTML = "";
 
+  if (!auth.currentUser) return;
+
   const tasksLokal = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
   const sekarang = new Date().getTime();
 
@@ -514,9 +633,8 @@ window.displayGagalHistory = function() {
     return;
   }
 
-  tasksLokal.forEach((task, index) => {
+  tasksLokal.forEach((task) => {
     const waktuDeadline = new Date(task.deadline).getTime() || Infinity;
-    // PERBAIKAN TYPO: Variabel 'now' yang salah ketik sudah diganti saklek menjadi 'sekarang'
     if (!task.completed && waktuDeadline < sekarang) {
       gagalList.innerHTML += `
         <div class="history-item-box" style="background: #fff5f5; padding: 14px 18px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #ef4444; display: flex; justify-content: space-between; align-items: center;">
@@ -524,7 +642,7 @@ window.displayGagalHistory = function() {
             <span style="font-weight: 700; color: #991b1b;">❌ ${task.name}</span>
             <p style="font-size: 12px; color: #b91c1c; margin-top: 4px;">Terlewat: ${formatTampilanTanggal(task.deadline)}</p>
           </div>
-          <button onclick="deleteTask(${index})" style="background: #7f1d1d; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">Ihlaskan & Hapus</button>
+          <button onclick="deleteTask('${task.id}')" style="background: #7f1d1d; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">Ihlaskan & Hapus</button>
         </div>`;
     }
   });
@@ -534,10 +652,10 @@ function jalankanAlarmTodoOtomatis() {
   setInterval(() => {
     if (!auth.currentUser) return;
     const sekarang = new Date();
-    const tanggalKunciStr = sekarang.toDateString();
+    const tanggalKunciStr = sekarang.toDateString(); // PERBAIKAN TYPO: Kata 'Bird =' pengacau sudah dibuang total ✨
     const timestampSekarang = sekarang.getTime();
     
-   const tugasAktif = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
+    const tugasAktif = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
     periksaDeadlineOtomatis();
 
     tugasAktif.forEach((task) => {
@@ -545,18 +663,15 @@ function jalankanAlarmTodoOtomatis() {
         const waktuDeadline = new Date(task.deadline);
         const selisihMilidetik = waktuDeadline.getTime() - timestampSekarang;
         
-        // PERBAIKAN: Gunakan Math.round agar pembulatan menitnya pas murni (bukan loncat lewat Math.ceil)
         const selisihMenitTodo = Math.round(selisihMilidetik / (1000 * 60));
-        
-        const idKunciTodo = `${tanggalKunciStr}_${task.name}_${task.deadline}`;
+        const idKunciTodo = `${tanggalKunciStr}_${task.id}`;
 
-        // TIMING H-5 MENIT SAKLEK SEBELUM DEADLINE HANGUS
         if (selisihMenitTodo === 5) {
           if (!gembokTodoH5[idKunciTodo]) {
-            gembokTodoH5[idKunciTodo] = true; // Kunci detik pertama di memori RAM!
+            gembokTodoH5[idKunciTodo] = true; 
 
             if (Notification.permission === "granted") {
-              const keyNotifTodo = `notif_todo_${task.name}_${task.deadline}`;
+              const keyNotifTodo = `notif_todo_${task.id}_5`;
               
               if (!sessionStorage.getItem(keyNotifTodo)) {
                 new Notification(`🚨 DEADLINE H-5 TUGAS: ${task.name}`, {
@@ -571,36 +686,23 @@ function jalankanAlarmTodoOtomatis() {
         }
       }
     });
-  }, 1000); // Satpam Todo ngecek tiap 1 detik murni murni offline
+  }, 20000); 
 }
 
-
-
-
-/* ================= EXPOSE TO GLOBAL ================= */
-window.addTask = addTask;
-window.completeTask = completeTask;
-window.deleteTask = deleteTask;
-
-
 function periksaDeadlineOtomatis() {
+  if (!auth.currentUser) return;
   const sekarang = new Date().getTime();
   let tasksLokal = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
   let adaPerubahan = false;
 
-  tasksLokal.forEach((task, index) => {
-    // Memeriksa tugas yang belum selesai ('completed' masih false)
+  tasksLokal.forEach((task) => {
     if (!task.completed) {
       const waktuDeadline = new Date(task.deadline).getTime();
 
-      // JIKA DEADLINE SUDAH LEWAT ATAU MENUNJUKKAN 0
       if (waktuDeadline <= sekarang) {
-        // Otomatis tandai status tugas atau manipulasi properti di local data kamu
-        // Untuk sistem kamu saat ini, tugas overdue otomatis tidak akan masuk displayTasks
-        // Tapi kita bisa picu notifikasinya di sini
-        if (!sessionStorage.getItem(`gagal_alert_${task.name}_${task.deadline}`)) {
+        if (!sessionStorage.getItem(`gagal_alert_${task.id}`)) {
           triggerNotifTugasGagal(task.name);
-          sessionStorage.setItem(`gagal_alert_${task.name}_${task.deadline}`, "sent");
+          sessionStorage.setItem(`gagal_alert_${task.id}`, "sent");
           adaPerubahan = true;
         }
       }
@@ -613,21 +715,32 @@ function periksaDeadlineOtomatis() {
   }
 }
 
-// Fungsi Pemicu Notifikasi Tugas Gagal
 function triggerNotifTugasGagal(judulTugas) {
   if (Notification.permission === 'granted') {
-    navigator.serviceWorker.ready.then((registration) => {
-      registration.showNotification('🚨 DEADLINE LEWAT, YAA!', {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.showNotification('🚨 DEADLINE LEWAT, YAA!', {
+          body: `Tugas "${judulTugas}" udah melewati batas waktu pengumpulan. Tetap semangat, yuk gaspol tugas lainnya!`,
+          icon: '/icon.png',
+          badge: '/icon.png',
+          tag: 'task-failed-alert',
+          vibrate: [500, 100, 500],
+          requireInteraction: true
+        });
+      });
+    } else {
+      new Notification('🚨 DEADLINE LEWAT, YAA!', {
         body: `Tugas "${judulTugas}" udah melewati batas waktu pengumpulan. Tetap semangat, yuk gaspol tugas lainnya!`,
-        icon: '/icon.png',
-        badge: '/icon.png',
-        tag: 'task-failed-alert',
-        vibrate: [500, 100, 500],
         requireInteraction: true
       });
-    });
+    }
   }
 }
+
+/* ================= EXPOSE TO GLOBAL ================= */
+window.addTask = addTask;
+window.completeTask = completeTask;
+window.deleteTask = deleteTask;
 
 
 
@@ -656,9 +769,9 @@ window.displayWellness = function() {
           <h3>💧 ${item.type}</h3>
           <p>⏰ Waktu: <strong>${item.time} WIB</strong></p>
           <p>🌸 Catatan: ${item.note || "-"}</p>
-          <div class="wellness-buttons" style="display: inline-block;">
-            <button class="done-btn" onclick="completeWellness(${item.id})">Selesai</button>
-            <button class="delete-btn" onclick="deleteWellness(${item.id})">Hapus</button>
+          <div class="wellness-buttons" style="display: flex; gap: 8px; margin-top: 10px;">
+            <button class="done-btn" onclick="completeWellness('${item.id}')">Selesai</button>
+            <button class="delete-btn" onclick="deleteWellness('${item.id}')">Hapus</button>
           </div>
         </div>`;
     }
@@ -707,7 +820,8 @@ window.completeWellness = function(id) {
   const uidAman = auth.currentUser.uid;
   let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
 
-  const index = dataWellnessLokal.findIndex(item => item.id === id);
+  // PERBAIKAN: Gunakan '==' agar tipe data Number/String dari HTML tetap bisa dicocokkan secara fleksibel
+  const index = dataWellnessLokal.findIndex(item => item.id == id);
   if (index !== -1) {
     dataWellnessLokal[index].completed = true;
     localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
@@ -721,8 +835,8 @@ window.deleteWellness = function(id) {
   const uidAman = auth.currentUser.uid;
   let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
 
-  // Cari berdasarkan ID agar tidak salah menghapus item saat array bergeser
-  const index = dataWellnessLokal.findIndex(item => item.id === id);
+  // PERBAIKAN: Gunakan '==' untuk mengantisipasi ketidakcocokan tipe data primitive (string vs number)
+  const index = dataWellnessLokal.findIndex(item => item.id == id);
   if (index !== -1) {
     dataWellnessLokal.splice(index, 1);
     localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
@@ -732,6 +846,8 @@ window.deleteWellness = function(id) {
 }
 
 function jalankanSatpamWellnessOtomatis() {
+  // PERBAIKAN OPTIMASI: Interval diset ke 60000ms (1 menit sekali) agar pas dengan rotasi perubahan jamMenitSekarangStr 
+  // Langkah ini sekaligus mencegah double trigger notifikasi berondong di menit yang sama
   setInterval(() => {
     if (!auth.currentUser) return; 
 
@@ -741,7 +857,6 @@ function jalankanSatpamWellnessOtomatis() {
     const pengingatWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
 
     pengingatWellness.forEach((item) => {
-      // PERBAIKAN: Gunakan item.time dan item.type agar sinkron dengan data input!
       if (!item.completed && item.time === jamMenitSekarangStr) {
         if (Notification.permission === "granted") {
           const keyNotifWellness = `notif_well_${auth.currentUser.uid}_${item.id}_${item.time}`;
@@ -757,7 +872,7 @@ function jalankanSatpamWellnessOtomatis() {
         }
       }
     });
-  }, 30000); 
+  }, 60000); 
 }
 
 /**
@@ -786,7 +901,7 @@ window.displayWellnessHistory = function() {
             <span style="font-weight: 700; color: #1e293b;">${item.type} (${item.time})</span>
             <p style="font-size: 12px; color: #7c3aed; margin-top: 4px;">💙 Sudah terpenuhi hari ini</p>
           </div>
-          <button onclick="deleteWellness(${item.id})" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">
+          <button onclick="deleteWellness('${item.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">
             Hapus Jejak
           </button>
         </div>`;
@@ -794,12 +909,12 @@ window.displayWellnessHistory = function() {
   });
 }
 
-
-
 /* ================= EXPOSE TO GLOBAL ================= */
 window.addWellness = addWellness;
 window.completeWellness = completeWellness;
 window.deleteWellness = deleteWellness;
+
+
 
 
  /* ================= MANAGEMENT DATA (FOCUS TIMER) ================= */
@@ -845,7 +960,6 @@ function startFocusTimer() {
     note: noteInput ? noteInput.value : ""
   };
   
-  // Disimpan satu paket utuh bawaan kodingan asli lu, cuma nama kuncinya aja pake UID!
   localStorage.setItem(`activeFocusTimer_${auth.currentUser.uid}`, JSON.stringify(dataTimer));
 
   // 4. JALANKAN MESIN COUNTDOWN
@@ -867,7 +981,6 @@ function jalankanHitungMundur(endTime, targetText, noteText, initialDuration) {
   if (targetInput) targetInput.disabled = true;
   if (noteInput) noteInput.disabled = true;
 
-  // REQ USER: Ubah teks menjadi "Selesai" warna hijau, tapi JANGAN DI-DISABLED biar bisa diklik!
   const startBtn = document.getElementById("btnMulaiFocus");
   if (startBtn) {
     startBtn.innerText = "Selesai";
@@ -894,7 +1007,6 @@ function jalankanHitungMundur(endTime, targetText, noteText, initialDuration) {
 
       bukaGembokFormInputDanKembalikanTombol();
 
-      // Masuk jejak riwayat otomatis
       catatHistoryFocusKeLokal(targetText, initialDuration);
 
       if (Notification.permission === "granted") {
@@ -923,11 +1035,12 @@ function jalankanHitungMundur(endTime, targetText, noteText, initialDuration) {
 function hentikanTimerTengahJalanManual() {
   clearInterval(focusInterval);
   
-  const simpananTimer = localStorage.getItem("activeFocusTimer");
+  if (!auth.currentUser) return;
+
+  // PERBAIKAN: Ambil data menggunakan UID user aktif agar target dan durasi aslinya terbaca
+  const simpananTimer = localStorage.getItem(`activeFocusTimer_${auth.currentUser.uid}`);
   if (simpananTimer) {
     const dataTimer = JSON.parse(simpananTimer);
-    
-    // Tetap catat ke riwayat karena user menganggapnya sudah "Selesai"
     catatHistoryFocusKeLokal(dataTimer.target, dataTimer.initialDuration);
   }
 
@@ -941,6 +1054,7 @@ function hentikanTimerTengahJalanManual() {
 }
 
 function resetFocusTimer() {
+  if (!auth.currentUser) return;
   clearInterval(focusInterval);
   localStorage.removeItem(`activeFocusTimer_${auth.currentUser.uid}`);
   
@@ -975,15 +1089,15 @@ function bukaGembokFormInputDanKembalikanTombol() {
   const startBtn = document.getElementById("btnMulaiFocus");
   if (startBtn) {
     startBtn.innerText = "Mulai";
-    startBtn.style.background = "#4b5cff"; // Balik ke warna biru utama lo
+    startBtn.style.background = "#4b5cff"; 
     startBtn.style.boxShadow = "0 4px 12px rgba(75, 92, 255, 0.18)";
     startBtn.disabled = false;
   }
 }
 
 function catatHistoryFocusKeLokal(targetText, durasiMenit) {
-  const uid = auth.currentUser ? auth.currentUser.uid : "anonim";
-  let focusHistory = JSON.parse(localStorage.getItem(`focusHistoryData_${uid}`)) || [];
+  if (!auth.currentUser) return;
+  let focusHistory = JSON.parse(localStorage.getItem(`focusHistoryData_${auth.currentUser.uid}`)) || [];
   
   focusHistory.push({
     target: targetText || "Fokus Belajar",
@@ -991,26 +1105,31 @@ function catatHistoryFocusKeLokal(targetText, durasiMenit) {
     timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
   });
   
-  localStorage.setItem(`focusHistoryData_${uid}`, JSON.stringify(focusHistory));
+  localStorage.setItem(`focusHistoryData_${auth.currentUser.uid}`, JSON.stringify(focusHistory));
   displayFocusHistory();
 }
 
 
 function deleteFocusHistory(index) {
-  let focusHistory = JSON.parse(localStorage.getItem("focusHistoryData")) || [];
+  if (!auth.currentUser) return;
+
+  // PERBAIKAN: Ambil dan simpan kembali ke key ber-UID agar sinkron dengan fungsi penampil riwayat
+  let focusHistory = JSON.parse(localStorage.getItem(`focusHistoryData_${auth.currentUser.uid}`)) || [];
   focusHistory.splice(index, 1);
-  localStorage.setItem("focusHistoryData", JSON.stringify(focusHistory));
+  localStorage.setItem(`focusHistoryData_${auth.currentUser.uid}`, JSON.stringify(focusHistory));
   displayFocusHistory();
 }
 
 function cekSesiTimerPasRefresh() {
-  const simpananTimer = localStorage.getItem("activeFocusTimer");
+  if (!auth.currentUser) return;
+
+  // PERBAIKAN: Membaca sesi aktif menggunakan UID user yang login agar tidak bernilai null saat reload
+  const simpananTimer = localStorage.getItem(`activeFocusTimer_${auth.currentUser.uid}`);
   if (simpananTimer) {
     const dataTimer = JSON.parse(simpananTimer);
     const sekarang = new Date().getTime();
 
     if (dataTimer.endTime > sekarang) {
-      // Mesin dihidupkan ulang dengan data dari localStorage
       jalankanHitungMundur(dataTimer.endTime, dataTimer.target, dataTimer.note, dataTimer.initialDuration);
     } else {
       localStorage.removeItem(`activeFocusTimer_${auth.currentUser.uid}`);
@@ -1077,14 +1196,14 @@ function sendNotification(title, message){
       icon: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
     });
   }
-  alarmSound.play().catch(e => console.log("Audio play ditangguhkan yaawser"));
+  alarmSound.play().catch(e => console.log("Audio play ditangguhkan oleh kebijakan autoplay browser"));
 }
 
 /* ================= INITIAL LOAD DATA ON STARTUP ================= */
 // Panggil penayangan data otomatis saat file diload pertama kali
-//displaySchedules();
-//displayTasks();
-//displayWellness();
+//tampilkanJadwalDashboard();
+//tampilkanTodoDashboard();
+//tampilkanWellnessDashboard();
 
 /* ================= JALUR EKSPOR WINDOW GLOBAL ================= */
 window.showRegister = showRegister;
@@ -1144,9 +1263,7 @@ function aktifkanNotificationFCM() {
       })
       .then((currentToken) => {
         if (currentToken) {
-          // Token ini adalah "alamat rumah" laptop/HP user. 
           console.log("TOKEN FCM LU (Copas ini buat ngetes):", currentToken);
-          // Kalau di industri, token ini bakal disimpan ke database biar bisa ditembak massal
         } else {
           console.log('Gagal dapet token, cek setelan Firebase lu.');
         }
@@ -1172,11 +1289,11 @@ function bersihkanWellnessGantiHariOtomatis() {
   const tanggalHariIni = new Date().toDateString(); 
   const tanggalTerakhirSimpan = localStorage.getItem("lastWellnessDate");
 
- if (tanggalTerakhirSimpan !== tanggalHariIni) {
-  localStorage.removeItem(`wellnessLogs_${auth.currentUser.uid}`);
-  dataWellness = [];
-  localStorage.setItem("lastWellnessDate", tanggalHariIni);
-}
+  if (tanggalTerakhirSimpan !== tanggalHariIni) {
+    localStorage.removeItem(`wellnessLogs_${auth.currentUser.uid}`);
+    dataWellness = [];
+    localStorage.setItem("lastWellnessDate", tanggalHariIni);
+  }
 }
 
 
@@ -1191,37 +1308,27 @@ document.addEventListener("DOMContentLoaded", () => {
 // Dan jangan lupa ekspos ke global jika tombol HTML mau ikutan manggil
 window.aktifkanNotificationFCM = aktifkanNotificationFCM;
 
-let deferredPrompt; // 1. Variabel penampung pemicu instalasi
+let deferredPrompt; // Variabel penampung pemicu instalasi
 
-// 2. Biarkan Chrome yang memutuskan kapan tombol ini layak muncul
+// Biarkan Chrome yang memutuskan kapan tombol ini layak muncul
 window.addEventListener('beforeinstallprompt', (e) => {
-  // Cegah pop-up bawaan yaawser yang mengganggu
   e.preventDefault();
-  
-  // Kunci event instalasinya ke dalam variabel kita
   deferredPrompt = e;
   
- 
-  // Artinya tombol HANYA MUNCUL kalau Chrome udah siap 100% buat instal
   const tombolInstal = document.getElementById('btnInstalPWA');
   if (tombolInstal) {
     tombolInstal.style.display = 'inline-block'; 
     
-    // 3. Pasang fungsi klik yang valid
     tombolInstal.addEventListener('click', () => {
-      // Sembunyikan tombolnya biar gak di-klik dua kali
       tombolInstal.style.display = 'none';
-      
-      // Tembak pop-up instalasi Chrome yang asli!
       deferredPrompt.prompt();
       
-      // Pantau keputusan user
       deferredPrompt.userChoice.then((choiceResult) => {
         if (choiceResult.outcome === 'accepted') {
           console.log('User gokil, sukses instal MindSpace! 🌸');
         } else {
           console.log('User nolak instal.');
-          tombolInstal.style.display = 'inline-block'; // Munculkan lagi kalau ditolak
+          tombolInstal.style.display = 'inline-block';
         }
         deferredPrompt = null;
       });
@@ -1229,7 +1336,6 @@ window.addEventListener('beforeinstallprompt', (e) => {
   }
 });
 
-// 4. Logika penutup: Kalau aplikasi udah terinstal di laptop, sembunyikan tombol selamanya
 window.addEventListener('appinstalled', () => {
   console.log('Aplikasi resmi terpasang di perangkat, yaa!');
   const tombolInstal = document.getElementById('btnInstalPWA');
@@ -1241,7 +1347,6 @@ window.addEventListener('appinstalled', () => {
 // 1. STRUKTUR UTAMA SEGMENT JADWAL KULIAH 
 
 function tambahJadwalKuliah() {
-  // Ambil data langsung dari elemen input form HTML kamu
   let course = document.getElementById("courseInput")?.value || "";
   let day = document.getElementById("dayInput")?.value || ""; 
   let start = document.getElementById("startTime")?.value || "";
@@ -1267,27 +1372,24 @@ function tambahJadwalKuliah() {
   console.log('Jadwal berhasil disimpen di memori lokal! 🪻');
   tampilkanJadwalDashboard(); 
 
-  // Bersihkan form input setelah sukses menambah data
   if (document.getElementById("courseInput")) document.getElementById("courseInput").value = "";
   if (document.getElementById("dayInput")) document.getElementById("dayInput").value = "";
   if (document.getElementById("startTime")) document.getElementById("startTime").value = "";
 }
 
 
-// Fungsi untuk merender daftar jadwal ke HTML biar kelihatan gagah
 function tampilkanJadwalDashboard() {
-  const containerJadwal = document.getElementById('containerListJadwal'); // Sesuaikan ID container HTML lu
+  const containerJadwal = document.getElementById('containerListJadwal'); 
   if (!containerJadwal) return;
   
   dataJadwal = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
-  containerJadwal.innerHTML = ''; // Bersihin isi lama
+  containerJadwal.innerHTML = ''; 
   
   if (dataJadwal.length === 0) {
     containerJadwal.innerHTML = '<p style="color: #666; text-align: center;">Belum ada jadwal kuliah yang diinput.</p>';
     return;
   }
   
-  // Render satu-persatu dalam bentuk card Lavender Premium
   dataJadwal.forEach(j => {
     containerJadwal.innerHTML += `
       <div class="wellness-card" id="${j.id}">
@@ -1302,7 +1404,6 @@ function tampilkanJadwalDashboard() {
   });
 }
 
-// Fungsi hapus jadwal jika kuliahnya udah lulus atau libur
 function hapusJadwal(idJadwal) {
   const uidAman = auth.currentUser ? auth.currentUser.uid : "";
   if (!uidAman) return;
@@ -1310,7 +1411,6 @@ function hapusJadwal(idJadwal) {
   const dataJadwalLokal = JSON.parse(localStorage.getItem(`jadwalKuliah_${uidAman}`)) || [];
   const hasilFilter = dataJadwalLokal.filter(j => j.id !== idJadwal);
   
-  // Gunakan variabel uidAman yang sudah divalidasi
   localStorage.setItem(`jadwalKuliah_${uidAman}`, JSON.stringify(hasilFilter));
   tampilkanJadwalDashboard();
 }
@@ -1320,73 +1420,59 @@ window.hapusJadwal = hapusJadwal;
 // =========================================================================
 // 2. SISTEM SATPAM OTOMATIS: PENGAWAS JADWAL H-20 & H-5 (CEK TIAP MENIT)
 // =========================================================================
-let rentangWaktuTerakhir = ""; // Gembok biar gak spam notif di menit yang sama
+let rentangWaktuTerakhir = ""; 
 
 setInterval(() => {
   if (!auth.currentUser) return;
   const sekarang = new Date();
   
-  // 1. Pemetaan hari sistem JavaScript
-  const daftarHari = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const daftarHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
   const hariIni = daftarHari[sekarang.getDay()]; 
   
-  // 2. Ambil total MENIT saat ini dari jam 00:00 (Biar gampang dikurangi)
   const totalMenitSekarang = (sekarang.getHours() * 60) + sekarang.getMinutes();
   
-  // Buat gembok preventif biar gak double trigger di detik yang sama
   const kunciMenit = `${sekarang.getHours()}:${sekarang.getMinutes()}`;
   if (rentangWaktuTerakhir === kunciMenit) return;
 
-  // 3. Tarik data jadwal kuliah dari LocalStorage
- const ambilDataJadwalLokal = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
+  const ambilDataJadwalLokal = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
 
-  // 4. Lakukan scanning tiap jadwal kuliah yang terdaftar
   ambilDataJadwalLokal.forEach(jadwal => {
-    // Hanya cek jadwal yang HARI-NYA cocok dengan hari ini
     if (jadwal.hari === hariIni) {
       
-      // Pecah string jam jadwal (misal "08:00" jadi jam 8, menit 0)
       const [jamJadwal, menitJadwal] = jadwal.jam.split(':').map(Number);
       const totalMenitJadwal = (jamJadwal * 60) + menitJadwal;
       
-      // Hitung selisih waktu: Menit Jadwal dikurangi Menit Sekarang
       const selisihMenit = totalMenitJadwal - totalMenitSekarang;
 
-      // KONDISI 1: Tembak Peringatan H-20 Menit
-      if (selisihMenit === 21) {
+      // PERBAIKAN LOGIKA: Dikembalikan murni ke target H-20 menit asli
+      if (selisihMenit === 20) {
         rentangWaktuTerakhir = kunciMenit;
         triggerNotifJadwalOffline(jadwal.matkul, "20 menit lagi masuk, yaa! Siap-siap otw kelas.");
       }
       
-      // KONDISI 2: Tembak Peringatan H-5 Menit (Mode Siaga)
-      else if (selisihMenit === 6) {
+      // PERBAIKAN LOGIKA: Dikembalikan murni ke target H-5 menit asli
+      else if (selisihMenit === 5) {
         rentangWaktuTerakhir = kunciMenit;
         triggerNotifJadwalOffline(jadwal.matkul, "5 menit lagi kelas dimulai! Jangan nyasar, gass masuk.");
       }
     }
   });
 
-}, 30000); // Cek tiap 30 detik biar sensitivitasnya tajam
+}, 30000); 
 
 
-// =========================================================================
-// 3. FUNGSI EKSEKUSI NOTIFIKASI LOKAL yaaWSER (DIUBAH PESANNYA SECARA DINAMIS)
-// =========================================================================
 function triggerNotifJadwalOffline(namaMatkul, pesanKustom) {
   if (Notification.permission === 'granted') {
     navigator.serviceWorker.ready.then((registration) => {
       registration.showNotification(`🪻 PENGINGAT JADWAL: ${namaMatkul}`, {
-        body: pesanKustom, // Isinya bakal otomatis berubah sesuai H-20 atau H-5
-        icon: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png', // Logo Lavender Murni Lu ✅
+        body: pesanKustom, 
+        icon: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png', 
         vibrate: [300, 100, 300], 
         badge: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png',
-        // Tambahin penanda di tag biar yaawser gak bingung bedain notif H-20 dan H-5
         tag: 'jadwal-alert-' + namaMatkul + '-' + (pesanKustom.includes('20') ? '20' : '5'),
         requireInteraction: true 
       });
     });
-  } else {
-    console.log("Izin notifikasi belum diaktifkan, yaa!");
   }
 }
 
@@ -1395,7 +1481,6 @@ function triggerNotifJadwalOffline(namaMatkul, pesanKustom) {
 // 1. STRUKTUR UTAMA SEGMENT TO-DO LIST (LAVENDER PREMIUM) WITH OFFLINE NOTIF
 // =========================================================================
 
-// Fungsi untuk menyimpan Tugas baru dari Form ke LocalStorage
 function tambahTodoTugas(namaTugas, tanggalDeadline, jamDeadline) {
   const uidAman = auth.currentUser ? auth.currentUser.uid : "";
   const dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${uidAman}`)) || [];
@@ -1403,21 +1488,19 @@ function tambahTodoTugas(namaTugas, tanggalDeadline, jamDeadline) {
   const tugasBaru = {
     id: 'todo_' + Date.now(),
     tugas: namaTugas,
-    tanggal: tanggalDeadline, // Format HTML input date: "YYYY-MM-DD" (Contoh: "2026-05-26")
-    jam: jamDeadline         // Format HTML input time: "HH:MM" (Contoh: "23:59")
+    tanggal: tanggalDeadline, 
+    jam: jamDeadline         
   };
   
   dataTodo.push(tugasBaru);
   localStorage.setItem(`todoTugas_${auth.currentUser.uid}`, JSON.stringify(dataTodo));
 
-  
   console.log('Tugas baru sukses dikunci di memori lokal, yaa! 🪻');
-  tampilkanTodoDashboard(); // Refresh UI list tugas
+  tampilkanTodoDashboard(); 
 }
 
-// Fungsi render daftar To-Do ke HTML biar sewarna Lavender
 function tampilkanTodoDashboard() {
-  const containerTodo = document.getElementById('containerListTodo'); // Sesuaikan ID HTML lu, 
+  const containerTodo = document.getElementById('containerListTodo'); 
   if (!containerTodo) return;
   
   dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
@@ -1441,93 +1524,68 @@ function tampilkanTodoDashboard() {
   });
 }
 
-// Fungsi hapus to-do jika tugas sudah selesai dikerjakan (Gembok UID Aman)
 function hapusTodo(idTodo) {
-  // 1. Pastikan user sudah login dan ambil UID-nya
   const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-  if (!uidAman) {
-    console.error("Gagal menghapus: User tidak terotentikasi.");
-    return;
-  }
-  // 2. Tarik data murni milik UID tersebut dari localStorage
+  if (!uidAman) return;
+  
   const dataTodoLokal = JSON.parse(localStorage.getItem(`todoTugas_${uidAman}`)) || []; 
-  // 3. Filter data untuk membuang item berdasarkan ID unik Lavender
   const hasilFilterTodo = dataTodoLokal.filter(t => t.id !== idTodo); 
-  // 4. Kunci kembali ke localStorage menggunakan UID yang sama
+  
   localStorage.setItem(`todoTugas_${uidAman}`, JSON.stringify(hasilFilterTodo));
-  // 5. Segarkan tampilan UI di layar
   tampilkanTodoDashboard();
 }
-// Pastikan fungsi ini diekspos ke global window agar bisa diakses oleh onclick HTML
 window.hapusTodo = hapusTodo;
-
-
 
 
 // =========================================================================
 // 2. SATPAM TO-DO: PENGHITUNG SELISIH DEADLINE H-5 MENIT (OFFLINE TOTAL)
 // =========================================================================
-let gembokTodoTerakhir = ""; // Biar gak spam notif berulang-ulang di menit yang sama
+let gembokTodoTerakhir = ""; 
 
 setInterval(() => {
   if (!auth.currentUser) return;
   const sekarang = new Date();
-  
-  // Ambil data waktu sekarang dalam format Timestamp Milidetik
   const timestampSekarang = sekarang.getTime();
   
-  // Bikin kunci menit buat satpam preventif
   const kunciMenitTodo = `${sekarang.getDate()}-${sekarang.getHours()}:${sekarang.getMinutes()}`;
   if (gembokTodoTerakhir === kunciMenitTodo) return;
 
-  // Tarik data tugas dari LocalStorage
   const dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
 
-
   dataTodo.forEach(item => {
-    // Gabungkan string Tanggal dan Jam milik tugas jadi satu format standar Date
-    // Contoh gabungan: "2026-05-26T23:59:00"
     const stringDeadline = `${item.tanggal}T${item.jam}:00`;
     const waktuDeadline = new Date(stringDeadline);
     
-    // Validasi jika format inputan tanggalnya valid
     if (!isNaN(waktuDeadline.getTime())) {
       const timestampDeadline = waktuDeadline.getTime();
-      
-      // Hitung selisih waktu dalam satuan MENIT
-      // (Timestamp Deadline - Timestamp Sekarang) / 1000 milidetik / 60 detik
       const selisihMenitTodo = Math.round((timestampDeadline - timestampSekarang) / 1000 / 60);
 
-      // KUNCI UTAMA: Jika waktu sisa TEPAT 5 menit lagi sebelum deadline!
-      if (selisihMenitTodo === 6) {
-        gembokTodoTerakhir = kunciMenitTodo; // Kunci menit ini
-        triggerNotifTodoOffline(item.tugas); // Tembak alarm darurat!
+      // PERBAIKAN LOGIKA: Kembalikan murni ke target H-5 menit asli
+      if (selisihMenitTodo === 5) {
+        gembokTodoTerakhir = kunciMenitTodo; 
+        triggerNotifTodoOffline(item.tugas); 
       }
     }
   });
 
-}, 30000); // Satpam ngecek tiap 30 detik biar super akurat
+}, 30000); 
 
 
-// =========================================================================
-// 3. FUNGSI EKSEKUSI NOTIFIKASI LOCAL TO-DO (MODE ANTI-PANIK)
-// =========================================================================
 function triggerNotifTodoOffline(namaTugas) {
   if (Notification.permission === 'granted') {
     navigator.serviceWorker.ready.then((registration) => {
       registration.showNotification('🚨 DEADLINE DEPAN MATA, yaa!', {
         body: `Tugas "${namaTugas}" kamu sisa 5 menit lagi! Ayoo buruan submit ke sistem!`,
-        icon: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png', // Ikon Lavender Murni Lu ✅
-        vibrate: [500, 100, 500, 100, 500], // Getaran beruntun biar panik wkwk
+        icon: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png', 
+        vibrate: [500, 100, 500, 100, 500], 
         badge: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png',
         tag: 'todo-alert-' + namaTugas,
-        requireInteraction: true // Notif bakal nempel di layar sampai di-close murni oleh lu
+        requireInteraction: true 
       });
     });
   }
 }
 
-// Tambahkan pemicu render load data tugas saat halaman pertama kali dibuka
 window.addEventListener('DOMContentLoaded', () => {
   tampilkanTodoDashboard();
 });
@@ -1537,32 +1595,28 @@ window.addEventListener('DOMContentLoaded', () => {
 // 1. STRUKTUR UTAMA SEGMENT WELLNESS LOG (LAVENDER PREMIUM) WITH OFFLINE NOTIF
 // =========================================================================
 
-// Fungsi menyimpan Log Wellness rutin ke LocalStorage
 function tambahWellnessLog(namaAktivitas, jamMenitTarget) {
-    const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-    const dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+  const dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
   
   const logBaru = {
     id: 'well_' + Date.now(),
-    aktivitas: namaAktivitas, // Contoh: "Minum Air Putih 500ml", "Mood Check-in"
-    jam: jamMenitTarget       // Format HTML input time: "HH:MM" (Contoh: "07:00", "13:00")
+    aktivitas: namaAktivitas, 
+    jam: jamMenitTarget       
   };
   
   dataWellness.push(logBaru);
   localStorage.setItem(`wellnessLogs_${auth.currentUser.uid}`, JSON.stringify(dataWellness));
 
-  
   console.log('Log kesehatan on-time berhasil dikunci di memori lokal, yaa! 🪻');
-  tampilkanWellnessDashboard(); // Refresh list visual di layar
+  tampilkanWellnessDashboard(); 
 }
 
-// Fungsi render list log kesehatan ke HTML biar serasi bertema Lavender
 function tampilkanWellnessDashboard() {
-  const containerWellness = document.getElementById('containerListWellness'); // Sesuaikan ID HTML form wellness lu, yaa
+  const containerWellness = document.getElementById('containerListWellness'); 
   if (!containerWellness) return;
   
   dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
-
   containerWellness.innerHTML = '';
   
   if (dataWellness.length === 0) {
@@ -1583,7 +1637,6 @@ function tampilkanWellnessDashboard() {
   });
 }
 
-// Fungsi hapus log atau tandai kelar untuk hari itu
 function hapusWellness(idWellness) {
   const uidAman = auth.currentUser ? auth.currentUser.uid : "";
   if (!uidAman) return;
@@ -1591,107 +1644,88 @@ function hapusWellness(idWellness) {
   const dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
   const hasilFilterWellness = dataWellnessLokal.filter(w => w.id !== idWellness);
   
-  // Gunakan variabel uidAman agar tidak terlempar ke data _undefined
   localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(hasilFilterWellness));
   tampilkanWellnessDashboard();
 }
 window.hapusWellness = hapusWellness;
 
 
-
 // 2. SATPAM WELLNESS: PENGAWAS DETIK ON-TIME (CEK TIAP MENIT)
-
-let gembokWellnessTerakhir = ""; // Kunci preventif biar gak spam notif di menit yang sama
+let gembokWellnessTerakhir = ""; 
 
 setInterval(() => {
   if (!auth.currentUser) return;
   const sekarang = new Date();
   
-  // Ambil jam dan menit lokal saat ini secara real-time (Format HH:MM)
   const jamSekarang = String(sekarang.getHours()).padStart(2, '0');
   const menitSekarang = String(sekarang.getMinutes()).padStart(2, '0');
   const waktuSekarang = `${jamSekarang}:${menitSekarang}`;
 
-  // Gembok preventif biar gak jebol berkali-kali dalam menit yang sama
   if (gembokWellnessTerakhir === waktuSekarang) return;
 
-  // Tarik data Wellness dari LocalStorage
-    const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-    const dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+  const dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
 
-  // Cari apakah ada target aktivitas kesehatan yang jamnya SAKLEK (ON-TIME) detik ini juga
   const logCocok = dataWellness.find(w => w.jam === waktuSekarang);
 
   if (logCocok) {
-    gembokWellnessTerakhir = waktuSekarang; // Kunci menit ini biar aman
-    triggerNotifWellnessOffline(logCocok.aktivitas); // Tembak alarm pengingat!
+    gembokWellnessTerakhir = waktuSekarang; 
+    triggerNotifWellnessOffline(logCocok.aktivitas); 
   }
-}, 30000); // Satpam keliling ngecek tiap 30 detik murni offline
+}, 30000); 
 
-
-
-// 3. FUNGSI EKSEKUSI NOTIFIKASI LOCAL WELLNESS (VIBE CALM & HEALTHY)
 
 function triggerNotifWellnessOffline(namaAktivitas) {
   if (Notification.permission === 'granted') {
     navigator.serviceWorker.ready.then((registration) => {
       registration.showNotification('🪻 WELLNESS CHECK-IN, yaa!', {
         body: `Waktunya on-time untuk: "${namaAktivitas}". Jaga kesehatan jiwa dan fisik lu, gass eksekusi!`,
-        icon: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png', // Logo Lavender Estetik Kebanggaan Lu ✅
-        vibrate: [200, 100, 200, 100, 400], // Ritme getar soft tapi kerasa di HP
+        icon: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png', 
+        vibrate: [200, 100, 200, 100, 400], 
         badge: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png',
         tag: 'wellness-alert-' + namaAktivitas,
-        requireInteraction: true // Tetap melayang di layar sampai di-klik biar mahasiswanya disiplin
+        requireInteraction: true 
       });
     });
   }
 }
 
-// Render data otomatis pas halaman berhasil dibuka
 window.addEventListener('DOMContentLoaded', () => {
   tampilkanWellnessDashboard();
 });
 
 
-
-
 // 1. STRUKTUR UTAMA SEGMEN FOCUS MODE (POMODORO LAVENDER) WITH OFFLINE NOTIF
-
 let timerFokus;
 let sisaDetikFokus = 0;
 let sedangBerjalan = false;
 
-// Fungsi untuk mulai menjalankan Focus Mode (Timer)
 function mulaiFocusMode(menitDurasi) {
-  if (sedangBerjalan) return; // Cegah double klik bikin timernya balapan
+  if (sedangBerjalan) return; 
   
   sisaDetikFokus = menitDurasi * 60;
   sedangBerjalan = true;
   
   console.log(`Focus Mode aktif selama ${menitDurasi} menit, yaa! Pintu offline dikunci. 🪻`);
   
-  // Jalankan satpam hitung mundur tiap 1 detik murni lokal
   timerFokus = setInterval(() => {
     if (!auth.currentUser) return;
     if (sisaDetikFokus <= 0) {
-      // KUNCI UTAMA: Waktu habis! Hentikan timer dan tembak Notif Lokal seketika
       clearInterval(timerFokus);
       sedangBerjalan = false;
       updateVisualTimer(0, 0);
       
-      triggerNotifFocusOffline(); // BOOM! Tembak alarm fokus kelar!
+      triggerNotifFocusOffline(); 
     } else {
       sisaDetikFokus--;
       
-      // Hitung sisa menit dan detik buat di-render ke layar HTML
       const m = Math.floor(sisaDetikFokus / 60);
       const s = sisaDetikFokus % 60;
       updateVisualTimer(m, s);
     }
-  }, 1000); // Jalan tiap 1 detik murni offline
+  }, 1000); 
 }
 
-// Fungsi stop darurat kalau tiba-tiba lu mau udahan
 function stopFocusMode() {
   clearInterval(timerFokus);
   sedangBerjalan = false;
@@ -1700,9 +1734,8 @@ function stopFocusMode() {
   console.log('Focus Mode dihentikan paksa, yaa.');
 }
 
-// Fungsi untuk update angka timer di layar HTML lu
 function updateVisualTimer(menit, detik) {
-  const elemenTimer = document.getElementById('displayTimerFokus'); // Sesuaikan ID elemen teks timer lu, yaa
+  const elemenTimer = document.getElementById('displayTimerFokus'); 
   if (!elemenTimer) return;
   
   const formatMenit = String(menit).padStart(2, '0');
@@ -1711,36 +1744,23 @@ function updateVisualTimer(menit, detik) {
 }
 
 
-// =========================================================================
-// 2. FUNGSI EKSEKUSI NOTIFIKASI LOCAL FOCUS MODE (ANTI-AIRPLANE MODE)
-// =========================================================================
 function triggerNotifFocusOffline() {
   if (Notification.permission === 'granted') {
     navigator.serviceWorker.ready.then((registration) => {
       registration.showNotification('🪻 SESSION FOCUS SELESAI, yaa!', {
         body: 'Sesi belajar/ngoding lu udah kelar. Berdiri dulu, regangkan fisik, dan ambil minum air! Sukses besar!',
-        icon: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png', // Logo Lavender Andalan Lu ✅
-        vibrate: [400, 200, 400, 200, 400], // Ritme getar santai tapi tegas biar rileks
+        icon: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png', 
+        vibrate: [400, 200, 400, 200, 400], 
         badge: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png',
         tag: 'focus-alert-done',
-        requireInteraction: true // Biar notifnya nangkring terus sampe di-klik buat tanda beneran udahan
+        requireInteraction: true 
       });
     });
-  } else {
-    console.log("Izin notifikasi yaawser belum aktif, yaa!");
   }
 }
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/firebase-messaging-sw.js') // Menggunakan / agar absolut ke root server
-    .then((registration) => {
-      console.log('Service Worker berhasil didaftarkan:', registration.scope);
-    })
-    .catch((err) => {
-      console.error('Service Worker gagal didaftarkan:', err);
-    });
-}
-
+// PERBAIKAN: Registrasi Service Worker duplikat polosan di sini telah dihapus sepenuhnya 
+// agar tidak bentrok dengan registrasi berparameter konfigurasi yang ada di bawah.
 
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -1805,9 +1825,10 @@ window.addEventListener("DOMContentLoaded", () => {
   const jalankanRenderAwalSemuaData = () => {
     if (!auth.currentUser) return;
     
-    if (typeof displayTasks === "function") displayTasks();
-    if (typeof displaySchedules === "function") displaySchedules();
-    if (typeof displayWellness === "function") displayWellness();
+    // PERBAIKAN SINKRONISASI: Menghubungkan ke fungsi baru bertema Lavender Premium
+    if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+    if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
+    if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
     
     if (document.getElementById("todoHistoryList") && typeof displayTodoHistory === "function") displayTodoHistory();
     if (typeof displayGagalHistory === "function") displayGagalHistory();
@@ -1815,7 +1836,6 @@ window.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById("focusHistoryList") && typeof displayFocusHistory === "function") displayFocusHistory();
   };
 
-  // Toleransi delay kecil menunggu Auth State Firebase siap sepenuhnya
   setTimeout(jalankanRenderAwalSemuaData, 250);
 
   // 6. SOLUSI JITU PINDAH HALAMAN (ANTI-DATA-HILANG)
@@ -1829,18 +1849,19 @@ window.addEventListener("DOMContentLoaded", () => {
 
         console.log(`Menuju halaman: ${targetPage}. Merender ulang data...`);
         
+        // PERBAIKAN SINKRONISASI: Menghubungkan navigasi ke fungsi render visual Lavender Premium
         if (targetPage === "wellness") {
-          if (typeof displayWellness === "function") displayWellness();
+          if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
           if (typeof displayWellnessHistory === "function") displayWellnessHistory();
         } else if (targetPage === "scheduler" || targetPage === "dashboard") {
-          if (typeof displaySchedules === "function") displaySchedules();
-          if (typeof displayTasks === "function") displayTasks();
+          if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
+          if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
           if (typeof displayTodoHistory === "function") displayTodoHistory();
           if (typeof displayGagalHistory === "function") displayGagalHistory();
         } else if (targetPage === "focus") {
           if (typeof displayFocusHistory === "function") displayFocusHistory();
         }
-      }, 70); // Sedikit ditambah jeda biar transisi HTML beres dulu
+      }, 70); 
     });
   });
 });
