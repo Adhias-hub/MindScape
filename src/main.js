@@ -17,9 +17,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-let schedules = [];
-let tasks = [];
-let wellnessData = [];
+//let schedules = [];
+//let tasks = [];
+//let wellnessData = [];
 
 let dataJadwal = [];
 let dataTodo = [];
@@ -427,41 +427,41 @@ function formatTampilanTanggal(dateString) {
   return `${hari}-${bulan}-${tahun} Pukul ${jam}`;
 }
 
-function displayTasks(){
-  periksaDeadlineOtomatis();
-  let taskList = document.getElementById("taskList");
-  if(!taskList) return;
-  taskList.innerHTML = "";
+// function displayTasks(){
+//   periksaDeadlineOtomatis();
+//   let taskList = document.getElementById("taskList");
+//   if(!taskList) return;
+//   taskList.innerHTML = "";
 
- tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
+//  tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
 
-  // Urutkan berdasarkan deadline terdekat
-  tasks.sort((a, b) => {
-    const waktuA = new Date(a.deadline).getTime() || Infinity;
-    const waktuB = new Date(b.deadline).getTime() || Infinity;
-    return waktuA - waktuB;
-  });
+//   // Urutkan berdasarkan deadline terdekat
+//   tasks.sort((a, b) => {
+//     const waktuA = new Date(a.deadline).getTime() || Infinity;
+//     const waktuB = new Date(b.deadline).getTime() || Infinity;
+//     return waktuA - waktuB;
+//   });
 
-  const sekarang = new Date().getTime();
+//   const sekarang = new Date().getTime();
 
-  // Render HANYA tugas yang belum selesai DAN belum kelewat deadline
-  tasks.forEach((task, index)=>{
-    const waktuDeadline = new Date(task.deadline).getTime() || Infinity;
+//   // Render HANYA tugas yang belum selesai DAN belum kelewat deadline
+//   tasks.forEach((task, index)=>{
+//     const waktuDeadline = new Date(task.deadline).getTime() || Infinity;
     
-    if (!task.completed && waktuDeadline >= sekarang) {
-      taskList.innerHTML += `
-        <div class="task-card">
-          <h3>${task.name}</h3>
-          <p>📅 Deadline: <strong>${formatTampilanTanggal(task.deadline)}</strong></p>
-          <p>📝 ${task.note || "-"}</p>
-          <div class="task-buttons">
-            <button class="done-btn" onclick="completeTask(${index})">Selesai</button>
-            <button class="delete-btn" onclick="deleteTask(${index})">Hapus</button>
-          </div>
-        </div>`;
-    }
-  });
-}
+//     if (!task.completed && waktuDeadline >= sekarang) {
+//       taskList.innerHTML += `
+//         <div class="task-card">
+//           <h3>${task.name}</h3>
+//           <p>📅 Deadline: <strong>${formatTampilanTanggal(task.deadline)}</strong></p>
+//           <p>📝 ${task.note || "-"}</p>
+//           <div class="task-buttons">
+//             <button class="done-btn" onclick="completeTask(${index})">Selesai</button>
+//             <button class="delete-btn" onclick="deleteTask(${index})">Hapus</button>
+//           </div>
+//         </div>`;
+//     }
+//   });
+// }
 
 function addTask(){
   let taskName = document.getElementById("taskInput").value.trim();
@@ -1338,11 +1338,16 @@ function tampilkanJadwalDashboard() {
 // Fungsi hapus jadwal jika kuliahnya udah lulus atau libur
 function hapusJadwal(idJadwal) {
   const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+  if (!uidAman) return;
+
   const dataJadwalLokal = JSON.parse(localStorage.getItem(`jadwalKuliah_${uidAman}`)) || [];
   const hasilFilter = dataJadwalLokal.filter(j => j.id !== idJadwal);
-  localStorage.setItem(`jadwalKuliah_${auth.currentUser.uid}`, JSON.stringify(hasilFilter));
+  
+  // Gunakan variabel uidAman yang sudah divalidasi
+  localStorage.setItem(`jadwalKuliah_${uidAman}`, JSON.stringify(hasilFilter));
   tampilkanJadwalDashboard();
 }
+window.hapusJadwal = hapusJadwal;
 
 
 // =========================================================================
@@ -1613,12 +1618,17 @@ function tampilkanWellnessDashboard() {
 
 // Fungsi hapus log atau tandai kelar untuk hari itu
 function hapusWellness(idWellness) {
- const uidAman = auth.currentUser ? auth.currentUser.uid : "";
- const dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+  if (!uidAman) return;
+
+  const dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
   const hasilFilterWellness = dataWellnessLokal.filter(w => w.id !== idWellness);
-  localStorage.setItem(`wellnessLogs_${auth.currentUser.uid}`, JSON.stringify(hasilFilterWellness));
+  
+  // Gunakan variabel uidAman agar tidak terlempar ke data _undefined
+  localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(hasilFilterWellness));
   tampilkanWellnessDashboard();
 }
+window.hapusWellness = hapusWellness;
 
 
 
