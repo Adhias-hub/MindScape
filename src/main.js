@@ -40,9 +40,9 @@ onAuthStateChanged(auth, (user) => {
       wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${user.uid}`)) || [];
       
       // 2. Ambil data internal fitur baru Lavender kamu berdasarkan UID
-      dataJadwalKuliah = JSON.parse(localStorage.getItem(`jadwalKuliah_${user.uid}`)) || [];
-      dataTodoTugas = JSON.parse(localStorage.getItem(`todoTugas_${user.uid}`)) || [];
-      dataWellnessLogs = JSON.parse(localStorage.getItem(`wellnessLogs_${user.uid}`)) || [];
+      dataJadwal = JSON.parse(localStorage.getItem(`jadwalKuliah_${user.uid}`)) || [];
+      dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${user.uid}`)) || [];
+      dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${user.uid}`)) || [];
       
       // 3. Jalankan fungsi render bawaan struktur lama (Beri proteksi if typeof)
       if (typeof displaySchedules === "function") displaySchedules();
@@ -141,13 +141,14 @@ function loginDenganGoogle() {
 /* ================= FIND AND UPDATE THIS LOGOUT FUNCTION ================= */
 function logout() {
   signOut(auth).then(() => {
-    // 🔥 SOLUSI SAKLEK: Bersihkan sisa array di RAM browser agar tidak bocor antar akun
+    // Bersihkan seluruh sisa array di RAM browser agar tidak bocor antar akun
     schedules = [];
     tasks = [];
     wellnessData = [];
-    dataJadwalKuliah = [];
-    dataTodoTugas = [];
-    dataWellnessLogs = [];
+    
+    dataJadwal = [];
+    dataTodo = [];
+    dataWellness = [];
     
     alert("Logout berhasil!");
     window.location.href = "index.html";
@@ -1218,14 +1219,11 @@ function bersihkanWellnessGantiHariOtomatis() {
   const tanggalHariIni = new Date().toDateString(); 
   const tanggalTerakhirSimpan = localStorage.getItem("lastWellnessDate");
 
-  if (tanggalTerakhirSimpan !== tanggalHariIni) {
-    let wellnessLokal = JSON.parse(localStorage.getItem("wellnessData")) || [];
-    wellnessLokal.forEach(item => item.completed = false);
-    
-    localStorage.setItem(`wellnessData_${auth.currentUser.uid}`, JSON.stringify(wellnessData));
-    localStorage.removeItem("wellnessHistoryData"); 
-    localStorage.setItem("lastWellnessDate", tanggalHariIni);
-  }
+ if (tanggalTerakhirSimpan !== tanggalHariIni) {
+  localStorage.removeItem(`wellnessLogs_${auth.currentUser.uid}`);
+  dataWellness = [];
+  localStorage.setItem("lastWellnessDate", tanggalHariIni);
+}
 }
 
 
@@ -1356,9 +1354,8 @@ window.addEventListener('appinstalled', () => {
 
 // Fungsi untuk menyimpan Jadwal baru dari Form HTML ke LocalStorage
 function tambahJadwalKuliah(namaMatkul, hariTerpilih, jamMenit) {
-  // Ambil data lama atau bikin array baru kalau masih kosong
-  const dataJadwal = JSON.parse(localStorage.getItem('jadwalKuliah')) || [];
-  
+  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+  const dataJadwal = JSON.parse(localStorage.getItem(`jadwalKuliah_${uidAman}`)) || [];
   // Bikin object jadwal baru (Cuma simpan Hari dan Jam murni, )
   const jadwalBaru = {
     id: 'jadwal_' + Date.now(),
@@ -1368,7 +1365,8 @@ function tambahJadwalKuliah(namaMatkul, hariTerpilih, jamMenit) {
   };
   
   dataJadwal.push(jadwalBaru);
-  localStorage.setItem('jadwalKuliah', JSON.stringify(dataJadwal));
+  localStorage.setItem(`jadwalKuliah_${auth.currentUser.uid}`, JSON.stringify(dataJadwal));
+
   
   console.log('Jadwal berhasil disimpen di memori lokal, ! 🪻');
   tampilkanJadwalDashboard(); // Refresh tampilan list di layar
@@ -1379,7 +1377,7 @@ function tampilkanJadwalDashboard() {
   const containerJadwal = document.getElementById('containerListJadwal'); // Sesuaikan ID container HTML lu
   if (!containerJadwal) return;
   
-  const dataJadwal = JSON.parse(localStorage.getItem('jadwalKuliah')) || [];
+  dataJadwal = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
   containerJadwal.innerHTML = ''; // Bersihin isi lama
   
   if (dataJadwal.length === 0) {
@@ -1404,9 +1402,10 @@ function tampilkanJadwalDashboard() {
 
 // Fungsi hapus jadwal jika kuliahnya udah lulus atau libur
 function hapusJadwal(idJadwal) {
-  const dataJadwalLokal = JSON.parse(localStorage.getItem('jadwalKuliah')) || [];
+  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+  const dataJadwalLokal = JSON.parse(localStorage.getItem(`jadwalKuliah_${uidAman}`)) || [];
   const hasilFilter = dataJadwalLokal.filter(j => j.id !== idJadwal);
-  localStorage.setItem('jadwalKuliah', JSON.stringify(hasilFilter));
+  localStorage.setItem(`jadwalKuliah_${auth.currentUser.uid}`, JSON.stringify(hasilFilter));
   tampilkanJadwalDashboard();
 }
 
@@ -1432,7 +1431,7 @@ setInterval(() => {
   if (rentangWaktuTerakhir === kunciMenit) return;
 
   // 3. Tarik data jadwal kuliah dari LocalStorage
- const ambilDataJadwalLokal = JSON.parse(localStorage.getItem('jadwalKuliah')) || [];
+ const ambilDataJadwalLokal = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
 
   // 4. Lakukan scanning tiap jadwal kuliah yang terdaftar
   ambilDataJadwalLokal.forEach(jadwal => {
@@ -1491,7 +1490,8 @@ function triggerNotifJadwalOffline(namaMatkul, pesanKustom) {
 
 // Fungsi untuk menyimpan Tugas baru dari Form ke LocalStorage
 function tambahTodoTugas(namaTugas, tanggalDeadline, jamDeadline) {
-  const dataTodo = JSON.parse(localStorage.getItem('todoTugas')) || [];
+  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+  const dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${uidAman}`)) || [];
   
   const tugasBaru = {
     id: 'todo_' + Date.now(),
@@ -1501,7 +1501,8 @@ function tambahTodoTugas(namaTugas, tanggalDeadline, jamDeadline) {
   };
   
   dataTodo.push(tugasBaru);
-  localStorage.setItem('todoTugas', JSON.stringify(dataTodo));
+  localStorage.setItem(`todoTugas_${auth.currentUser.uid}`, JSON.stringify(dataTodo));
+
   
   console.log('Tugas baru sukses dikunci di memori lokal, yaa! 🪻');
   tampilkanTodoDashboard(); // Refresh UI list tugas
@@ -1512,7 +1513,7 @@ function tampilkanTodoDashboard() {
   const containerTodo = document.getElementById('containerListTodo'); // Sesuaikan ID HTML lu, 
   if (!containerTodo) return;
   
-  const dataTodo = JSON.parse(localStorage.getItem('todoTugas')) || [];
+  dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
   containerTodo.innerHTML = '';
   
   if (dataTodo.length === 0) {
@@ -1537,7 +1538,7 @@ function tampilkanTodoDashboard() {
 function hapusTodo(idTodo) {
   const dataTodoLokal = JSON.parse(localStorage.getItem('todoTugas')) || [];
   const hasilFilterTodo = dataTodoLokal.filter(t => t.id !== idTodo);
-  localStorage.setItem('todoTugas', JSON.stringify(hasilFilterTodo));
+  localStorage.setItem(`todoTugas_${auth.currentUser.uid}`, JSON.stringify(hasilFilterTodo));
   tampilkanTodoDashboard();
 }
 
@@ -1560,7 +1561,8 @@ setInterval(() => {
   if (gembokTodoTerakhir === kunciMenitTodo) return;
 
   // Tarik data tugas dari LocalStorage
-  const dataTodo = JSON.parse(localStorage.getItem('todoTugas')) || [];
+  const dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
+
 
   dataTodo.forEach(item => {
     // Gabungkan string Tanggal dan Jam milik tugas jadi satu format standar Date
@@ -1617,7 +1619,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Fungsi menyimpan Log Wellness rutin ke LocalStorage
 function tambahWellnessLog(namaAktivitas, jamMenitTarget) {
-  const dataWellness = JSON.parse(localStorage.getItem('wellnessLogs')) || [];
+    const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+    const dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
   
   const logBaru = {
     id: 'well_' + Date.now(),
@@ -1626,7 +1629,8 @@ function tambahWellnessLog(namaAktivitas, jamMenitTarget) {
   };
   
   dataWellness.push(logBaru);
-  localStorage.setItem('wellnessLogs', JSON.stringify(dataWellness));
+  localStorage.setItem(`wellnessLogs_${auth.currentUser.uid}`, JSON.stringify(dataWellness));
+
   
   console.log('Log kesehatan on-time berhasil dikunci di memori lokal, yaa! 🪻');
   tampilkanWellnessDashboard(); // Refresh list visual di layar
@@ -1637,7 +1641,8 @@ function tampilkanWellnessDashboard() {
   const containerWellness = document.getElementById('containerListWellness'); // Sesuaikan ID HTML form wellness lu, yaa
   if (!containerWellness) return;
   
-  const dataWellness = JSON.parse(localStorage.getItem('wellnessLogs')) || [];
+  dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
+
   containerWellness.innerHTML = '';
   
   if (dataWellness.length === 0) {
@@ -1660,9 +1665,10 @@ function tampilkanWellnessDashboard() {
 
 // Fungsi hapus log atau tandai kelar untuk hari itu
 function hapusWellness(idWellness) {
-  const dataWellnessLokal = JSON.parse(localStorage.getItem('wellnessLogs')) || [];
+ const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+ const dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
   const hasilFilterWellness = dataWellnessLokal.filter(w => w.id !== idWellness);
-  localStorage.setItem('wellnessLogs', JSON.stringify(hasilFilterWellness));
+  localStorage.setItem(`wellnessLogs_${auth.currentUser.uid}`, JSON.stringify(hasilFilterWellness));
   tampilkanWellnessDashboard();
 }
 
@@ -1685,7 +1691,8 @@ setInterval(() => {
   if (gembokWellnessTerakhir === waktuSekarang) return;
 
   // Tarik data Wellness dari LocalStorage
-  const dataWellness = JSON.parse(localStorage.getItem('wellnessLogs')) || [];
+    const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+    const dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
 
   // Cari apakah ada target aktivitas kesehatan yang jamnya SAKLEK (ON-TIME) detik ini juga
   const logCocok = dataWellness.find(w => w.jam === waktuSekarang);
