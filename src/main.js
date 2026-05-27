@@ -35,7 +35,6 @@ onAuthStateChanged(auth, (user) => {
   const isFocusPage = path.includes("focus.html");
   const isLoginPage = path.includes("index.html") || path === "/";
 
-  // TAMBAHAN AMAN: Jika terdeteksi user sudah login tapi kesasar di halaman login, langsung kunci pindah ke home!
   if (user && isLoginPage) {
     window.location.replace("home.html");
     return;
@@ -47,68 +46,58 @@ onAuthStateChanged(auth, (user) => {
     // =========================================================================
     // STEP 1: AMBIL DATA SEKALI SAJA DI AWAL MENGGUNAKAN KUNCI LAVENDER PREMIUM
     // =========================================================================
+    // PERBAIKAN: Menyamakan kunci 'todoTugas_' agar sinkron dengan fungsi Lavender Premium
     const jadwalLokal = JSON.parse(localStorage.getItem(`jadwalKuliah_${user.uid}`)) || [];
-    const todoLokal = JSON.parse(localStorage.getItem(`tasks_${user.uid}`)) || [];
+    const todoLokal = JSON.parse(localStorage.getItem(`todoTugas_${user.uid}`)) || [];
     const wellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${user.uid}`)) || [];
 
-    // Isi sistem lama agar fungsi-fungsi lama tidak error/broken
     schedules = jadwalLokal;
     tasks = todoLokal;
     wellnessData = wellnessLokal;
 
-    // Isi sistem Lavender Premium agar sinkron di dashboard dan halaman internal
     dataJadwal = jadwalLokal;
     dataTodo = todoLokal;
     dataWellness = wellnessLokal;
 
     // =========================================================================
-    // STEP 2: ROUTING & RENDER VISUAL HALAMAN (KUNCI SUDAH AMAN DAN SERAGAM)
+    // STEP 2: ROUTING & RENDER VISUAL HALAMAN (DIPICU INSTAN PASCA RELOAD)
     // =========================================================================
     
-    // 1. ROUTING HALAMAN JADWAL INTERNAL
+    // Pemicu Render Global Dashboard Lavender Premium
+    if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
+    if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+    if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
+    
+    // Routing Halaman Internal
     if (isSchedulePage) {
       if (typeof displaySchedules === "function") displaySchedules();
-      if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard(); 
     }
     
-    // 2. ROUTING HALAMAN TO-DO LIST INTERNAL
     if (isTodoPage) {
       if (typeof displayTasks === "function") displayTasks();
       if (typeof displayTodoHistory === "function") displayTodoHistory();
       if (typeof displayGagalHistory === "function") displayGagalHistory();
-      if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard(); 
     }
     
-    // 3. ROUTING HALAMAN WELLNESS INTERNAL
     if (isWellnessPage) {
       if (typeof displayWellness === "function") displayWellness();
       if (typeof displayWellnessHistory === "function") displayWellnessHistory();
-      if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard(); 
     }
     
-    // 4. ROUTING HALAMAN FOCUS MODE
     if (isFocusPage) {
       if (typeof displayFocusHistory === "function") displayFocusHistory();
       if (typeof cekSesiTimerPasRefresh === "function") cekSesiTimerPasRefresh();
     }
-    
-    // 5. ROUTING HALAMAN DASHBOARD UTAMA (HOME)
-    if (isHomePage || path.includes("dashboard")) {
-      if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
-      if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
-      if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
-    }
 
   } else {
-    // =========================================================================
-    // JURUS TENDANG SAKLEK (HANYA MENGUBAH WINDOW.LOCATION MENJADI .REPLACE) 🔒
-    // =========================================================================
+    // JURUS TENDANG SAKLEK
     if (isHomePage || isSchedulePage || isTodoPage || isWellnessPage || isFocusPage || path.includes("dashboard")) {
       alert("Akses ditolak! Silakan login terlebih dahulu.");
-      window.location.replace("index.html"); // Menggunakan replace agar history URL terhapus dan gak bisa di-back
+      window.location.replace("index.html");
     }
   }
 });
+
 
 /* ================= REGISTER (STRATA AMAN FIREBASE) ================= */
 function register() {
@@ -1519,7 +1508,11 @@ function tampilkanTodoDashboard() {
   const containerTodo = document.getElementById('containerListTodo'); 
   if (!containerTodo) return;
   
-  dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
+  // PERBAIKAN AMAN: Beri proteksi jika auth.currentUser belum siap saat reload
+  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+  if (!uidAman) return; 
+
+  dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${uidAman}`)) || [];
   containerTodo.innerHTML = '';
   
   if (dataTodo.length === 0) {
