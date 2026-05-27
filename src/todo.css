@@ -1,3 +1,4 @@
+/* ================= RESET ================= */
 *{
   margin: 0;
   padding: 0;
@@ -131,7 +132,6 @@ body {
 }
 
 /* ================= TODO SECTION (REVISI JUARA LAYOUT SAMA RATA) ================= */
-
 .todo-section {
   padding: 40px 40px 60px 40px;
   max-width: 1200px;
@@ -147,29 +147,23 @@ body {
   letter-spacing: -0.5px;
 }
 
-/* ================= FORM INPUT TODO (UKURAN SAMA RATA 100% + GAP ANTI-TABRAKAN) ================= */
+/* ================= FORM INPUT TODO ================= */
 .todo-form {
   display: grid;
-  /* KUNCI UTAMA: repeat(4, minmax(0, 1fr)) membagi 4 kolom SAMA RATA 
-     untuk input kalender, catatan, jam, dan tombol tambah tugas */
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  
-  /* GAP TOTAL: Jarak antar elemen (horizontal dan vertikal) konsisten 20px */
   gap: 20px; 
-  
   margin-bottom: 50px;
   background: white;
   padding: 35px;
   border-radius: 24px;
   box-shadow: 0 12px 35px rgba(75, 92, 255, 0.06);
   border: 1px solid #eef1ff;
-  align-items: stretch; /* Memastikan tinggi input dan tombol benar-benar sama rata */
+  align-items: stretch;
 }
 
-/* Memastikan semua element input (text, date, time) memiliki ukuran box yang sama */
 .todo-form input {
-  box-sizing: border-box; /* Mencegah ukuran bengkak karena padding */
-  height: 58px; /* Mengunci tinggi agar sama persis dengan tombol */
+  box-sizing: border-box;
+  height: 58px;
   padding: 0 18px;
   border-radius: 16px;
   border: 1.5px solid #cbd5e1;
@@ -179,7 +173,7 @@ body {
   color: #1e293b;
   font-weight: 500;
   transition: all 0.25s ease;
-  width: 100%; /* Paksa memenuhi kotak grid masing-masing tanpa bocor */
+  width: 100%;
 }
 
 .todo-form input:focus {
@@ -188,10 +182,10 @@ body {
   box-shadow: 0 0 0 4px rgba(75, 92, 255, 0.15);
 }
 
-/* TOMBOL TAMBAH TUGAS (UKURAN DAN TINGGI KEMBAR DENGAN INPUT) */
+/* TOMBOL TAMBAH TUGAS */
 .todo-form button {
   box-sizing: border-box;
-  height: 58px; /* Tinggi KEMBAR KEMBAR dengan input */
+  height: 58px;
   padding: 0 20px; 
   background: #4b5cff;
   color: white;
@@ -203,7 +197,7 @@ body {
   cursor: pointer;
   transition: all 0.25s ease;
   box-shadow: 0 6px 20px rgba(75, 92, 255, 0.2);
-  width: 100%; /* Memenuhi kolom ke-4 grid */
+  width: 100%;
 }
 
 .todo-form button:hover {
@@ -212,23 +206,12 @@ body {
   box-shadow: 0 8px 25px rgba(75, 92, 255, 0.3);
 }
 
-/* Media Query Tambahan: Agar saat dibuka di HP tidak maksa 4 kolom (jadi jelek/sempit) */
-@media (max-width: 768px) {
-  .todo-form {
-    grid-template-columns: 1fr; /* Berjejer ke bawah saat di layar HP */
-  }
-}
-
-/* ================= TASK CARDS GRID (GAP PER TUGAS AMAN) ================= */
+/* ================= TASK CARDS GRID ================= */
 .todo-grid {
   display: grid;
-  /* Menggunakan auto-fill agar flexibel, dan minimal lebar card 300px */
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  
-  /* KUNCI UTAMA: Mengatur jarak antar kolom (24px) dan memaksa jarak antar baris/bawah (28px) */
   column-gap: 24px;
   row-gap: 28px; 
-  
   width: 100%;
 }
 
@@ -243,15 +226,13 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  
-  
   margin-bottom: 8px; 
 }
-
 
 .todo-grid > .task-card:last-child {
   margin-bottom: 0;
 }
+
 .task-card:hover {
   transform: translateY(-5px);
   border-color: #4b5cff;
@@ -310,9 +291,11 @@ body {
 .task-buttons .delete-btn:hover {
   background: #ff6b6b;
   color: white;
-  transform: translateY
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(254, 226, 226, 0.25);
 }
 
+/* ================= RESPONSIVE LAYOUT (UNTUK HP) ================= */
 @media (max-width: 768px) {
   /* 1. Gembok saklek level html & body biar gak bisa geser kanan sama sekali */
   html, body {
@@ -321,27 +304,115 @@ body {
     position: relative;
   }
 
+  /* ================= SINKRONISASI COKOT/FOKUS LAYOUT ================= */
+  .focus-layout-wrapper {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .focus-form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 15px;
+    padding: 20px;
+    margin-bottom: 30px;
+  }
+
+  .focus-form input,
+  .focus-form textarea {
+    width: 100% !important;   
+    font-size: 16px !important;  
+    padding: 16px !important;    
+    box-sizing: border-box;
+  }
+
+  .timer-buttons button,
+  .focus-form button {
+    font-size: 16px !important;   
+    font-weight: 700 !important;  
+    padding: 16px !important;     
+    width: 100% !important;
+  }
+
+  .focus-history-section h3,
+  .schedule-table th, 
+  .schedule-table td {
+    padding: 12px 10px; 
+    font-size: 14px;
+  }
+
+  /* ================= SINKRONISASI TODO SECTION (BIAR SERAPET JADWAL & WELLNESS 🔒) ================= */
+  .todo-section {
+    padding: 20px 15px 60px 15px !important; /* Paksa rapet kiri-kanan 15px sesuai Screenshot 3 */
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .todo-section h2 {
+    font-size: 26px; /* Perkecil judul biar proporsional di HP */
+    margin-bottom: 25px;
+  }
+
+  /* JINAKKAN FORM TODO: Menjadi 1 kolom lurus rapi ke bawah */
+  .todo-form {
+    grid-template-columns: 1fr !important; /* Gembok 1 kolom total ke bawah */
+    gap: 15px !important;
+    padding: 20px !important; /* Ketebalan padding dalam disamakan */
+    margin-bottom: 30px;
+    border-radius: 20px !important;
+  }
+
+  /* KUNCI UKURAN INPUT TODO (16px Anti Auto-Zoom & Tinggi Fleksibel) */
+  .todo-form input {
+    width: 100% !important;
+    height: auto !important; /* Lepas tinggi kaku 58px agar mengikuti padding empuk */
+    padding: 16px !important; /* Padding disamakan dengan form jadwal */
+    font-size: 16px !important; /* Kunci 16px pas di jempol */
+  }
+
+  /* TOMBOL TODO DI HP (Full Width & Empuk) */
+  .todo-form button {
+    height: auto !important;
+    padding: 16px 20px !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    width: 100% !important;
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  /* Card list tugas menyesuaikan layar HP */
+  .todo-grid {
+    grid-template-columns: 1fr; /* Card bertumpuk ke bawah di HP */
+    gap: 20px;
+  }
+
+  .task-card {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  /* =========================================================================== */
+
   /* 2. JINAKKAN HEADER (Biar gak melar keluar layar HP) */
   .home-header {
-    padding: 15px 15px; /* Sempitkan padding kiri-kanan dari 50px ke 15px */
+    padding: 15px 15px; 
     width: 100%;
-    box-sizing: border-box; /* Paksa padding dihitung di dalam lebar, bukan nambah lebar */
+    box-sizing: border-box; 
     display: flex;
-    flex-direction: column; /* Ubah logo dan menu jadi susunan atas-bawah biar gak sesak */
+    flex-direction: column; 
     gap: 15px;
     align-items: center;
     text-align: center;
   }
 
-  /* Rapikan area logo di HP */
   .logo-area h1 {
     font-size: 22px;
-    white-space: normal; /* Izinkan teks patah baris kalau nama aplikasinya kepanjangan */
+    white-space: normal; 
   }
 
-  /* Rapatkan navbar menu di HP */
   .navbar {
-    gap: 15px; /* Perkecil jarak antar menu biar gak offscreen */
+    gap: 15px; 
     justify-content: center;
     width: 100%;
   }

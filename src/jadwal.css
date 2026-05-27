@@ -324,19 +324,14 @@ body {
 }
 
 /* ================= TABEL JADWAL KULIAH SUPER BERISI ================= */
-/* ================= TABEL JADWAL KULIAH SUPER BERISI (REVISI: DETIL GARIS ESTETIK) ================= */
 .schedule-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   background: white;
-  
-  /* Sudut kotak kokoh */
   border-radius: 14px; 
   overflow: hidden;
   box-shadow: 0 12px 35px rgba(75, 92, 255, 0.06);
-  
-  /* GARIS TEPI LUAR TABEL */
   border: 1.5px solid #dfe6ff; 
 }
 
@@ -349,12 +344,9 @@ body {
   font-weight: 800;
   text-align: center;
   letter-spacing: 0.5px;
-  
-  /* GARIS PEMBATAS VERTIKAL DI HEADER */
   border-right: 1px solid rgba(255, 255, 255, 0.2); 
 }
 
-/* Hilangkan garis vertikal di kolom header paling kanan agar tidak menabrak border luar */
 .schedule-table th:last-child {
   border-right: none;
 }
@@ -367,33 +359,26 @@ body {
   color: #334155;
   font-size: 16px;
   font-weight: 500;
-  
-  /* GARIS PEMBATAS VERTIKAL & HORIZONTAL DI ISI TABEL */
   border-bottom: 1px solid #eef1ff;
   border-right: 1px solid #eef1ff; 
-  
   transition: all 0.2s ease;
 }
 
-/* Hilangkan garis vertikal di kolom data paling kanan */
 .schedule-table td:last-child {
   border-right: none;
 }
 
-/* Kolom Hari (Teks Tebal) */
 .schedule-table td strong {
   color: #4b5cff;
   font-weight: 700;
   font-size: 16.5px;
 }
 
-/* Hover per baris data */
 .schedule-table tr:hover td {
   background: #f5f7ff;
   color: #0f172a;
 }
 
-/* Hilangkan semua garis bawah di baris paling terakhir agar tidak dobel dengan border luar */
 .schedule-table tr:last-child td {
   border-bottom: none;
 }
@@ -418,6 +403,7 @@ body {
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
 }
 
+/* ================= RESPONSIVE LAYOUT (UNTUK HP) ================= */
 @media (max-width: 768px) {
   /* 1. Gembok saklek level html & body biar gak bisa geser kanan sama sekali */
   html, body {
@@ -426,35 +412,59 @@ body {
     position: relative;
   }
 
-  /* ================= SINKRONISASI JADWAL HP (TOMBOL TETAP BESAR) ================= */
+  /* ================= SINKRONISASI JADWAL HP (TOMBOL & INPUT TETAP BESAR 🔒) ================= */
   .schedule-section {
-    padding: 30px 15px 60px 15px; /* Sempitkan padding luar section dari 40px ke 15px */
+    padding: 30px 15px 60px 15px; 
   }
 
   .schedule-section h2 {
-    font-size: 26px; /* Perkecil ukuran judul biar proporsional di HP */
+    font-size: 26px; 
     margin-bottom: 25px;
   }
 
+  /* JINAKKAN FORM: Ubah grid jadi 1 kolom total ke bawah biar inputan gak menciut kesamping */
   .schedule-form {
-    padding: 20px; /* Sempitkan padding form biar space tabel lebih luas */
+    grid-template-columns: 1fr !important; /* Paksa satu kolom lurus ke bawah di HP */
+    gap: 15px; 
+    padding: 20px; 
     margin-bottom: 30px;
   }
 
-  /* KUNCI UKURAN: Tulisan tombol tambah jadwal tidak boleh ikut mengecil di HP 🔒 */
-  .schedule-form button {
-    font-size: 16px !important;   /* Mempertahankan ukuran asli 16px */
-    font-weight: 700 !important;  /* Tetap tebal dan gagah */
-    padding: 16px !important;     /* Padding tebal agar ramah jempol di HP */
-  }
-  
-  /* Ukuran teks di dalam tabel saja yang disesuaikan agar pas di layar HP */
-  .schedule-table th, 
-  .schedule-table td {
-    padding: 12px 10px; 
-    font-size: 14px;
+  .schedule-form input,
+  .schedule-form select {
+    width: 100% !important;   
+    font-size: 16px !important;  /* Mencegah auto-zoom di iPhone iOS */
+    padding: 16px !important;    
+    box-sizing: border-box;
   }
 
+  .schedule-form button {
+    font-size: 16px !important;   
+    font-weight: 700 !important;  
+    padding: 16px !important;     
+    width: 100% !important;
+  }
+  
+  /* ================= OPERASI GEMBOK RESPONSIVE TABEL JADWAL 🪚 ================= */
+  .table-responsive-wrapper {
+    width: 100% !important;
+    overflow-x: auto !important;        /* NYALAKAN SCROLL KANAN KIRI DI HP */
+    -webkit-overflow-scrolling: touch;  /* Efek scroll smooth lancar di iPhone/Safari */
+    border-radius: 14px;                /* Ikuti kelengkungan tabel */
+    margin-top: 20px;
+    box-sizing: border-box;
+  }
+
+  .schedule-table {
+    width: 100% !important;
+    min-width: 580px !important;        /* Kunci lebar minimal tabel biar isi kolom dapet ruang dan gak dempet-dempetan */
+  }
+
+  .schedule-table th, 
+  .schedule-table td {
+    padding: 12px 10px !important;      /* Padding menyusut rapi menyesuaikan layar HP */
+    font-size: 14px !important;
+  }
   /* =========================================================================== */
 
   /* 2. JINAKKAN HEADER (Biar gak melar keluar layar HP) */
@@ -483,26 +493,4 @@ body {
   .navbar a {
     font-size: 14.5px;
   }
-}
-
-
-.schedule-table tbody th[scope="row"] {
-    background-color: #e0f2fe !important; /* Warna biru muda pastel yang soft dan lucu */
-    color: #0369a1 !important;            /* Warna teks biru tua agar kontrasnya lolos audit Accessibility */
-    text-align: center;
-    font-weight: 700;
-}
-
-/* Opsional: Biar transisi warna card tabel lu senada kalau disentuh kursor */
-.schedule-table tbody tr:hover th[scope="row"] {
-    background-color: #bae6fd !important; /* Biru muda sedikit lebih tegas pas di-hover */
-}
-
-.table-responsive-wrapper {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch; /* Scroll smooth di iPhone / Safari iOS */
-  border-radius: 14px; /* Samakan dengan border-radius tabel Anda */
-  box-shadow: 0 12px 35px rgba(75, 92, 255, 0.06);
-  margin-top: 20px;
 }

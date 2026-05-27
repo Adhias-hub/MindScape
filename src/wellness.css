@@ -326,16 +326,19 @@ body {
 
 /* ================= PREVENTIF RESPONSIF HP (ANTI-BOCOR KANAN) ================= */
 @media (max-width: 768px) {
+  /* 1. Gembok saklek level html & body biar gak bisa geser kanan sama sekali */
   html, body {
     width: 100%;
     overflow-x: hidden;
     position: relative;
   }
 
+  /* 2. JINAKKAN HEADER (Biar gak melar keluar layar HP) */
   .home-header {
     padding: 15px 15px;
     width: 100%;
     box-sizing: border-box;
+    display: flex; /* Memastikan flexbox aktif untuk flex-direction */
     flex-direction: column;
     gap: 15px;
     align-items: center;
@@ -357,43 +360,46 @@ body {
     font-size: 14.5px;
   }
 
+  /* ================= SINKRONISASI WELLNESS HP (PATOKAN SAKLEK 🔒) ================= */
   .wellness-section {
-    padding: 20px 15px;
+    padding: 30px 15px 60px 15px; /* Disamakan dengan padding section jadwal */
     width: 100%;
     box-sizing: border-box;
   }
   
   .wellness-section h2 {
-    font-size: 24px;
-    margin-bottom: 20px;
+    font-size: 26px; /* Disamakan dengan judul section jadwal biar sinkron */
+    margin-bottom: 25px;
   }
 
   .wellness-form {
     padding: 20px;
-    gap: 12px;
-    border-radius: 20px;
+    gap: 15px; /* Disamakan gap-nya dengan form jadwal */
+    border-radius: 24px; /* Kelengkungan disamakan biar karakter grafisnya konsisten gagah */
     width: 100%;
     box-sizing: border-box;
-    grid-template-columns: 1fr; /* Paksa inputan dan tombol jadi satu kolom lurus ke bawah */
+    display: grid; /* Memastikan grid aktif agar 1fr bekerja sempurna */
+    grid-template-columns: 1fr !important; /* Paksa inputan dan tombol jadi satu kolom lurus ke bawah */
   }
 
+  /* KUNCI UKURAN INPUT WELLNESS: Menggunakan standar 16px empuk anti auto-zoom */
   .wellness-form input,
   .wellness-form select {
-    width: 100%;
-    height: 50px;
-    padding: 12px;
-    font-size: 14.5px;
+    width: 100% !important;
+    height: auto !important; /* Biarkan tinggi diatur oleh padding yang empuk */
+    padding: 16px !important; /* Tebal dan ramah jari di HP */
+    font-size: 16px !important; /* KUNCI UTAMA: 16px biar pas dicolek gak auto-zoom */
     box-sizing: border-box;
   }
 
-  /* OPTIMALISASI TOMBOL DI LAYER MOBILE (Dibuat Full Width & Proporsional) */
+  /* OPTIMALISASI TOMBOL WELLNESS (Dibuat Full Width, Tebal & Gagah) */
   .wellness-form button {
-    display: inline-block;
-    width: 100%;
-    min-height: 50px;           /* Menggunakan min-height agar tidak tercekik */
-    height: auto;               /* Membiarkan height fleksibel mengikuti isi */
-    padding: 14px 20px;
-    font-size: 15px;
+    display: inline-block; /* Mempertahankan trik center andalanmu */
+    width: 100% !important;
+    min-height: 50px;           
+    height: auto;               
+    padding: 16px 20px !important; /* Di-scale up sedikit biar seimbang dengan ketebalan input */
+    font-size: 16px !important; /* Tulisan tombol dikunci di 16px biar tegas */
     font-weight: 700;
     margin-top: 8px;
     white-space: nowrap;

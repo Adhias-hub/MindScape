@@ -431,7 +431,7 @@ function jalankanSatpamOtomatis() {
               if (!sessionStorage.getItem(keyNotifJadwal)) {
                 new Notification(`⏰ H-20 JADWAL: ${jadwal.course}`, {
                   body: `Ayo, ${jadwal.course} bakal mulai dalam sekitar 20 menit lagi! Jangan telat, yaa!`,
-                  icon: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+                  icon: '/flower.png',
                   requireInteraction: true 
                 });
                 sessionStorage.setItem(keyNotifJadwal, "sent");
@@ -447,7 +447,7 @@ function jalankanSatpamOtomatis() {
               if (!sessionStorage.getItem(keyNotifJadwal)) {
                 new Notification(`🚨 H-5 JADWAL: ${jadwal.course}`, {
                   body: `Gass masuk! Kurang dari 5 menit lagi kelas ${jadwal.course} dimulai! Jangan nyasar!`,
-                  icon: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+                  icon: '/flower.png',
                   requireInteraction: true 
                 });
                 sessionStorage.setItem(keyNotifJadwal, "sent");
@@ -672,7 +672,7 @@ function jalankanAlarmTodoOtomatis() {
         const selisihMenitTodo = Math.round(selisihMilidetik / (1000 * 60));
         const idKunciTodo = `${tanggalKunciStr}_${task.id}`;
 
-        if (selisihMenitTodo === 5) {
+        if (selisihMenitTodo === 10) {
           if (!gembokTodoH5[idKunciTodo]) {
             gembokTodoH5[idKunciTodo] = true; 
 
@@ -680,9 +680,9 @@ function jalankanAlarmTodoOtomatis() {
               const keyNotifTodo = `notif_todo_${task.id}_5`;
               
               if (!sessionStorage.getItem(keyNotifTodo)) {
-                new Notification(`🚨 DEADLINE H-5 TUGAS: ${task.name}`, {
-                  body: `Gawat! Sisa 5 menit lagi batas pengumpulan tugas "${task.name}" habis! Buruan submit, yaa! 😱`,
-                  icon: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png',
+                new Notification(`🚨 DEADLINE TUGAS: ${task.name}`, {
+                  body: `Gawat! Sisa sekitar 10 menit lagi batas pengumpulan tugas "${task.name}" habis! Buruan submit, yaa! 😱`,
+                  icon: '/flower.png',
                   requireInteraction: true 
                 });
                 sessionStorage.setItem(keyNotifTodo, "sent");
@@ -727,8 +727,8 @@ function triggerNotifTugasGagal(judulTugas) {
       navigator.serviceWorker.ready.then((registration) => {
         registration.showNotification('🚨 DEADLINE LEWAT, YAA!', {
           body: `Tugas "${judulTugas}" udah melewati batas waktu pengumpulan. Tetap semangat, yuk gaspol tugas lainnya!`,
-          icon: '/icon.png',
-          badge: '/icon.png',
+          icon: '/flower.png',
+          badge: '/flower.png',
           tag: 'task-failed-alert',
           vibrate: [500, 100, 500],
           requireInteraction: true
@@ -870,7 +870,7 @@ function jalankanSatpamWellnessOtomatis() {
           if (!sessionStorage.getItem(keyNotifWellness)) {
             new Notification(`💧 TIME FOR WELLNESS`, {
               body: `Waktunya aktivitas: "${item.type}"`,
-              icon: 'https://cdn-icons-png.flaticon.com/512/3011/3011285.png',
+              icon: '/flower.png',
               requireInteraction: true 
             });
             sessionStorage.setItem(keyNotifWellness, "sent");
@@ -878,7 +878,7 @@ function jalankanSatpamWellnessOtomatis() {
         }
       }
     });
-  }, 60000); 
+  }, 30000); 
 }
 
 /**
@@ -1018,7 +1018,7 @@ function jalankanHitungMundur(endTime, targetText, noteText, initialDuration) {
       if (Notification.permission === "granted") {
         new Notification("⏰ Focus Mode Selesai!", {
           body: `🎉 Sesi belajar "${targetText || 'Fokus'}" sudah kelar, yaa! Hebattt kamu sudah produktif hari ini 🌸`,
-          icon: 'https://cdn-icons-png.flaticon.com/512/9043/9043516.png',
+          icon: '/flower.png',
           requireInteraction: true
         });
       }
@@ -1199,7 +1199,7 @@ function sendNotification(title, message){
   if(Notification.permission === "granted"){
     new Notification(title, {
       body: message,
-      icon: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+      icon: "/flower.png"
     });
   }
   alarmSound.play().catch(e => console.log("Audio play ditangguhkan oleh kebijakan autoplay browser"));
@@ -1477,9 +1477,9 @@ function triggerNotifJadwalOffline(namaMatkul, pesanKustom) {
     navigator.serviceWorker.ready.then((registration) => {
       registration.showNotification(`🪻 PENGINGAT JADWAL: ${namaMatkul}`, {
         body: pesanKustom, 
-        icon: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png', 
+        icon: '/flower.png', 
         vibrate: [300, 100, 300], 
-        badge: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png',
+        badge: '/flower.png',
         tag: 'jadwal-alert-' + namaMatkul + '-' + (pesanKustom.includes('20') ? '20' : '5'),
         requireInteraction: true 
       });
@@ -1587,9 +1587,9 @@ function triggerNotifTodoOffline(namaTugas) {
     navigator.serviceWorker.ready.then((registration) => {
       registration.showNotification('🚨 DEADLINE DEPAN MATA, yaa!', {
         body: `Tugas "${namaTugas}" kamu sisa 5 menit lagi! Ayoo buruan submit ke sistem!`,
-        icon: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png', 
+        icon: '/flower.png', 
         vibrate: [500, 100, 500, 100, 500], 
-        badge: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png',
+        badge: '/flower.png',
         tag: 'todo-alert-' + namaTugas,
         requireInteraction: true 
       });
@@ -1691,9 +1691,9 @@ function triggerNotifWellnessOffline(namaAktivitas) {
     navigator.serviceWorker.ready.then((registration) => {
       registration.showNotification('🪻 WELLNESS CHECK-IN, yaa!', {
         body: `Waktunya on-time untuk: "${namaAktivitas}". Jaga kesehatan jiwa dan fisik lu, gass eksekusi!`,
-        icon: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png', 
+        icon: '/flower.png', 
         vibrate: [200, 100, 200, 100, 400], 
-        badge: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png',
+        badge: '/flower.png',
         tag: 'wellness-alert-' + namaAktivitas,
         requireInteraction: true 
       });
@@ -1760,9 +1760,9 @@ function triggerNotifFocusOffline() {
     navigator.serviceWorker.ready.then((registration) => {
       registration.showNotification('🪻 SESSION FOCUS SELESAI, yaa!', {
         body: 'Sesi belajar/ngoding lu udah kelar. Berdiri dulu, regangkan fisik, dan ambil minum air! Sukses besar!',
-        icon: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png', 
+        icon: '/flower.png', 
         vibrate: [400, 200, 400, 200, 400], 
-        badge: 'https://cdn-icons-png.flaticon.com/512/3221/3221191.png',
+        badge: '/flower.png',
         tag: 'focus-alert-done',
         requireInteraction: true 
       });

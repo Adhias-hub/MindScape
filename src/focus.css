@@ -1,3 +1,4 @@
+/* ================= RESET ================= */
 *{
   margin: 0;
   padding: 0;
@@ -187,14 +188,14 @@ body {
   box-shadow: 0 0 0 4px rgba(75, 92, 255, 0.15);
 }
 
-/* ================= CONTAINER UTAMA KIRI-KANAN (SINKRON & PROPORSIONAL) ================= */
+/* ================= CONTAINER UTAMA KIRI-KANAN ================= */
 .focus-layout-wrapper {
   display: grid;
-  grid-template-columns: 1fr 1.3fr; /* Kiri ramping (Timer), Kanan luas (Target Widget) */
+  grid-template-columns: 1fr 1.3fr; 
   gap: 30px;
-  max-width: 850px; /* Samakan dengan lebar Form biar lurus simetris */
-  margin: 0 auto 50px auto; /* Ditambah margin bawah biar gak nempel ke riwayat */
-  align-items: stretch; /* Paksa tinggi kiri dan kanan sama rata */
+  max-width: 850px; 
+  margin: 0 auto 50px auto; 
+  align-items: stretch; 
 }
 
 /* ================= TIMER DISPLAY BOX (KIRI) ================= */
@@ -211,7 +212,6 @@ body {
   gap: 20px;
 }
 
-/* Angka Timer */
 .timer-box h1 {
   font-size: 64px; 
   color: #4b5cff;
@@ -265,10 +265,10 @@ body {
 
 /* ================= TARGET FOCUS BOX WIDGET (KANAN) ================= */
 .focus-target-box {
-  background: white; /* Diubah jadi putih bersih biar senada dengan kotak kiri */
+  background: white; 
   padding: 35px;
   border-radius: 24px;
-  border-left: 6px solid #4b5cff; /* Aksen tiang biru tebal penanda info */
+  border-left: 6px solid #4b5cff; 
   box-shadow: 0 10px 30px rgba(75, 92, 255, 0.05);
   border-top: 1px solid #eef1ff;
   border-right: 1px solid #eef1ff;
@@ -276,7 +276,7 @@ body {
   text-align: left;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* Aliran teks rapi dari atas */
+  justify-content: flex-start; 
   gap: 15px;
 }
 
@@ -301,7 +301,6 @@ body {
   font-weight: 500;
 }
 
-/* Garis pembatas estetik di dalam widget kanan */
 .box-divider {
   height: 1px;
   background: #e2e8f0;
@@ -309,11 +308,11 @@ body {
   width: 100%;
 }
 
-/* ================= HISTORI JURNAL BOTTOM (CENTERED) ================= */
+/* ================= HISTORI JURNAL BOTTOM ================= */
 .focus-history-section {
-  max-width: 850px; /* Lebar saklek sama dengan Form dan Wrapper di atasnya */
-  margin: 50px auto 0 auto; /* KUNCI 1: auto kiri kanan paksa box di tengah layar */
-  padding: 0 10px; /* Jarak aman tipis di kanan kiri */
+  max-width: 850px; 
+  margin: 50px auto 0 auto; 
+  padding: 0 10px; 
 }
 
 .focus-history-section h3 {
@@ -322,26 +321,17 @@ body {
   font-weight: 800;
   margin-bottom: 22px;
   letter-spacing: -0.5px;
-  text-align: center; /* KUNCI 2: Paksa tulisan judul jurnal tegak lurus di tengah */
+  text-align: center; 
 }
 
-/* Memastikan item riwayat di dalamnya juga ikut rapi */
 #focusHistoryList {
   width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: stretch; /* Biar baris list riwayatnya melebar penuh dan rapi */
+  align-items: stretch; 
 }
 
 /* ================= RESPONSIVE LAYOUT (UNTUK HP) ================= */
-@media (max-width: 768px) {
-  .focus-layout-wrapper {
-    grid-template-columns: 1fr; /* Jadi satu kolom bertumpuk di HP */
-    gap: 24px;
-  }
-}
-
-
 @media (max-width: 768px) {
   /* 1. Gembok saklek level html & body biar gak bisa geser kanan sama sekali */
   html, body {
@@ -350,27 +340,111 @@ body {
     position: relative;
   }
 
+  /* ================= SINKRONISASI COKOT/FOKUS LAYOUT HP (PATOKAN SAKLEK 🔒) ================= */
+  .focus-section {
+    padding: 20px 15px 60px 15px !important; /* Kunci rapet kiri-kanan 15px sesuai data utama */
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .focus-section h2 {
+    font-size: 26px; /* Perkecil judul biar proporsional di HP */
+    margin-bottom: 25px;
+  }
+
+  /* JINAKKAN FORM FOKUS: Diubah jadi 1 kolom bertumpuk rapi ke bawah */
+  .focus-form {
+    grid-template-columns: 1fr !important; 
+    gap: 15px !important;
+    padding: 20px !important; /* Mengikuti standard ketebalan box jadwal */
+    margin-bottom: 30px !important;
+    border-radius: 20px !important;
+  }
+
+  /* KUNCI UKURAN INPUT FOKUS: Menggunakan standard 16px empuk anti auto-zoom */
+  .focus-form input,
+  .focus-form textarea {
+    width: 100% !important;   
+    padding: 16px !important;    
+    font-size: 16px !important; /* Gembok 16px biar pas di HP gak mental layout-nya */
+    box-sizing: border-box !important;
+  }
+
+  /* JINAKKAN CONTAINER TIMER & WIDGET INFO: Berbaris tegak lurus ke bawah */
+  .focus-layout-wrapper {
+    grid-template-columns: 1fr !important; 
+    gap: 20px !important;
+    margin-bottom: 35px !important;
+  }
+
+  /* Kotak display angka waktu di HP */
+  .timer-box {
+    padding: 30px 20px !important;
+    border-radius: 20px !important;
+  }
+
+  .timer-box h1 {
+    font-size: 54px !important; /* Di-scale down dikit biar pas di layar HP sempit */
+  }
+
+  /* Tombol Kontrol Mulai/Reset di HP (Dibuat Full Width & Gagah) */
+  .timer-buttons {
+    max-width: 100% !important; /* Lepas batas 240px biar menuhin ruang */
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .timer-buttons button {
+    padding: 16px 0 !important; /* Dipertebal tinggi vertikalnya agar ramah jempol */
+    font-size: 16px !important;
+    border-radius: 14px !important;
+  }
+
+  /* Kotak Info Target Kanan di HP */
+  .focus-target-box {
+    padding: 25px !important;
+    border-radius: 20px !important;
+    border-left: 5px solid #4b5cff !important;
+  }
+
+  /* Bagian Riwayat Jurnal bawah di HP */
+  .focus-history-section {
+    margin-top: 30px !important;
+  }
+
+  .focus-history-section h3 {
+    font-size: 22px !important;
+    margin-bottom: 15px !important;
+  }
+
+  /* Ukuran text baris riwayat disesuaikan */
+  .focus-history-section th, 
+  .focus-history-section td {
+    padding: 12px 10px !important; 
+    font-size: 14px !important;
+  }
+
+  /* =========================================================================== */
+
   /* 2. JINAKKAN HEADER (Biar gak melar keluar layar HP) */
   .home-header {
-    padding: 15px 15px; /* Sempitkan padding kiri-kanan dari 50px ke 15px */
+    padding: 15px 15px; 
     width: 100%;
-    box-sizing: border-box; /* Paksa padding dihitung di dalam lebar, bukan nambah lebar */
+    box-sizing: border-box; 
     display: flex;
-    flex-direction: column; /* Ubah logo dan menu jadi susunan atas-bawah biar gak sesak */
+    flex-direction: column; 
     gap: 15px;
     align-items: center;
     text-align: center;
   }
 
-  /* Rapikan area logo di HP */
   .logo-area h1 {
     font-size: 22px;
-    white-space: normal; /* Izinkan teks patah baris kalau nama aplikasinya kepanjangan */
+    white-space: normal; 
   }
 
-  /* Rapatkan navbar menu di HP */
   .navbar {
-    gap: 15px; /* Perkecil jarak antar menu biar gak offscreen */
+    gap: 15px; 
     justify-content: center;
     width: 100%;
   }

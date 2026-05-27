@@ -58,24 +58,26 @@
       </div>
 
       <!-- TABEL DATA -->
-      <table class="schedule-table">
-        <!-- Best Practices Fix: Menambahkan caption tabel untuk kejelasan struktur data -->
-        <caption class="visually-hidden" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;">Daftar Jadwal Kuliah Mingguan</caption>
-        
-        <thead>
-          <tr>
-            <th scope="col">Hari</th>
-            <th scope="col">Mata Kuliah</th>
-            <th scope="col">Jam</th>
-            <th scope="col">Catatan</th>
-            <th scope="col">Aksi</th>
-          </tr>
-        </thead>
+      <div class="table-responsive-wrapper">
 
-        <tbody id="scheduleList">
-          <!-- Data akan dirender secara dinamis oleh script.js -->
-        </tbody>
-      </table>
+  <table class="schedule-table">
+    <caption class="visually-hidden" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;">Daftar Jadwal Kuliah Mingguan</caption>
+    
+    <thead>
+      <tr>
+        <th scope="col">Hari</th>
+        <th scope="col">Mata Kuliah</th>
+        <th scope="col">Jam</th>
+        <th scope="col">Catatan</th>
+        <th scope="col">Aksi</th>
+      </tr>
+    </thead>
+
+    <tbody id="scheduleList">
+      </tbody>
+  </table>
+
+</div>
     </section>
   </main>
 
