@@ -1,7 +1,19 @@
-/* ================= INITIALIZE FIREBASE ================= */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
+import { initializeApp } from "firebase/app";
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  onAuthStateChanged, 
+  signOut,
+  updateProfile,            
+  sendPasswordResetEmail,   
+  updatePassword            
+} from "firebase/auth";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
+// ✅ TAMBAHKAN INI: Modul Firestore untuk database cloud
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore"; 
 
 // Mengambil data dari file .env secara aman di Vite
 const firebaseConfig = {
@@ -16,131 +28,50 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
+const db = getFirestore(app); // ✅ TAMBAHKAN INI: Jalur database cloud siap digunakan!
 
+/* ================= LEVEL 2: DEKLARASI VARIABEL GLOBAL RAM ================= */
 let schedules = [];
 let tasks = [];
 let wellnessData = [];
 
-let dataJadwal = [];
-let dataTodo = [];
-let dataWellness = [];
+/* ================= LEVEL 3: CORE FUNCTIONS (Fungsi Autentikasi & Routing) ================= */
 
-/* ================= FIND & UPDATE THIS BLOCK ================= */
-onAuthStateChanged(auth, (user) => {
-  const path = window.location.pathname;
-  const isHomePage = path.includes("home.html");
-  const isSchedulePage = path.includes("jadwal.html");
-  const isTodoPage = path.includes("todo.html");
-  const isWellnessPage = path.includes("wellness.html");
-  const isFocusPage = path.includes("focus.html");
-  const isLoginPage = path.includes("index.html") || path === "/";
-
-  if (user && isLoginPage) {
-    window.location.replace("home.html");
-    return;
-  }
-
-  if (user) {
-    console.log("Satpam Auth: User aktif ->", user.email);
-
-    // =========================================================================
-    // STEP 1: AMBIL DATA SEKALI SAJA DI AWAL MENGGUNAKAN KUNCI LAVENDER PREMIUM
-    // =========================================================================
-    const jadwalLokal = JSON.parse(localStorage.getItem(`jadwalKuliah_${user.uid}`)) || [];
-    const todoLokal = JSON.parse(localStorage.getItem(`todoTugas_${user.uid}`)) || []; // Ubah 'tasks_' jadi 'todoTugas_'
-    const wellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${user.uid}`)) || [];
-
-    schedules = jadwalLokal;
-    tasks = todoLokal;
-    wellnessData = wellnessLokal;
-
-    dataJadwal = jadwalLokal;
-    dataTodo = todoLokal;
-    dataWellness = wellnessLokal;
-
-    // =========================================================================
-    // STEP 2: ROUTING & RENDER VISUAL HALAMAN (DIPICU INSTAN PASCA RELOAD)
-    // =========================================================================
-    
-    // Pemicu Render Global Dashboard Lavender Premium
-    if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
-    if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
-    if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
-    
-    // Routing Halaman Internal
-    if (isSchedulePage) {
-      if (typeof displaySchedules === "function") displaySchedules();
-    }
-    
-    if (isTodoPage) {
-      if (typeof displayTasks === "function") displayTasks();
-      if (typeof displayTodoHistory === "function") displayTodoHistory();
-      if (typeof displayGagalHistory === "function") displayGagalHistory();
-    }
-    
-    if (isWellnessPage) {
-      if (typeof displayWellness === "function") displayWellness();
-      if (typeof displayWellnessHistory === "function") displayWellnessHistory();
-    }
-    
-    if (isFocusPage) {
-      if (typeof displayFocusHistory === "function") displayFocusHistory();
-      if (typeof cekSesiTimerPasRefresh === "function") cekSesiTimerPasRefresh();
-    }
-
-  } else {
-    // JURUS TENDANG SAKLEK
-    if (isHomePage || isSchedulePage || isTodoPage || isWellnessPage || isFocusPage || path.includes("dashboard")) {
-      alert("Akses ditolak! Silakan login terlebih dahulu.");
-      window.location.replace("index.html");
-    }
-  }
-});
-
-
-/* ================= REGISTER (STRATA AMAN FIREBASE) ================= */
 function register() {
-  let name = document.getElementById("registerName").value.trim();
-  let email = document.getElementById("registerEmail").value.trim();
-  let password = document.getElementById("registerPassword").value.trim();
+  let name = document.getElementById("registerName")?.value.trim() || "";
+  let email = document.getElementById("registerEmail")?.value.trim() || "";
+  let password = document.getElementById("registerPassword")?.value.trim() || "";
 
   if (name === "" || email === "" || password === "") {
     alert("Semua data wajib diisi!");
     return;
   }
 
-  // Langkah A: Daftarkan email & password ke Firebase
   createUserWithEmailAndPassword(auth, email, password)
     .then((userCredential) => {
       const user = userCredential.user;
-
-      // Langkah B: LANGSUNG PERINTAHKAN FIREBASE BUAT NGE-SET NAMA USERNYA SECARA PERMANEN
-      import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js")
-        .then(({ updateProfile }) => {
-          updateProfile(user, {
-            displayName: name
-          })
-          .then(() => {
-            alert(`Akun atas nama "${name}" berhasil dibuat secara legal di Firebase! 🌸✨`);
-            window.location.href = "home.html";
-          })
-          .catch((err) => {
-            console.error("Gagal sinkron nama:", err);
-            // Tetap lempar ke home meskipun nama gagal disinkron biar gak stuck
-            window.location.href = "home.html";
-          });
+      
+      // ✅ CDN dihapus, langsung panggil updateProfile yang diimpor di atas
+      updateProfile(user, { displayName: name })
+        .then(() => {
+          alert(`Akun atas nama "${name}" berhasil dibuat secara legal di Firebase! 🌸✨`);
+          window.location.href = "home.html";
+        })
+        .catch((err) => {
+          console.error("Gagal sinkron nama:", err);
+          window.location.href = "home.html";
         });
-
     })
     .catch((error) => {
       alert("Gagal registrasi: " + error.message);
     });
 }
 
-/* ================= LOGIN EMAIL & PASSWORD ================= */
+
+
 function login() {
-  let email = document.getElementById("loginEmail").value.trim();
-  let password = document.getElementById("loginPassword").value.trim();
+  let email = document.getElementById("loginEmail")?.value.trim() || "";
+  let password = document.getElementById("loginPassword")?.value.trim() || "";
 
   if (email === "" || password === "") {
     alert("Email dan password wajib diisi!");
@@ -148,7 +79,7 @@ function login() {
   }
 
   signInWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
+    .then(() => {
       alert("Login berhasil ✨");
       window.location.href = "home.html";
     })
@@ -157,10 +88,9 @@ function login() {
     });
 }
 
-/* ================= LOGIN DENGAN GOOGLE ================= */
 function loginDenganGoogle() {
   signInWithPopup(auth, googleProvider)
-    .then((result) => {
+    .then(() => {
       alert("Login Google Berhasil! 🌸");
       window.location.href = "home.html";
     })
@@ -169,17 +99,11 @@ function loginDenganGoogle() {
     });
 }
 
-/* ================= FIND AND UPDATE THIS LOGOUT FUNCTION ================= */
 function logout() {
   signOut(auth).then(() => {
-    // Bersihkan seluruh sisa array di RAM browser agar tidak bocor antar akun
-    schedules = [];
-    tasks = [];
+    schedules = []; 
+    tasks = []; 
     wellnessData = [];
-    
-    dataJadwal = [];
-    dataTodo = [];
-    dataWellness = [];
     
     alert("Logout berhasil!");
     window.location.href = "index.html";
@@ -188,85 +112,68 @@ function logout() {
   });
 }
 
-/* ================= FORGOT PASSWORD REAL ================= */
-// Pastikan fungsi ini ditaruh di dalam file JS Module lu
-
 function forgotPassword() {
   let inputEmail = prompt("Masukkan email akun kamu yang terdaftar:");
-  
-  if (!inputEmail) return; // Jika user menekan tombol Cancel
-
+  if (!inputEmail) return;
   if (inputEmail.trim() === "") {
     alert("Email tidak boleh kosong!");
     return;
   }
 
-  // Panggil fungsi resmi Firebase untuk kirim email reset password
-  import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js")
-    .then(({ sendPasswordResetEmail }) => {
-      sendPasswordResetEmail(auth, inputEmail)
-        .then(() => {
-          // JIKA BERHASIL, EMAIL RESMI DARI GOOGLE AKAN MASUK
-          alert(`📩 Link reset password BERHASIL dikirim! Silakan cek kotak masuk atau folder SPAM di email: ${inputEmail}`);
-        })
-        .catch((error) => {
-          console.error("Gagal kirim email reset:", error);
-          // Firebase otomatis mengecek apakah email itu terdaftar atau formatnya salah
-          if (error.code === "auth/user-not-found") {
-            alert("Email tersebut belum terdaftar di sistem kita, yaa!");
-          } else if (error.code === "auth/invalid-email") {
-            alert("Format email yang kamu masukkan salah/tidak valid!");
-          } else {
-            alert("Gagal mengirim email reset: " + error.message);
-          }
-        });
+  // ✅ CDN dihapus, langsung panggil sendPasswordResetEmail
+  sendPasswordResetEmail(auth, inputEmail)
+    .then(() => {
+      alert(`📩 Link reset password BERHASIL dikirim! Silakan cek kotak masuk atau folder SPAM di email: ${inputEmail}`);
+    })
+    .catch((error) => {
+      console.error("Gagal kirim email reset:", error);
+      if (error.code === "auth/user-not-found") {
+        alert("Email tersebut belum terdaftar di sistem kita, yaa!");
+      } else if (error.code === "auth/invalid-email") {
+        alert("Format email yang kamu masukkan salah/tidak valid!");
+      } else {
+        alert("Gagal mengirim email reset: " + error.message);
+      }
     });
 }
 
 function changePassword() {
   const user = auth.currentUser;
-
   if (!user) {
     alert("Kamu harus login terlebih dahulu!");
     return;
   }
 
   let newPassword = prompt("Masukkan password baru kamu (Minimal 6 karakter):");
-  
-  if (!newPassword) return; // Jika user menekan cancel
-
+  if (!newPassword) return;
   if (newPassword.length < 6) {
     alert("Password gagal diubah! Firebase mewajibkan password minimal 6 karakter, yaa! 🔒");
     return;
   }
 
-  // Eksekusi perubahan password langsung ke server Google Firebase
-  import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js")
-    .then(({ updatePassword }) => {
-      updatePassword(user, newPassword)
-        .then(() => {
-          alert("Password akun kamu berhasil diubah di server Firebase! 🔒✨");
-        })
-        .catch((error) => {
-          console.error("Gagal ubah password:", error);
-          if (error.code === "auth/requires-recent-login") {
-            alert("Demi keamanan, fitur ini butuh 'Fresh Login'. Silakan logout dulu, lalu login kembali dan langsung coba lagi ubah password-nya, yaa! 🛡️");
-          } else {
-            alert("Gagal mengubah password: " + error.message);
-          }
-        });
+  // ✅ CDN dihapus, langsung panggil updatePassword
+  updatePassword(user, newPassword)
+    .then(() => {
+      alert("Password akun kamu berhasil diubah di server Firebase! 🔒✨");
+    })
+    .catch((error) => {
+      console.error("Gagal ubah password:", error);
+      if (error.code === "auth/requires-recent-login") {
+        alert("Demi keamanan, fitur ini butuh 'Fresh Login'. Silakan logout dulu, lalu login kembali dan langsung coba lagi ubah password-nya, yaa! 🛡️");
+      } else {
+        alert("Gagal mengubah password: " + error.message);
+      }
     });
 }
 
-/* ================= PAGE ROUTING / TOGGLE DISPLAY ================= */
 function showRegister() {
-  document.getElementById("loginPage").style.display = "none";
-  document.getElementById("registerPage").style.display = "flex";
+  if(document.getElementById("loginPage")) document.getElementById("loginPage").style.display = "none";
+  if(document.getElementById("registerPage")) document.getElementById("registerPage").style.display = "flex";
 }
 
 function showLogin() {
-  document.getElementById("registerPage").style.display = "none";
-  document.getElementById("loginPage").style.display = "flex";
+  if(document.getElementById("registerPage")) document.getElementById("registerPage").style.display = "none";
+  if(document.getElementById("loginPage")) document.getElementById("loginPage").style.display = "flex";
 }
 
 function toggleMenu() {
@@ -278,7 +185,7 @@ function toggleMenu() {
 function openProfile() {
   const user = auth.currentUser;
   if (user) {
-    alert(`👤 Profil Saya\n\nNama: ${user.displayName || localStorage.getItem("name") || "User"}\nEmail: ${user.email}`);
+    alert(`👤 Profil Saya\n\nNama: ${user.displayName || "User"}\nEmail: ${user.email}`);
   }
 }
 
@@ -293,970 +200,98 @@ function scrollDashboard() {
   document.getElementById("dashboardSection")?.scrollIntoView({ behavior: "smooth" });
 }
 
-/* ================= MANAGEMENT DATA (JADWAL) ================= */
-schedules = [];
 
-const dayOrder = {
-  "Senin": 1, "Selasa": 2, "Rabu": 3, "Kamis": 4, "Jumat": 5, "Sabtu": 6, "Minggu": 7
-};
 
-// FUNGSI: Memastikan array schedules selalu terurut rapi di memori
-function urutkanJadwalSesuaiHari() {
-  schedules.sort((a, b) => {
-    let orderA = dayOrder[a.day] || 99;
-    let orderB = dayOrder[b.day] || 99;
-    if (orderA !== orderB) return orderA - orderB;
-    return a.start.localeCompare(b.start);
-  });
+/* ================= SECURITY UTILITY (ENKRIPSI STORAGE) ================= */
+
+// Fungsi untuk mengacak string (enkripsi ringan berbasis Base64 + Custom Salt)
+function encryptData(text) {
+  // Tambahkan salt rahasia agar tidak bisa di-decode instan pakai generator Base64 biasa
+  const salt = "MindSpace_Secure_Salt_2026_"; 
+  const saltedText = salt + text;
+  // Ubah ke format Base64 yang aman dari mata telanjang
+  return btoa(unescape(encodeURIComponent(saltedText)));
 }
 
-function displaySchedules() {
-  let scheduleList = document.getElementById("scheduleList");
-  if (!scheduleList) return;
-  scheduleList.innerHTML = "";
-  
-  if (!auth.currentUser) return;
-
-  // 🔥 PERBAIKAN DI SINI: Samakan kuncinya pakai 'jadwalKuliah_' agar sinkron se-aplikasi!
-  schedules = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
-  urutkanJadwalSesuaiHari(); 
-
-  if (schedules.length === 0) {
-    scheduleList.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Belum ada jadwal kuliah.</td></tr>`;
-    return;
-  }
-
-  schedules.forEach((schedule, index) => {
-    scheduleList.innerHTML += `
-      <tr>
-        <th scope="row"><strong>${schedule.day}</strong></th>
-        <td>${schedule.course}</td>
-        <td>${schedule.start} - ${schedule.end}</td>
-        <td>${schedule.note || "-"}</td>
-        <td>
-          <button onclick="deleteSchedule(${index})" class="btn-delete" aria-label="Hapus jadwal mata kuliah ${schedule.course}">
-            Hapus
-          </button>
-        </td>
-      </tr>`;
-  });
-}
-
-function addSchedule() {
-  let course = document.getElementById("courseInput").value.trim();
-  let day = document.getElementById("dayInput").value; 
-  let start = document.getElementById("startTime").value;
-  let end = document.getElementById("endTime").value;
-  let note = document.getElementById("noteInput").value.trim();
-
-  if (course === "" || day === "" || start === "" || end === "") {
-    alert("Isi semua data jadwal!");
-    return;
-  }
-
-  if (!auth.currentUser) return;
-
-  // SINKRONISASI KRITIS: Tarik data fresh dari UID aktif dulu sebelum di-push agar tidak menimpa data user lain
-  schedules = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
-  
-  schedules.push({ course, day, start, end, note });
-  
-  // Urutkan array-nya dulu, baru simpan ke localStorage secara permanen berdasarkan UID
-  urutkanJadwalSesuaiHari();
-  localStorage.setItem(`jadwalKuliah_${auth.currentUser.uid}`, JSON.stringify(schedules));
-  
-  displaySchedules();
-
-  // Reset Input Form
-  document.getElementById("courseInput").value = "";
-  document.getElementById("dayInput").value = "";
-  document.getElementById("startTime").value = "";
-  document.getElementById("endTime").value = "";
-  document.getElementById("noteInput").value = "";
-}
-
-function deleteSchedule(index) {
-  if (!auth.currentUser) return;
-
-  // SINKRONISASI KRITIS: Pastikan array di memori sinkron dengan data asli di localstorage sebelum di-splice
-  schedules = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
-  urutkanJadwalSesuaiHari();
-
-  // Sekarang index dari HTML dan urutan array lokal dijamin 100% sinkron dan aman!
-  schedules.splice(index, 1);
-  localStorage.setItem(`jadwalKuliah_${auth.currentUser.uid}`, JSON.stringify(schedules));
-  displaySchedules();
-}
-
-let gembokJadwalH20 = {};
-let gembokJadwalH5  = {};
-let gembokTodoH5    = {};
-
-function jalankanSatpamOtomatis() {
-  const kamusHari = {
-    "Minggu": 0, "Senin": 1, "Selasa": 2, "Rabu": 3, "Kamis": 4, "Jumat": 5, "Sabtu": 6
-  };
-
-  setInterval(() => {
-    if (!auth.currentUser) return; // Proteksi jika belum login
-
-    const sekarang = new Date();
-    const hariIniAngka = sekarang.getDay();
-    const tanggalKunciStr = sekarang.toDateString(); 
-    const jamSekarangMenit = (sekarang.getHours() * 60) + sekarang.getMinutes();
-    
-    // Ambil data terjaga murni berdasarkan UID user aktif
-   const jadwalAktif = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
-
-    jadwalAktif.forEach((jadwal) => {
-      if (kamusHari[jadwal.day] === hariIniAngka) {
-        const [jamMulai, menitMulai] = jadwal.start.split(":").map(Number);
-        const menitKuliahMulai = (jamMulai * 60) + menitMulai;
-        const selisihMenitJadwal = menitKuliahMulai - jamSekarangMenit;
-        const idKunciNotif = `${tanggalKunciStr}_${jadwal.course}_${jadwal.start}`;
-
-        // PERBAIKAN LOGIKA: Menggunakan rentang toleransi agar notifikasi tidak terlewat jika interval 30 detik bergeser
-        if (selisihMenitJadwal <= 20 && selisihMenitJadwal > 18) {
-          if (!gembokJadwalH20[idKunciNotif]) {
-            gembokJadwalH20[idKunciNotif] = true;
-            if (Notification.permission === "granted") {
-              const keyNotifJadwal = `notif_jadwal_${auth.currentUser.uid}_${jadwal.course}_20`;
-              if (!sessionStorage.getItem(keyNotifJadwal)) {
-                new Notification(`⏰ H-20 JADWAL: ${jadwal.course}`, {
-                  body: `Ayo, ${jadwal.course} bakal mulai dalam sekitar 20 menit lagi! Jangan telat, yaa!`,
-                  icon: '/flower.png',
-                  requireInteraction: true 
-                });
-                sessionStorage.setItem(keyNotifJadwal, "sent");
-              }
-            }
-          }
-        }
-        else if (selisihMenitJadwal <= 5 && selisihMenitJadwal > 0) {
-          if (!gembokJadwalH5[idKunciNotif]) {
-            gembokJadwalH5[idKunciNotif] = true;
-            if (Notification.permission === "granted") {
-              const keyNotifJadwal = `notif_jadwal_${auth.currentUser.uid}_${jadwal.course}_5`;
-              if (!sessionStorage.getItem(keyNotifJadwal)) {
-                new Notification(`🚨 H-5 JADWAL: ${jadwal.course}`, {
-                  body: `Gass masuk! Kurang dari 5 menit lagi kelas ${jadwal.course} dimulai! Jangan nyasar!`,
-                  icon: '/flower.png',
-                  requireInteraction: true 
-                });
-                sessionStorage.setItem(keyNotifJadwal, "sent");
-              }
-            }
-          }
-        }
-      }
-    });
-  }, 30000); // Interval 30 detik aman karena logika pencocokan menggunakan rentang waktu (bukan '===')
-}
-
-/* ================= EXPOSE TO GLOBAL ================= */
-window.addSchedule = addSchedule;
-window.deleteSchedule = deleteSchedule;
-
-
-/* ================= MANAGEMENT DATA (TODO TASKS) ================= */
-
-// 1. INISIALISASI VARIABEL GLOBAL (Murni Array Kosong, Tidak Mencampur Key Polosan)
-tasks = [];
-
-function formatTampilanTanggal(dateString) {
-  if (!dateString) return "-";
-  const [tanggal, jam] = dateString.split("T");
-  const [tahun, bulan, hari] = tanggal.split("-");
-  return `${hari}-${bulan}-${tahun} Pukul ${jam}`;
-}
-
-function displayTasks() {  
-  let taskList = document.getElementById("taskList"); 
-  if (!taskList) return;
-  taskList.innerHTML = "";
-
-  if (!auth.currentUser) return;
-
-  tasks = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
-
-  const sekarang = new Date().getTime();
-
-  if (tasks.length === 0) {
-    taskList.innerHTML = `<p style="color: #94a3b8; font-style: italic;">Tenang, belum ada tugas yang numpuk. 🔥</p>`;
-    return;
-  }
-
-  tasks.forEach((item) => {
-    const waktuDeadline = new Date(item.deadline).getTime();
-    if (!item.completed && waktuDeadline >= sekarang) {
-      taskList.innerHTML += `
-        <div class="task-card" id="${item.id}" style="padding: 16px; margin-bottom: 12px; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-          <h3 style="margin: 0; font-size: 18px; color: #1e293b;">🌸 ${item.name}</h3>
-          <p style="margin: 6px 0; font-size: 14px; color: #64748b;"><strong>Deadline:</strong> ${formatTampilanTanggal(item.deadline)} WIB</p>
-          
-          <div class="task-buttons" style="display: flex; gap: 8px; margin-top: 12px;">
-            <button class="done-btn" onclick="completeTask('${item.id}')" style="background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">Selesai</button>
-            <button class="delete-btn" onclick="deleteTask('${item.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">Hapus</button>
-          </div>
-        </div>
-      `;
+// Fungsi untuk mengembalikan string asli (dekripsi)
+function decryptData(cipherText) {
+  try {
+    if (!cipherText) return null;
+    const decoded = decodeURIComponent(escape(atob(cipherText)));
+    const salt = "MindSpace_Secure_Salt_2026_";
+    if (decoded.startsWith(salt)) {
+      return decoded.replace(salt, "");
     }
-  });
-}
-
-function addTask() {
-  let taskInput = document.getElementById("taskInput");
-  let dateInput = document.getElementById("deadlineDate");
-  let timeInput = document.getElementById("deadlineTime");
-
-  if (!taskInput || !dateInput || !timeInput) return;
-
-  let taskName = taskInput.value.trim();
-  let dateVal = dateInput.value; 
-  let timeVal = timeInput.value; 
-
-  if (taskName === "" || dateVal === "" || timeVal === "") {
-    alert("Isi nama tugas, tanggal, beserta jam deadlinenya!");
-    return;
-  }
-
-  if (!auth.currentUser) return;
-
-  // Ambil data lama langsung pakai standar auth.currentUser.uid
-  tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
-
-  // Gabungkan tanggal dan jam menjadi format ISO standar untuk mempermudah manipulasi Date
-  const fullDeadlineString = `${dateVal}T${timeVal}`;
-
-  // Masukkan objek dengan struktur properti yang seragam (name dan deadline)
-  tasks.push({
-    id: 'todo_' + Date.now(),
-    name: taskName,
-    deadline: fullDeadlineString,
-    completed: false        
-  });
-
-  // Simpan ke localStorage berdasarkan UID aktif
-  localStorage.setItem(`tasks_${auth.currentUser.uid}`, JSON.stringify(tasks));
-  
-  // Refresh tampilan halaman dan dashboard sekaligus
-  displayTasks();
-  if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
-
-  // Reset Input Form secara aman
-  taskInput.value = "";
-  dateInput.value = "";
-  timeInput.value = "";
-}
-
-// Terbuka penuh ke window scope agar terbebas dari belenggu modul isolasi JavaScript
-window.completeTask = function(taskId) {
-  if (!auth.currentUser) return;
-
-  tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
-  const targetIndex = tasks.findIndex(task => task.id === taskId);
-  
-  if (targetIndex !== -1) {
-    tasks[targetIndex].completed = true;
-    localStorage.setItem(`tasks_${auth.currentUser.uid}`, JSON.stringify(tasks));
-    
-    displayTasks();
-    if (typeof displayTodoHistory === "function") displayTodoHistory();
-    if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+    return null; // Data rusak atau dimanipulasi orang lain
+  } catch (e) {
+    console.error("Gagal mendekripsi data. Kemungkinan data telah dimanipulasi lewat DevTools.");
+    return null;
   }
 }
 
-// Terbuka penuh ke window scope agar terbebas dari belenggu modul isolasi JavaScript
-window.deleteTask = function(taskId) {
-  if (!auth.currentUser) return;
-
-  tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
-  const targetIndex = tasks.findIndex(task => task.id === taskId);
-  
-  if (targetIndex !== -1) {
-    tasks.splice(targetIndex, 1);
-    localStorage.setItem(`tasks_${auth.currentUser.uid}`, JSON.stringify(tasks));
-    
-    displayTasks();
-    if (typeof displayTodoHistory === "function") displayTodoHistory();
-    if (typeof displayGagalHistory === "function") displayGagalHistory(); 
-    if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
-  }
+// Handler Baru untuk Simpan Data ke LocalStorage secara Terenkripsi
+function simpanDataAman(key, dataObj) {
+  const jsonString = JSON.stringify(dataObj);
+  const encryptedString = encryptData(jsonString);
+  localStorage.setItem(key, encryptedString);
 }
 
-// --- HISTORI 1: TUGAS SELESAI ---
-window.displayTodoHistory = function() {
-  const historyList = document.getElementById("todoHistoryList");
-  if (!historyList) return;
-  historyList.innerHTML = "";
-
-  if (!auth.currentUser) return;
-
-  const tasksLokal = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
-  const tugasSelesai = tasksLokal.filter(task => task.completed);
-
-  if (tugasSelesai.length === 0) {
-    historyList.innerHTML = `<p style="color: #94a3b8; font-style: italic; font-size: 14px;">Belum ada riwayat tugas selesai.</p>`;
-    return;
-  }
-
-  tasksLokal.forEach((task) => {
-    if (task.completed) {
-      historyList.innerHTML += `
-        <div class="history-item-box" style="background: #f8fafc; padding: 14px 18px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #10b981; display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <span style="font-weight: 700; color: #1e293b; text-decoration: line-through;">${task.name}</span>
-            <p style="font-size: 12px; color: #64748b; margin-top: 4px;">✅ Selesai dikerjakan</p>
-          </div>
-          <button onclick="deleteTask('${task.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">Hapus Jejak</button>
-        </div>`;
-    }
-  });
+// Handler Baru untuk Ambil Data dari LocalStorage secara Aman
+function ambilDataAman(key) {
+  const encryptedData = localStorage.getItem(key);
+  if (!encryptedData) return null;
+  const decryptedString = decryptData(encryptedData);
+  if (!decryptedString) return null;
+  return JSON.parse(decryptedString);
 }
-
-// --- HISTORI 2: TUGAS GAGAL/OVERDUE ---
-window.displayGagalHistory = function() {
-  const gagalList = document.getElementById("todoGagalList");
-  if (!gagalList) return;
-  gagalList.innerHTML = "";
-
-  if (!auth.currentUser) return;
-
-  const tasksLokal = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
-  const sekarang = new Date().getTime();
-
-  const tugasGagal = tasksLokal.filter(task => !task.completed && new Date(task.deadline).getTime() < sekarang);
-
-  if (tugasGagal.length === 0) {
-    gagalList.innerHTML = `<p style="color: #94a3b8; font-style: italic; font-size: 14px;">Bersih! Tidak ada tugas yang telat. Mantap! 🔥</p>`;
-    return;
-  }
-
-  tasksLokal.forEach((task) => {
-    const waktuDeadline = new Date(task.deadline).getTime() || Infinity;
-    if (!task.completed && waktuDeadline < sekarang) {
-      gagalList.innerHTML += `
-        <div class="history-item-box" style="background: #fff5f5; padding: 14px 18px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #ef4444; display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <span style="font-weight: 700; color: #991b1b;">❌ ${task.name}</span>
-            <p style="font-size: 12px; color: #b91c1c; margin-top: 4px;">Terlewat: ${formatTampilanTanggal(task.deadline)}</p>
-          </div>
-          <button onclick="deleteTask('${task.id}')" style="background: #7f1d1d; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">Ihlaskan & Hapus</button>
-        </div>`;
-    }
-  });
-}
-
-function jalankanAlarmTodoOtomatis() {
-  setInterval(() => {
-    if (!auth.currentUser) return;
-    const sekarang = new Date();
-    const tanggalKunciStr = sekarang.toDateString(); // PERBAIKAN TYPO: Kata 'Bird =' pengacau sudah dibuang total ✨
-    const timestampSekarang = sekarang.getTime();
-    
-    const tugasAktif = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
-    periksaDeadlineOtomatis();
-
-    tugasAktif.forEach((task) => {
-      if (!task.completed && task.deadline) {
-        const waktuDeadline = new Date(task.deadline);
-        const selisihMilidetik = waktuDeadline.getTime() - timestampSekarang;
-        
-        const selisihMenitTodo = Math.round(selisihMilidetik / (1000 * 60));
-        const idKunciTodo = `${tanggalKunciStr}_${task.id}`;
-
-        if (selisihMenitTodo === 10) {
-          if (!gembokTodoH5[idKunciTodo]) {
-            gembokTodoH5[idKunciTodo] = true; 
-
-            if (Notification.permission === "granted") {
-              const keyNotifTodo = `notif_todo_${task.id}_5`;
-              
-              if (!sessionStorage.getItem(keyNotifTodo)) {
-                new Notification(`🚨 DEADLINE TUGAS: ${task.name}`, {
-                  body: `Gawat! Sisa sekitar 10 menit lagi batas pengumpulan tugas "${task.name}" habis! Buruan submit, yaa! 😱`,
-                  icon: '/flower.png',
-                  requireInteraction: true 
-                });
-                sessionStorage.setItem(keyNotifTodo, "sent");
-              }
-            }
-          }
-        }
-      }
-    });
-  }, 20000); 
-}
-
-function periksaDeadlineOtomatis() {
-  if (!auth.currentUser) return;
-  const sekarang = new Date().getTime();
-  let tasksLokal = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
-  let adaPerubahan = false;
-
-  tasksLokal.forEach((task) => {
-    if (!task.completed) {
-      const waktuDeadline = new Date(task.deadline).getTime();
-
-      if (waktuDeadline <= sekarang) {
-        if (!sessionStorage.getItem(`gagal_alert_${task.id}`)) {
-          triggerNotifTugasGagal(task.name);
-          sessionStorage.setItem(`gagal_alert_${task.id}`, "sent");
-          adaPerubahan = true;
-        }
-      }
-    }
-  });
-
-  if (adaPerubahan) {
-    displayTasks();
-    displayGagalHistory();
-  }
-}
-
-function triggerNotifTugasGagal(judulTugas) {
-  if (Notification.permission === 'granted') {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((registration) => {
-        registration.showNotification('🚨 DEADLINE LEWAT, YAA!', {
-          body: `Tugas "${judulTugas}" udah melewati batas waktu pengumpulan. Tetap semangat, yuk gaspol tugas lainnya!`,
-          icon: '/flower.png',
-          badge: '/flower.png',
-          tag: 'task-failed-alert',
-          vibrate: [500, 100, 500],
-          requireInteraction: true
-        });
-      });
-    } else {
-      new Notification('🚨 DEADLINE LEWAT, YAA!', {
-        body: `Tugas "${judulTugas}" udah melewati batas waktu pengumpulan. Tetap semangat, yuk gaspol tugas lainnya!`,
-        requireInteraction: true
-      });
-    }
-  }
-}
-
-/* ================= EXPOSE TO GLOBAL ================= */
-window.addTask = addTask;
-window.completeTask = completeTask;
-window.deleteTask = deleteTask;
-
-
-
-
-
-/* ================= MANAGEMENT DATA (WELLNESS) ================= */
-// Hapus inisialisasi global tanpa UID di atas agar tidak memicu kebocoran data
-
-window.displayWellness = function() {
-  const wellnessList = document.getElementById("wellnessList");
-  if (!wellnessList) return;
-  wellnessList.innerHTML = "";
-
-  if (!auth.currentUser) return;
-
-  // Ambil data dari kamar log yang benar
-  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
-
-  // Urutkan berdasarkan waktu
-  dataWellnessLokal.sort((a, b) => a.time.localeCompare(b.time));
-
-  dataWellnessLokal.forEach((item) => {
-    if (!item.completed) {
-      wellnessList.innerHTML += `
-        <div class="wellness-card">
-          <h3>💧 ${item.type}</h3>
-          <p>⏰ Waktu: <strong>${item.time} WIB</strong></p>
-          <p>🌸 Catatan: ${item.note || "-"}</p>
-          <div class="wellness-buttons" style="display: flex; gap: 8px; margin-top: 10px;">
-            <button class="done-btn" onclick="completeWellness('${item.id}')">Selesai</button>
-            <button class="delete-btn" onclick="deleteWellness('${item.id}')">Hapus</button>
-          </div>
-        </div>`;
-    }
-  });
-}
-
-window.addWellness = function() {
-  if (!auth.currentUser) {
-    alert("Maaf harus login dulu, yaa!");
-    return;
-  }
-
-  const uidAman = auth.currentUser.uid;
-  const type = document.getElementById("wellnessType")?.value;
-  const time = document.getElementById("wellnessTime")?.value;
-  const note = document.getElementById("wellnessNote")?.value || "";
-
-  if (!type || !time) {
-    alert("Aktivitas dan Jam wajib diisi!");
-    return;
-  }
-
-  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
-
-  dataWellnessLokal.push({
-    id: Date.now(),
-    type: type,
-    time: time,
-    note: note,
-    completed: false
-  });
-
-  localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
-  
-  // Reset Form
-  if(document.getElementById("wellnessType")) document.getElementById("wellnessType").value = "";
-  if(document.getElementById("wellnessTime")) document.getElementById("wellnessTime").value = "";
-  if(document.getElementById("wellnessNote")) document.getElementById("wellnessNote").value = "";
-
-  displayWellness();
-  if (typeof displayWellnessHistory === "function") displayWellnessHistory();
-}
-
-window.completeWellness = function(id) {
-  if (!auth.currentUser) return;
-  const uidAman = auth.currentUser.uid;
-  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
-
-  // PERBAIKAN: Gunakan '==' agar tipe data Number/String dari HTML tetap bisa dicocokkan secara fleksibel
-  const index = dataWellnessLokal.findIndex(item => item.id == id);
-  if (index !== -1) {
-    dataWellnessLokal[index].completed = true;
-    localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
-    displayWellness();
-    if (typeof displayWellnessHistory === "function") displayWellnessHistory();
-  }
-}
-
-window.deleteWellness = function(id) {
-  if (!auth.currentUser) return;
-  const uidAman = auth.currentUser.uid;
-  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
-
-  // PERBAIKAN: Gunakan '==' untuk mengantisipasi ketidakcocokan tipe data primitive (string vs number)
-  const index = dataWellnessLokal.findIndex(item => item.id == id);
-  if (index !== -1) {
-    dataWellnessLokal.splice(index, 1);
-    localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
-    displayWellness();
-    if (typeof displayWellnessHistory === "function") displayWellnessHistory();
-  }
-}
-
-function jalankanSatpamWellnessOtomatis() {
-  // PERBAIKAN OPTIMASI: Interval diset ke 60000ms (1 menit sekali) agar pas dengan rotasi perubahan jamMenitSekarangStr 
-  // Langkah ini sekaligus mencegah double trigger notifikasi berondong di menit yang sama
-  setInterval(() => {
-    if (!auth.currentUser) return; 
-
-    const sekarang = new Date();
-    const jamMenitSekarangStr = `${String(sekarang.getHours()).padStart(2, '0')}:${String(sekarang.getMinutes()).padStart(2, '0')}`;
-    
-    const pengingatWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
-
-    pengingatWellness.forEach((item) => {
-      if (!item.completed && item.time === jamMenitSekarangStr) {
-        if (Notification.permission === "granted") {
-          const keyNotifWellness = `notif_well_${auth.currentUser.uid}_${item.id}_${item.time}`;
-          
-          if (!sessionStorage.getItem(keyNotifWellness)) {
-            new Notification(`💧 TIME FOR WELLNESS`, {
-              body: `Waktunya aktivitas: "${item.type}"`,
-              icon: '/flower.png',
-              requireInteraction: true 
-            });
-            sessionStorage.setItem(keyNotifWellness, "sent");
-          }
-        }
-      }
-    });
-  }, 30000); 
-}
-
-/**
- * C. WELLNESS HISTORY HANDLER
- */
-window.displayWellnessHistory = function() {
-  const historyList = document.getElementById("wellnessHistoryList");
-  if (!historyList) return;
-  historyList.innerHTML = "";
-  if (!auth.currentUser) return;
-
-  const uidAman = auth.currentUser.uid;
-  const wellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
-  const wellnessSelesai = wellnessLokal.filter(item => item.completed);
-
-  if (wellnessSelesai.length === 0) {
-    historyList.innerHTML = `<p style="color: #94a3b8; font-style: italic; font-size: 14px;">Belum ada aktivitas kesehatan yang tercatat hari ini.</p>`;
-    return;
-  }
-
-  wellnessLokal.forEach((item) => {
-    if (item.completed) {
-      historyList.innerHTML += `
-        <div class="history-item-box" style="background: #faf5ff; padding: 14px 18px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #8b5cf6; display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <span style="font-weight: 700; color: #1e293b;">${item.type} (${item.time})</span>
-            <p style="font-size: 12px; color: #7c3aed; margin-top: 4px;">💙 Sudah terpenuhi hari ini</p>
-          </div>
-          <button onclick="deleteWellness('${item.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">
-            Hapus Jejak
-          </button>
-        </div>`;
-    }
-  });
-}
-
-/* ================= EXPOSE TO GLOBAL ================= */
-window.addWellness = addWellness;
-window.completeWellness = completeWellness;
-window.deleteWellness = deleteWellness;
-
-
-
-
- /* ================= MANAGEMENT DATA (FOCUS TIMER) ================= */
-
-// 1. PENGAMAN VARIABEL GLOBAL (Agar tidak reset/hilang saat refresh)
-if (typeof focusInterval === 'undefined') {
-  var focusInterval; 
-}
-
-function startFocusTimer() {
-  const startBtn = document.getElementById("btnMulaiFocus");
-  if (startBtn && startBtn.innerText === "Selesai") {
-    hentikanTimerTengahJalanManual();
-    return;
-  }
-
-  let minutesInput = document.getElementById("focusMinutes");
-  let targetInput = document.getElementById("focusTarget");
-  let noteInput = document.getElementById("focusNote");
-  if (!minutesInput) return;
-
-  let focusValue = minutesInput.value;
-  if (focusValue === "") {
-    alert("Masukkan durasi belajar!");
-    return;
-  }
-
-  // 1. LOCK INPUT
-  minutesInput.disabled = true;
-  if (targetInput) targetInput.disabled = true;
-  if (noteInput) noteInput.disabled = true;
-
-  // 2. KALKULASI TIMESTAMP
-  const sekarang = new Date().getTime();
-  const durasiMilidetik = focusValue * 60 * 1000;
-  const waktuSelesai = sekarang + durasiMilidetik;
-
-  // 3. SIMPAN PAKET DATA TIMER KE LOCALSTORAGE (SUDAH DIGEMBOK PAKE UID USER 🔥)
-  const dataTimer = {
-    endTime: waktuSelesai,
-    initialDuration: focusValue,
-    target: targetInput ? targetInput.value : "",
-    note: noteInput ? noteInput.value : ""
-  };
-  
-  localStorage.setItem(`activeFocusTimer_${auth.currentUser.uid}`, JSON.stringify(dataTimer));
-
-  // 4. JALANKAN MESIN COUNTDOWN
-  jalankanHitungMundur(waktuSelesai, dataTimer.target, dataTimer.note, dataTimer.initialDuration);
-}
-
-
-function jalankanHitungMundur(endTime, targetText, noteText, initialDuration) {
-  let targetDisplay = document.getElementById("targetDisplay");
-  let noteDisplay = document.getElementById("noteDisplay");
-  
-  if (targetDisplay) targetDisplay.innerText = targetText || "Belajar";
-  if (noteDisplay) noteDisplay.innerText = noteText || "-";
-
-  let minutesInput = document.getElementById("focusMinutes");
-  let targetInput = document.getElementById("focusTarget");
-  let noteInput = document.getElementById("focusNote");
-  if (minutesInput) minutesInput.disabled = true;
-  if (targetInput) targetInput.disabled = true;
-  if (noteInput) noteInput.disabled = true;
-
-  const startBtn = document.getElementById("btnMulaiFocus");
-  if (startBtn) {
-    startBtn.innerText = "Selesai";
-    startBtn.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
-    startBtn.style.boxShadow = "0 4px 12px rgba(16, 185, 129, 0.2)";
-    startBtn.disabled = false; // PASTIKAN FALSE BIAR BISA DIKLIK USER
-  }
-
-  clearInterval(focusInterval);
-  
-  focusInterval = setInterval(() => {
-    if (!auth.currentUser) return;
-    const sekarang = new Date().getTime();
-    const selisihMilidetik = endTime - sekarang;
-    let sisaDetikTotal = Math.ceil(selisihMilidetik / 1000);
-    
-    // KONDISI 1: JIKA WAKTU HABIS ALAMI (00:00)
-    if (sisaDetikTotal <= 0) {
-      clearInterval(focusInterval);
-      localStorage.removeItem(`activeFocusTimer_${auth.currentUser.uid}`);
-
-      let timerDisplay = document.getElementById("timerDisplay");
-      if (timerDisplay) timerDisplay.innerText = "00:00";
-
-      bukaGembokFormInputDanKembalikanTombol();
-
-      catatHistoryFocusKeLokal(targetText, initialDuration);
-
-      if (Notification.permission === "granted") {
-        new Notification("⏰ Focus Mode Selesai!", {
-          body: `🎉 Sesi belajar "${targetText || 'Fokus'}" sudah kelar, yaa! Hebattt kamu sudah produktif hari ini 🌸`,
-          icon: '/flower.png',
-          requireInteraction: true
-        });
-      }
-
-      alert(`🎉 Focus session selesai!\nHebattt kamu sudah belajar: ${targetText || 'Fokus'} 🌸`);
-      return;
-    }
-
-    let minutes = Math.floor(sisaDetikTotal / 60);
-    let seconds = sisaDetikTotal % 60;
-    
-    let timerDisplay = document.getElementById("timerDisplay");
-    if (timerDisplay) {
-      timerDisplay.innerText = String(minutes).padStart(2, '0') + ":" + String(seconds).padStart(2, '0');
-    }
-  }, 1000);
-}
-
-// KONDISI 2: USER KLIK TOMBOL "SELESAI" SEBELUM WAKTU HABIS (MANUAL STOP)
-function hentikanTimerTengahJalanManual() {
-  clearInterval(focusInterval);
-  
-  if (!auth.currentUser) return;
-
-  // PERBAIKAN: Ambil data menggunakan UID user aktif agar target dan durasi aslinya terbaca
-  const simpananTimer = localStorage.getItem(`activeFocusTimer_${auth.currentUser.uid}`);
-  if (simpananTimer) {
-    const dataTimer = JSON.parse(simpananTimer);
-    catatHistoryFocusKeLokal(dataTimer.target, dataTimer.initialDuration);
-  }
-
-  localStorage.removeItem(`activeFocusTimer_${auth.currentUser.uid}`);
-  
-  let timerDisplay = document.getElementById("timerDisplay");
-  if (timerDisplay) timerDisplay.innerText = "00:00";
-
-  bukaGembokFormInputDanKembalikanTombol();
-  alert("Sesi fokus telah diselesaikan secara manual dan dicatat ke jurnal! 🌸");
-}
-
-function resetFocusTimer() {
-  if (!auth.currentUser) return;
-  clearInterval(focusInterval);
-  localStorage.removeItem(`activeFocusTimer_${auth.currentUser.uid}`);
-  
-  let timerDisplay = document.getElementById("timerDisplay");
-  if (timerDisplay) timerDisplay.innerText = "00:00";
-  
-  let targetDisplay = document.getElementById("targetDisplay");
-  let noteDisplay = document.getElementById("noteDisplay");
-  if (targetDisplay) targetDisplay.innerText = "Belum ada target belajar.";
-  if (noteDisplay) noteDisplay.innerText = "Belum ada catatan.";
-
-  bukaGembokFormInputDanKembalikanTombol();
-
-  let minutesInput = document.getElementById("focusMinutes");
-  let targetInput = document.getElementById("focusTarget");
-  let noteInput = document.getElementById("focusNote");
-  if (minutesInput) minutesInput.value = "";
-  if (targetInput) targetInput.value = "";
-  if (noteInput) noteInput.value = "";
-}
-
-
-function bukaGembokFormInputDanKembalikanTombol() {
-  let minutesInput = document.getElementById("focusMinutes");
-  let targetInput = document.getElementById("focusTarget");
-  let noteInput = document.getElementById("focusNote");
-  
-  if (minutesInput) minutesInput.disabled = false;
-  if (targetInput) targetInput.disabled = false;
-  if (noteInput) noteInput.disabled = false;
-
-  const startBtn = document.getElementById("btnMulaiFocus");
-  if (startBtn) {
-    startBtn.innerText = "Mulai";
-    startBtn.style.background = "#4b5cff"; 
-    startBtn.style.boxShadow = "0 4px 12px rgba(75, 92, 255, 0.18)";
-    startBtn.disabled = false;
-  }
-}
-
-function catatHistoryFocusKeLokal(targetText, durasiMenit) {
-  if (!auth.currentUser) return;
-  let focusHistory = JSON.parse(localStorage.getItem(`focusHistoryData_${auth.currentUser.uid}`)) || [];
-  
-  focusHistory.push({
-    target: targetText || "Fokus Belajar",
-    duration: durasiMenit || 25,
-    timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-  });
-  
-  localStorage.setItem(`focusHistoryData_${auth.currentUser.uid}`, JSON.stringify(focusHistory));
-  displayFocusHistory();
-}
-
-
-function deleteFocusHistory(index) {
-  if (!auth.currentUser) return;
-
-  // PERBAIKAN: Ambil dan simpan kembali ke key ber-UID agar sinkron dengan fungsi penampil riwayat
-  let focusHistory = JSON.parse(localStorage.getItem(`focusHistoryData_${auth.currentUser.uid}`)) || [];
-  focusHistory.splice(index, 1);
-  localStorage.setItem(`focusHistoryData_${auth.currentUser.uid}`, JSON.stringify(focusHistory));
-  displayFocusHistory();
-}
-
-function cekSesiTimerPasRefresh() {
-  if (!auth.currentUser) return;
-
-  // PERBAIKAN: Membaca sesi aktif menggunakan UID user yang login agar tidak bernilai null saat reload
-  const simpananTimer = localStorage.getItem(`activeFocusTimer_${auth.currentUser.uid}`);
-  if (simpananTimer) {
-    const dataTimer = JSON.parse(simpananTimer);
-    const sekarang = new Date().getTime();
-
-    if (dataTimer.endTime > sekarang) {
-      jalankanHitungMundur(dataTimer.endTime, dataTimer.target, dataTimer.note, dataTimer.initialDuration);
-    } else {
-      localStorage.removeItem(`activeFocusTimer_${auth.currentUser.uid}`);
-    }
-  }
-}
-
-/**
- * D. FOCUS TIMER HISTORY HANDLER (Permanen Tracker dengan Tombol Hapus)
- */
-window.displayFocusHistory = function() {
-  const historyList = document.getElementById("focusHistoryList");
-  if (!historyList || !auth.currentUser) return;
-  historyList.innerHTML = "";
-
-  let focusHistory = JSON.parse(localStorage.getItem(`focusHistoryData_${auth.currentUser.uid}`)) || [];
-
-  if (focusHistory.length === 0) {
-    historyList.innerHTML = `<p style="color: #94a3b8; font-style: italic; font-size: 14px;">Belum ada riwayat sesi fokus.</p>`;
-    return;
-  }
-
-  focusHistory.forEach((log, index) => {
-    historyList.innerHTML += `
-      <div class="history-item-box" style="background: #eff6ff; padding: 14px 18px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #4b5cff; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <span style="font-weight: 700; color: #1e293b;">🎯 Sesi: ${log.target}</span>
-          <p style="font-size: 12px; color: #4b5cff; margin-top: 4px;">⏱️ Durasi: ${log.duration} Menit | Waktu: ${log.timestamp}</p>
-        </div>
-        <button onclick="deleteFocusHistory(${index})" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">
-          Hapus Jejak
-        </button>
-      </div>`;
-  });
-}
-
-// 2. PEMICU AMAN (Menjamin HTML ter-render sempurna saat web dimuat)
-document.addEventListener("DOMContentLoaded", () => {
-  cekSesiTimerPasRefresh();
-  displayFocusHistory();
-});
-
-/* ================= EXPOSE TO GLOBAL ================= */
-window.startFocusTimer = startFocusTimer;
-window.resetFocusTimer = resetFocusTimer;
-window.deleteFocusHistory = deleteFocusHistory;
-
-
-
-
 
 /* ================= SYSTEM UTILITY (NOTIFIKASI & SUARA) ================= */
-if(Notification.permission !== "granted"){
+if (Notification.permission !== "granted" && Notification.permission !== "denied") {
   Notification.requestPermission();
 }
 
+// ✅ Cukup deklarasikan SATU instance audio global di atas agar hemat memori RAM
+const alarmSound = new Audio("./alarm.mp3"); 
+alarmSound.volume = 1.0;
 
-let alarmSound = new Audio("alarm.mp3");
+// ✅ Fungsi Pintar Pemutar Audio (Kebal Blokir Autoplay Browser)
+function putarSuaraAlarm() {
+  alarmSound.play()
+    .then(() => {
+      console.log("🔊 Alarm berhasil berbunyi!");
+    })
+    .catch((error) => {
+      console.warn("⚠️ Suara ditangguhkan browser (Autoplay Policy). User harus berinteraksi dulu dengan halaman.");
+      
+      // Membuat toast/notifikasi kecil di pojok layar jika suara tersendat
+      const pengingatKlik = document.createElement("div");
+      pengingatKlik.innerHTML = `
+        <div style="position: fixed; bottom: 20px; right: 20px; bg-color: #ef4444; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; cursor: pointer; font-family: sans-serif; font-size: 14px;" onclick="this.remove()">
+          🚨 <b>MindSpace:</b> Ketuk layar ini untuk mengaktifkan suara alarm pengingat kuliah & tugas! 🌸
+        </div>
+      `;
+      document.body.appendChild(pengingatKlik);
+    });
+}
 
-function sendNotification(title, message){
-  if(Notification.permission === "granted"){
+function sendNotification(title, message) {
+  if (Notification.permission === "granted") {
     new Notification(title, {
       body: message,
       icon: "/flower.png"
     });
   }
-  alarmSound.play().catch(e => console.log("Audio play ditangguhkan oleh kebijakan autoplay browser"));
+  putarSuaraAlarm(); // ✅ Panggil fungsi pintar
 }
 
-/* ================= INITIAL LOAD DATA ON STARTUP ================= */
-// Panggil penayangan data otomatis saat file diload pertama kali
-//tampilkanJadwalDashboard();
-//tampilkanTodoDashboard();
-//tampilkanWellnessDashboard();
-
-/* ================= JALUR EKSPOR WINDOW GLOBAL ================= */
-window.showRegister = showRegister;
-window.showLogin = showLogin;
-window.register = register;
-window.login = login;
-window.loginDenganGoogle = loginDenganGoogle;
-window.logout = logout;
-window.forgotPassword = forgotPassword;
-window.toggleMenu = toggleMenu;
-window.openProfile = openProfile;
-window.privacySecurity = privacySecurity;
-window.scrollDashboard = scrollDashboard;
-window.addSchedule = addSchedule;
-window.deleteSchedule = deleteSchedule;
-window.addTask = addTask;
-window.completeTask = completeTask;
-window.deleteTask = deleteTask;
-window.addWellness = addWellness;
-window.completeWellness = completeWellness;
-window.deleteWellness = deleteWellness;
-window.startFocusTimer = startFocusTimer;
-window.resetFocusTimer = resetFocusTimer;
-window.changePassword = changePassword;
-window.aktifkanNotificationFCM = aktifkanNotificationFCM;
-
-// Fungsi Fitur Baru Lavender (Sudah terdaftar aman ✅)
-window.tambahJadwalKuliah = tambahJadwalKuliah;
-window.tampilkanJadwalDashboard = tampilkanJadwalDashboard;
-window.hapusJadwal = hapusJadwal;
-
-window.tambahTodoTugas = tambahTodoTugas;
-window.tampilkanTodoDashboard = tampilkanTodoDashboard;
-window.hapusTodo = hapusTodo;
-
-window.tambahWellnessLog = tambahWellnessLog;
-window.tampilkanWellnessDashboard = tampilkanWellnessDashboard;
-window.hapusWellness = hapusWellness;
-
-window.mulaiFocusMode = mulaiFocusMode;
-window.stopFocusMode = stopFocusMode;
-
-
-
-
+/* ================= INITIALIZE FCM MESSAGING ================= */
 const messaging = getMessaging(app);
-
 
 function aktifkanNotificationFCM() {
   Notification.requestPermission().then((permission) => {
     if (permission === 'granted') {
       console.log('Izin notifikasi diberikan.');
       
-      // Ambil token perangkat dari Google
       getToken(messaging, { 
         vapidKey: 'BPyZbomuMFw7K1C7RbAKX7-0R2crOwKSCD7txHAD5Z8xVeoOCzzLL3AZo58bGLw7SBhgwCQ_WmoKaCekkROhhp0' 
       })
@@ -1275,46 +310,35 @@ function aktifkanNotificationFCM() {
   });
 }
 
-// 4. Jika aplikasi kebetulan LAGI DIBUKA, tangkap notifnya lewat sini agar gak bentrok
 onMessage(messaging, (payload) => {
   console.log('Notif masuk pas aplikasi kebuka:', payload);
   alert(`📢 ${payload.notification.title}\n\n${payload.notification.body}`);
 });
 
-function bersihkanWellnessGantiHariOtomatis() {
-  // 1. TAMBAHKAN PAGAR PENGAMAN: Jika auth belum siap atau user null, langsung keluar dari fungsi
+/* ================= AUTOMATION AUTOMATIC CLEANER ================= */
+window.bersihkanWellnessGantiHariOtomatis = function() {
   if (!auth.currentUser) {
     console.log("Satpam Wellness: Firebase belum siap, pembersihan ditunda.");
     return; 
   }
-
+  
+  const uidAman = auth.currentUser.uid; 
   const tanggalHariIni = new Date().toDateString(); 
-  const tanggalTerakhirSimpan = localStorage.getItem("lastWellnessDate");
-
+  const tanggalTerakhirSimpan = ambilDataAman(`lastWellnessDate_${uidAman}`);
+  
   if (tanggalTerakhirSimpan !== tanggalHariIni) {
-    // Sekarang baris ini 100% aman karena auth.currentUser dijamin tidak null
-    localStorage.removeItem(`wellnessLogs_${auth.currentUser.uid}`);
-    dataWellness = [];
-    localStorage.setItem("lastWellnessDate", tanggalHariIni);
-    console.log("Satpam Wellness: Hari baru terdeteksi, logs berhasil dibersihkan!");
+    // ✅ PERBAIKAN JALUR GANDA: Bersihkan log di lokal dan sinkronkan pengosongan ke cloud saat ganti hari
+    window.sinkronisasiKeCloudDanLokal(uidAman, `wellnessLogs_${uidAman}`, "wellnessLogs", []);
+    if (typeof wellnessData !== 'undefined') wellnessData = [];
+    
+    simpanDataAman(`lastWellnessDate_${uidAman}`, tanggalHariIni);
+    console.log("Satpam Wellness: Hari baru terdeteksi, logs berhasil dibersihkan dari cloud & lokal!");
   }
 }
 
+/* ================= PROGRESSIVE WEB APPS (PWA) UTILITY ================= */
+let deferredPrompt; 
 
-// Jalankan otomatis fungsi pembersih ganti hari dan render semua histori saat halaman dimuat
-document.addEventListener("DOMContentLoaded", () => {
-  bersihkanWellnessGantiHariOtomatis();
-  displayTodoHistory();
-  displayWellnessHistory();
-  displayFocusHistory();
-});
-
-// Dan jangan lupa ekspos ke global jika tombol HTML mau ikutan manggil
-window.aktifkanNotificationFCM = aktifkanNotificationFCM;
-
-let deferredPrompt; // Variabel penampung pemicu instalasi
-
-// Biarkan Chrome yang memutuskan kapan tombol ini layak muncul
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
@@ -1323,8 +347,11 @@ window.addEventListener('beforeinstallprompt', (e) => {
   if (tombolInstal) {
     tombolInstal.style.display = 'inline-block'; 
     
-    tombolInstal.addEventListener('click', () => {
-      tombolInstal.style.display = 'none';
+    const tombolBaru = tombolInstal.cloneNode(true);
+    tombolInstal.parentNode.replaceChild(tombolBaru, tombolInstal);
+    
+    tombolBaru.addEventListener('click', () => {
+      tombolBaru.style.display = 'none';
       deferredPrompt.prompt();
       
       deferredPrompt.userChoice.then((choiceResult) => {
@@ -1332,7 +359,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
           console.log('User gokil, sukses instal MindSpace! 🌸');
         } else {
           console.log('User nolak instal.');
-          tombolInstal.style.display = 'inline-block';
+          tombolBaru.style.display = 'inline-block';
         }
         deferredPrompt = null;
       });
@@ -1346,314 +373,564 @@ window.addEventListener('appinstalled', () => {
   if (tombolInstal) tombolInstal.style.display = 'none';
 });
 
-
-
-// 1. STRUKTUR UTAMA SEGMENT JADWAL KULIAH 
-
-function tambahJadwalKuliah() {
-  let course = document.getElementById("courseInput")?.value || "";
-  let day = document.getElementById("dayInput")?.value || ""; 
-  let start = document.getElementById("startTime")?.value || "";
-
-  if (course === "" || day === "" || start === "") {
-    alert("Isi semua data jadwal kuliah!");
+/* ================= 1. STRUKTUR UTAMA SEGMENT JADWAL KULIAH ================= */
+window.tambahJadwalKuliah = function() {
+  if (!auth.currentUser) {
+    alert("Maaf, silakan login terlebih dahulu untuk mencatat jadwal kuliah!");
     return;
   }
 
-  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-  const dataJadwal = JSON.parse(localStorage.getItem(`jadwalKuliah_${uidAman}`)) || [];
+  const inputNamaMK = document.getElementById("scheduleInput");
+  const inputHari = document.getElementById("scheduleDay");
+  const inputJam = document.getElementById("scheduleTime");
+
+  const namaMK = inputNamaMK?.value.trim() || "";
+  const hariMK = inputHari?.value || "";
+  const jamMK = inputJam?.value || "";
+
+  if (namaMK === "" || hariMK === "" || jamMK === "") {
+    alert("Wajib isi Nama Mata Kuliah, Hari, dan Jam Kuliah!");
+    return;
+  }
+
+  const uidAman = auth.currentUser.uid; 
+  const dataJadwalLokal = ambilDataAman(`jadwalKuliah_${uidAman}`) || [];
   
   const jadwalBaru = {
-    id: 'jadwal_' + Date.now(),
-    matkul: course,
-    hari: day, 
-    jam: start      
+    id: 'sched_' + Date.now(),
+    matakuliah: namaMK,
+    hari: hariMK,
+    jam: jamMK
   };
   
-  dataJadwal.push(jadwalBaru);
-  localStorage.setItem(`jadwalKuliah_${uidAman}`, JSON.stringify(dataJadwal));
+  dataJadwalLokal.push(jadwalBaru);
   
-  console.log('Jadwal berhasil disimpen di memori lokal! 🪻');
-  tampilkanJadwalDashboard(); 
+  // ✅ GANTI KODE LAMA DENGAN JALUR GANDA INI
+  window.sinkronisasiKeCloudDanLokal(uidAman, `jadwalKuliah_${uidAman}`, "jadwalKuliah", dataJadwalLokal);
+  schedules = dataJadwalLokal; 
 
-  if (document.getElementById("courseInput")) document.getElementById("courseInput").value = "";
-  if (document.getElementById("dayInput")) document.getElementById("dayInput").value = "";
-  if (document.getElementById("startTime")) document.getElementById("startTime").value = "";
+  if (inputNamaMK) inputNamaMK.value = "";
+  if (inputHari) inputHari.value = "";
+  if (inputJam) inputJam.value = "";
+
+  if (typeof window.sinkronisasiDanRender === "function") window.sinkronisasiDanRender();
 }
 
-
-function tampilkanJadwalDashboard() {
-  const containerJadwal = document.getElementById('containerListJadwal'); 
-  if (!containerJadwal) return;
+window.tampilkanJadwalDashboard = function() {
+  const isiTabelJadwal = document.getElementById('scheduleList'); 
+  const containerDashboard = document.getElementById('containerListJadwal');
   
-  dataJadwal = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
-  containerJadwal.innerHTML = ''; 
+  if (!auth.currentUser) return;
+  const uidAman = auth.currentUser.uid;
+  const dataJadwalMurni = ambilDataAman(`jadwalKuliah_${uidAman}`) || [];
   
-  if (dataJadwal.length === 0) {
-    containerJadwal.innerHTML = '<p style="color: #666; text-align: center;">Belum ada jadwal kuliah yang diinput.</p>';
-    return;
+  // URUTAN RENDER 1: Halaman jadwal.html (Tabel)
+  if (isiTabelJadwal) {
+    isiTabelJadwal.innerHTML = ''; 
+    if (dataJadwalMurni.length === 0) {
+      isiTabelJadwal.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #94a3b8; font-style: italic;">Belum ada jadwal kuliah yang diinput.</td></tr>';
+    } else {
+      dataJadwalMurni.sort((a, b) => a.jam.localeCompare(b.jam));
+      dataJadwalMurni.forEach(j => {
+        isiTabelJadwal.innerHTML += `
+          <tr>
+            <td><b>${j.hari}</b></td>
+            <td>${j.matkul}</td>
+            <td>${j.jam} ${j.end ? ' - ' + j.end : ''} WIB</td>
+            <td>${j.note}</td>
+            <td>
+              <button class="btn-hapus-jadwal" data-id="${j.id}" style="background-color: #ef4444; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Hapus</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
   }
   
-  dataJadwal.forEach(j => {
-    containerJadwal.innerHTML += `
-      <div class="wellness-card" id="${j.id}">
-        <h3>🪻 ${j.matkul}</h3>
-        <p><strong>Hari:</strong> ${j.hari}</p>
-        <p><strong>Jam Masuk:</strong> ${j.jam} WIB</p>
-        <div class="wellness-buttons">
-          <button class="delete-btn" onclick="hapusJadwal('${j.id}')">Hapus</button>
-        </div>
-      </div>
-    `;
+  // URUTAN RENDER 2: Halaman home.html (Card)
+  if (containerDashboard) {
+    containerDashboard.innerHTML = '';
+    if (dataJadwalMurni.length === 0) {
+      containerDashboard.innerHTML = '<p style="color: #94a3b8; text-align: center; font-style: italic;">Belum ada jadwal hari ini.</p>';
+    } else {
+      dataJadwalMurni.forEach(j => {
+        containerDashboard.innerHTML += `
+          <div class="wellness-card" id="${j.id}">
+            <h3>🪻 ${j.matkul}</h3>
+            <p><strong>Hari:</strong> ${j.hari}</p>
+            <p><strong>Jam:</strong> ${j.jam} WIB</p>
+            <div class="wellness-buttons" style="margin-top: 10px;">
+              <button class="btn-hapus-jadwal" data-id="${j.id}">Hapus</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+  }
+
+  // ✅ KENDALI BARU: Mengikat fungsi Hapus tanpa onclick HTML
+  document.querySelectorAll('.btn-hapus-jadwal').forEach(tombol => {
+    tombol.addEventListener('click', (e) => {
+      const idJadwal = e.target.getAttribute('data-id');
+      if (typeof window.hapusJadwal === 'function') window.hapusJadwal(idJadwal);
+    });
   });
 }
 
-function hapusJadwal(idJadwal) {
-  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-  if (!uidAman) return;
+window.hapusJadwal = function(idJadwal) {
+  if (!auth.currentUser) return;
+  const uidAman = auth.currentUser.uid;
 
-  const dataJadwalLokal = JSON.parse(localStorage.getItem(`jadwalKuliah_${uidAman}`)) || [];
+  const dataJadwalLokal = ambilDataAman(`jadwalKuliah_${uidAman}`) || [];
   const hasilFilter = dataJadwalLokal.filter(j => j.id !== idJadwal);
   
-  localStorage.setItem(`jadwalKuliah_${uidAman}`, JSON.stringify(hasilFilter));
-  tampilkanJadwalDashboard();
+  // ✅ GANTI KODE LAMA DENGAN JALUR GANDA INI
+  window.sinkronisasiKeCloudDanLokal(uidAman, `jadwalKuliah_${uidAman}`, "jadwalKuliah", hasilFilter);
+  schedules = hasilFilter;
+  
+  console.log("Jadwal sukses diperbarui di cloud & lokal! 🧼 Cloud+Lokal");
+  
+  if (typeof window.sinkronisasiDanRender === "function") {
+    window.sinkronisasiDanRender();
+  } else {
+    if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
+  }
 }
-window.hapusJadwal = hapusJadwal;
 
-
-// =========================================================================
-// 2. SISTEM SATPAM OTOMATIS: PENGAWAS JADWAL H-20 & H-5 (CEK TIAP MENIT)
-// =========================================================================
+/* ================= 2. SATPAM JADWAL H-20 & H-5 ================= */
 let rentangWaktuTerakhir = ""; 
 
 setInterval(() => {
   if (!auth.currentUser) return;
+  
+  const uidAman = auth.currentUser.uid;
   const sekarang = new Date();
   
+  // LOGIKA VARIABEL YANG TADI HILANG KITA BUAT DI SINI
   const daftarHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-  const hariIni = daftarHari[sekarang.getDay()]; 
-  
+  const hariIni = daftarHari[sekarang.getDay()];
   const totalMenitSekarang = (sekarang.getHours() * 60) + sekarang.getMinutes();
-  
-  const kunciMenit = `${sekarang.getHours()}:${sekarang.getMinutes()}`;
+  const kunciMenit = `${hariIni}_${totalMenitSekarang}`;
+
   if (rentangWaktuTerakhir === kunciMenit) return;
 
-  const ambilDataJadwalLokal = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
+  const ambilDataJadwalLokal = ambilDataAman(`jadwalKuliah_${uidAman}`) || [];
 
   ambilDataJadwalLokal.forEach(jadwal => {
     if (jadwal.hari === hariIni) {
-      
       const [jamJadwal, menitJadwal] = jadwal.jam.split(':').map(Number);
       const totalMenitJadwal = (jamJadwal * 60) + menitJadwal;
-      
       const selisihMenit = totalMenitJadwal - totalMenitSekarang;
 
-      // PERBAIKAN LOGIKA: Dikembalikan murni ke target H-20 menit asli
       if (selisihMenit === 20) {
         rentangWaktuTerakhir = kunciMenit;
-        triggerNotifJadwalOffline(jadwal.matkul, "20 menit lagi masuk, yaa! Siap-siap otw kelas.");
-      }
-      
-      // PERBAIKAN LOGIKA: Dikembalikan murni ke target H-5 menit asli
-      else if (selisihMenit === 5) {
+        sendNotification(`🚨 Kelas ${jadwal.matkul}`, "20 menit lagi masuk, yaa! Siap-siap otw kelas.");
+      } else if (selisihMenit === 5) {
         rentangWaktuTerakhir = kunciMenit;
-        triggerNotifJadwalOffline(jadwal.matkul, "5 menit lagi kelas dimulai! Jangan nyasar, gass masuk.");
+        sendNotification(`🚨 Kelas ${jadwal.matkul}`, "5 menit lagi kelas dimulai! Jangan nyasar, gass masuk.");
       }
     }
   });
-
 }, 30000); 
 
-
-function triggerNotifJadwalOffline(namaMatkul, pesanKustom) {
-  if (Notification.permission === 'granted') {
-    navigator.serviceWorker.ready.then((registration) => {
-      registration.showNotification(`🪻 PENGINGAT JADWAL: ${namaMatkul}`, {
-        body: pesanKustom, 
-        icon: '/flower.png', 
-        vibrate: [300, 100, 300], 
-        badge: '/flower.png',
-        tag: 'jadwal-alert-' + namaMatkul + '-' + (pesanKustom.includes('20') ? '20' : '5'),
-        requireInteraction: true 
-      });
-    });
+/* ================= 3. STRUKTUR UTAMA SEGMENT TO DO TASKS ================= */
+window.tambahTodoTugas = function() {
+  if (!auth.currentUser) {
+    alert("Maaf, silakan login terlebih dahulu untuk mencatat tugas!");
+    return;
   }
-}
 
+  const inputNama = document.getElementById("taskInput");
+  const inputTanggal = document.getElementById("deadlineDate");
+  const inputJam = document.getElementById("deadlineTime");
+  const inputCatatan = document.getElementById("taskNote");
 
-// =========================================================================
-// 1. STRUKTUR UTAMA SEGMENT TO-DO LIST (LAVENDER PREMIUM) WITH OFFLINE NOTIF
-// =========================================================================
+  const namaTugas = inputNama?.value.trim() || "";
+  let tanggalDeadline = inputTanggal?.value || ""; 
+  const jamDeadline = inputJam?.value || "";
+  const catatanTugas = inputCatatan?.value.trim() || "-";
 
-function tambahTodoTugas(namaTugas, tanggalDeadline, jamDeadline) {
-  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-  const dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${uidAman}`)) || [];
+  if (namaTugas === "" || tanggalDeadline === "" || jamDeadline === "") {
+    alert("Wajib isi Nama Tugas, Tanggal, dan Jam Deadline!");
+    return;
+  }
+
+  const uidAman = auth.currentUser.uid; 
+  const dataTodoLokal = ambilDataAman(`todoTugas_${uidAman}`) || [];
   
   const tugasBaru = {
     id: 'todo_' + Date.now(),
     tugas: namaTugas,
     tanggal: tanggalDeadline, 
-    jam: jamDeadline         
+    jam: jamDeadline,
+    catatan: catatanTugas,
+    completed: false 
   };
   
-  dataTodo.push(tugasBaru);
-  localStorage.setItem(`todoTugas_${auth.currentUser.uid}`, JSON.stringify(dataTodo));
+  dataTodoLokal.push(tugasBaru);
+  
+  // ✅ PERBAIKAN JALUR GANDA: Amankan ke lokal dan kirim ke Firebase Cloud
+  window.sinkronisasiKeCloudDanLokal(uidAman, `todoTugas_${uidAman}`, "todoTugas", dataTodoLokal);
+  tasks = dataTodoLokal; 
 
-  console.log('Tugas baru sukses dikunci di memori lokal, yaa! 🪻');
-  tampilkanTodoDashboard(); 
+  console.log('Tugas baru sukses disinkronkan ke cloud & lokal! 📝☁️🔒');
+
+  if (inputNama) inputNama.value = "";
+  if (inputTanggal) inputTanggal.value = "";
+  if (inputJam) inputJam.value = "";
+  if (inputCatatan) inputCatatan.value = "";
+
+  if (typeof window.sinkronisasiDanRender === "function") window.sinkronisasiDanRender();
 }
 
-function tampilkanTodoDashboard() {
-  const containerTodo = document.getElementById('containerListTodo'); 
-  if (!containerTodo) return;
+window.tampilkanTodoDashboard = function() {
+  const containerTodo = document.getElementById('taskList'); 
+  if (!containerTodo || !auth.currentUser) return;
   
-  // PERBAIKAN AMAN: Beri proteksi jika auth.currentUser belum siap saat reload
-  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-  if (!uidAman) return; 
-
-  dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${uidAman}`)) || [];
+  const uidAman = auth.currentUser.uid;
+  const dataTodoMurni = ambilDataAman(`todoTugas_${uidAman}`) || [];
   containerTodo.innerHTML = '';
   
-  if (dataTodo.length === 0) {
-    containerTodo.innerHTML = '<p style="color: #666; text-align: center;">Tenang, yaa. Belum ada tugas yang numpuk.</p>';
+  const sekarang = new Date().getTime();
+
+  // PERBAIKAN FILTER: Tugas aktif adalah yang BELUM selesai DAN BELUM melewati jam deadline murni
+  const todoAktif = dataTodoMurni.filter(t => {
+    if (t.completed) return false; // Jika sudah selesai, buang dari dashboard
+    
+    // Periksa apakah waktu deadline sudah lewat atau belum
+    if (t.tanggal && t.jam) {
+      const waktuDeadline = parsingTanggalAman(t.tanggal, t.jam);
+      const timeDeadline = waktuDeadline.getTime();
+      if (!isNaN(timeDeadline) && sekarang > timeDeadline) {
+        return false; // Jika waktu sekarang sudah melewati deadline (hangus), buang dari dashboard aktif!
+      }
+    }
+    return true; // Sisanya adalah tugas yang benar-benar aktif murni
+  });
+
+  if (todoAktif.length === 0) {
+    containerTodo.innerHTML = '<p style="color: #94a3b8; text-align: center; font-style: italic; font-size: 14px;">Belum ada rencana tugas aktif atau semua tugas telah melewati deadline. Yuk tambah tugas baru!</p>';
     return;
   }
   
-  dataTodo.forEach(t => {
+  // Urutkan berdasarkan tanggal deadline terdekat
+  todoAktif.sort((a, b) => new Date(a.tanggal + 'T' + a.jam) - new Date(b.tanggal + 'T' + b.jam));
+
+  todoAktif.forEach(t => {
     containerTodo.innerHTML += `
-      <div class="wellness-card" id="${t.id}">
-        <h3>🌸 ${t.tugas}</h3>
-        <p><strong>Deadline:</strong> ${t.tanggal} | Pukul ${t.jam} WIB</p>
-        <div class="wellness-buttons">
-          <button class="done-btn" onclick="hapusTodo('${t.id}')">Selesai</button>
+      <div class="wellness-card" id="${t.id}" style="border-left: 4px solid #4b5cff; margin-bottom: 15px; padding: 15px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+        <h3>📝 ${t.tugas}</h3>
+        <p><strong>Batas Waktu:</strong> ${t.tanggal} - Jam ${t.jam} WIB</p>
+        <p style="color: #64748b; font-size: 14px;"><i>Catatan: ${t.catatan}</i></p>
+        <div class="wellness-buttons" style="margin-top: 10px;">
+          <button class="btn-selesai-todo" data-id="${t.id}" style="background-color: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold;">Selesai</button>
         </div>
+      </div>
+    `;
+  });
+
+  // Ikat fungsi Klik Tombol Selesai secara dinamis
+  document.querySelectorAll('.btn-selesai-todo').forEach(tombol => {
+    tombol.removeEventListener('click', penangananKlikSelesaiTodo); // Hindari duplikasi pengikatan event
+    tombol.addEventListener('click', penangananKlikSelesaiTodo);
+  });
+}
+
+// Fungsi pembantu independen untuk menangani aksi klik selesai
+function penangananKlikSelesaiTodo(e) {
+  const idTodo = e.target.getAttribute('data-id');
+  if (typeof window.hapusTodo === 'function') window.hapusTodo(idTodo);
+}
+
+
+window.hapusTodo = function(idTodo) {
+  if (!auth.currentUser) return;
+  const uidAman = auth.currentUser.uid; 
+
+  let dataTodoLokal = ambilDataAman(`todoTugas_${uidAman}`) || [];
+  const index = dataTodoLokal.findIndex(t => t.id === idTodo);
+  if (index !== -1) {
+    dataTodoLokal[index].completed = true;
+    
+    // ✅ PERBAIKAN JALUR GANDA: Perbarui status selesai ke lokal dan cloud
+    window.sinkronisasiKeCloudDanLokal(uidAman, `todoTugas_${uidAman}`, "todoTugas", dataTodoLokal);
+    tasks = dataTodoLokal; 
+    console.log("Tugas ditandai selesai di cloud & lokal! ✅☁️🔒");
+  }
+  
+  if (typeof window.sinkronisasiDanRender === "function") window.sinkronisasiDanRender();
+}
+
+function parsingTanggalAman(tanggalStr, jamStr) {
+  // Proteksi jika tanggalStr atau jamStr tidak ada/undefined
+  if (!tanggalStr || !jamStr) {
+    console.warn("Satpam Validasi: Menemukan data tanggal atau jam kosong!", { tanggalStr, jamStr });
+    return new Date(NaN); // Mengembalikan Date objek yang tidak valid secara aman
+  }
+  
+  let tanggalNormal = tanggalStr.replace(/\//g, "-");
+  return new Date(`${tanggalNormal}T${jamStr}:00`);
+}
+
+
+window.displayTodoHistory = function() {
+  const containerSelesai = document.getElementById('todoHistoryList');
+  if (!containerSelesai || !auth.currentUser) return;
+
+  const uidAman = auth.currentUser.uid;
+  const dataTodo = ambilDataAman(`todoTugas_${uidAman}`) || [];
+  containerSelesai.innerHTML = '';
+
+  const selesai = dataTodo.filter(t => t.completed);
+  if (selesai.length === 0) {
+    containerSelesai.innerHTML = '<p style="color: #94a3b8; font-style: italic; font-size: 14px;">Belum ada riwayat tugas selesai.</p>';
+    return;
+  }
+
+  selesai.forEach(t => {
+    containerSelesai.innerHTML += `
+      <div style="padding: 10px; background: #f0fdf4; border-left: 4px solid #10b981; margin-bottom: 8px; border-radius: 6px; font-size: 14px; text-align: left;">
+        ✅ <b>${t.tugas}</b> (Selesai dilakukan) <br>
+        <small style="color: #64748b;">Batas waktu asli: ${t.tanggal} jam ${t.jam} WIB</small>
       </div>
     `;
   });
 }
 
-function hapusTodo(idTodo) {
-  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-  if (!uidAman) return;
-  
-  const dataTodoLokal = JSON.parse(localStorage.getItem(`todoTugas_${uidAman}`)) || []; 
-  const hasilFilterTodo = dataTodoLokal.filter(t => t.id !== idTodo); 
-  
-  localStorage.setItem(`todoTugas_${uidAman}`, JSON.stringify(hasilFilterTodo));
-  tampilkanTodoDashboard();
+window.displayGagalHistory = function() {
+  const containerHangus = document.getElementById('todoGagalList');
+  if (!containerHangus || !auth.currentUser) return;
+
+  const uidAman = auth.currentUser.uid;
+  const dataTodo = ambilDataAman(`todoTugas_${uidAman}`) || [];
+  containerHangus.innerHTML = '';
+
+  const sekarang = new Date().getTime();
+  const hangus = dataTodo.filter(t => {
+    if (t.completed) return false;
+    // Pastikan properti tanggal dan jam ada sebelum di-parsing
+    if (!t.tanggal || !t.jam) return false; 
+    
+    const waktuDeadline = parsingTanggalAman(t.tanggal, t.jam);
+    const timeDeadline = waktuDeadline.getTime();
+    return isNaN(timeDeadline) ? false : sekarang > timeDeadline;
+  });
+
+  if (hangus.length === 0) {
+    containerHangus.innerHTML = '<p style="color: #94a3b8; font-style: italic; font-size: 14px;">Mantap! Tidak ada tugas hangus.</p>';
+    return;
+  }
+
+  hangus.forEach(t => {
+    containerHangus.innerHTML += `
+      <div style="padding: 10px; background: #fef2f2; border-left: 4px solid #ef4444; margin-bottom: 8px; border-radius: 6px; font-size: 14px; text-align: left;">
+        ⚠️ <b>${t.tugas}</b> (Melewati batas deadline) <br>
+        <small style="color: #64748b;">Hangus pada: ${t.tanggal} jam ${t.jam} WIB</small>
+      </div>
+    `;
+  });
 }
-window.hapusTodo = hapusTodo;
 
-
-// =========================================================================
-// 2. SATPAM TO-DO: PENGHITUNG SELISIH DEADLINE H-5 MENIT (OFFLINE TOTAL)
-// =========================================================================
+/* ================= 4. SATPAM TO-DO DEADLINE H-5 MIN ================= */
 let gembokTodoTerakhir = ""; 
 
 setInterval(() => {
   if (!auth.currentUser) return;
+  
+  const uidAman = auth.currentUser.uid;
   const sekarang = new Date();
   const timestampSekarang = sekarang.getTime();
   
-  const kunciMenitTodo = `${sekarang.getDate()}-${sekarang.getHours()}:${sekarang.getMinutes()}`;
-  if (gembokTodoTerakhir === kunciMenitTodo) return;
-
-  const dataTodo = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
+  // ✅ PERBAIKAN 5: Membaca secara aman terenkripsi
+  const dataTodo = ambilDataAman(`todoTugas_${uidAman}`) || [];
+  
+  let adaPerubahan = false;
 
   dataTodo.forEach(item => {
-    const stringDeadline = `${item.tanggal}T${item.jam}:00`;
-    const waktuDeadline = new Date(stringDeadline);
-    
+    if (item.completed) return;
+
+    const waktuDeadline = parsingTanggalAman(item.tanggal, item.jam);
     if (!isNaN(waktuDeadline.getTime())) {
       const timestampDeadline = waktuDeadline.getTime();
-      const selisihMenitTodo = Math.round((timestampDeadline - timestampSekarang) / 1000 / 60);
+      
+      const selisihMenit = Math.floor((timestampDeadline - timestampSekarang) / 1000 / 60);
+      if (selisihMenit === 5) {
+        triggerNotifTodoOffline(item.tugas);
+      }
 
-      // PERBAIKAN LOGIKA: Kembalikan murni ke target H-5 menit asli
-      if (selisihMenitTodo === 5) {
-        gembokTodoTerakhir = kunciMenitTodo; 
-        triggerNotifTodoOffline(item.tugas); 
+      if (timestampSekarang > timestampDeadline && !item.gagal) {
+        item.gagal = true; 
+        adaPerubahan = true;
+        triggerNotifTodoGagal(item.tugas);
       }
     }
   });
 
-}, 30000); 
-
+  if (adaPerubahan) {
+    // ✅ PERBAIKAN 6: Menyimpan status tugas gagal/hangus secara terenkripsi
+    simpanDataAman(`todoTugas_${uidAman}`, dataTodo);
+    
+    if (typeof window.tampilkanTodoDashboard === 'function') {
+      window.tampilkanTodoDashboard();
+    }
+  }
+}, 30000);
 
 function triggerNotifTodoOffline(namaTugas) {
+  // ✅ Panggil fungsi pemutar audio terpusat
+  putarSuaraAlarm();
+
+  // 2. Tampilkan Pop-up Visual (Service Worker / Desktop Notification)
   if (Notification.permission === 'granted') {
-    navigator.serviceWorker.ready.then((registration) => {
-      registration.showNotification('🚨 DEADLINE DEPAN MATA, yaa!', {
-        body: `Tugas "${namaTugas}" kamu sisa 5 menit lagi! Ayoo buruan submit ke sistem!`,
-        icon: '/flower.png', 
-        vibrate: [500, 100, 500, 100, 500], 
-        badge: '/flower.png',
-        tag: 'todo-alert-' + namaTugas,
-        requireInteraction: true 
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.showNotification('🚨 DEADLINE DEPAN MATA, yaa!', {
+          body: `Tugas "${namaTugas}" kamu sisa 5 menit lagi! Ayoo buruan submit ke sistem! 🌸`,
+          icon: '/flower.png', 
+          vibrate: [500, 100, 500, 100, 500], 
+          badge: '/flower.png',
+          tag: 'todo-alert-' + namaTugas,
+          requireInteraction: true 
+        });
+      }).catch(() => {
+        new Notification('🚨 DEADLINE DEPAN MATA, yaa!', { 
+          body: `Tugas "${namaTugas}" kamu sisa 5 menit lagi! Ayoo buruan submit! 🌸`, 
+          icon: '/flower.png' 
+        });
       });
+    } else {
+      new Notification('🚨 DEADLINE DEPAN MATA, yaa!', { 
+        body: `Tugas "${namaTugas}" kamu sisa 5 menit lagi! Ayoo buruan submit! 🌸`, 
+        icon: '/flower.png' 
+      });
+    }
+  }
+}
+
+function triggerNotifTodoGagal(namaTugas) {
+  if (Notification.permission === 'granted') {
+    new Notification('⚠️ TUGAS HANGUS!', {
+      body: `Yah, tugas "${namaTugas}" sudah melewati batas waktu. Yuk, jangan berkecil hati, segera cek daftar tugas gagal untuk evaluasi!`,
+      icon: '/flower.png',
+      tag: 'todo-gagal-' + namaTugas,
+      requireInteraction: true
     });
   }
 }
 
-// =========================================================================
-// 1. STRUKTUR UTAMA SEGMENT WELLNESS LOG (LAVENDER PREMIUM) WITH OFFLINE NOTIF
-// =========================================================================
+/* ================= 5. STRUKTUR UTAMA SEGMENT WELLNESS LOG ================= */
+window.tambahWellnessLog = function() {
+  if (!auth.currentUser) {
+    alert("Maaf, silakan login terlebih dahulu untuk mencatat rutinitas kesehatan!");
+    return;
+  }
 
-function tambahWellnessLog(namaAktivitas, jamMenitTarget) {
-  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-  const dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+  const inputAktivitas = document.getElementById("wellnessInput") || document.getElementById("activityInput") || document.getElementById("wellnessType");
+  const inputJamTarget = document.getElementById("wellnessTime") || document.getElementById("activityTime");
+  const inputCatatan = document.getElementById("wellnessNote") || document.getElementById("activityNote");
+
+  const namaAktivitas = inputAktivitas?.value || "";
+  const jamMenitTarget = inputJamTarget?.value || "";
+  const catatanWellness = inputCatatan?.value || "";
+
+  if (namaAktivitas === "" || jamMenitTarget === "") {
+    alert("Wajib isi nama rutinitas dan target jam operasional!");
+    return;
+  }
+
+  const uidAman = auth.currentUser.uid; 
+  const dataWellnessLokal = ambilDataAman(`wellnessLogs_${uidAman}`) || [];
   
   const logBaru = {
     id: 'well_' + Date.now(),
     aktivitas: namaAktivitas, 
-    jam: jamMenitTarget       
+    jam: jamMenitTarget,
+    type: namaAktivitas,
+    time: jamMenitTarget,
+    note: catatanWellness || "-",
+    completed: false 
   };
   
-  dataWellness.push(logBaru);
-  localStorage.setItem(`wellnessLogs_${auth.currentUser.uid}`, JSON.stringify(dataWellness));
+  dataWellnessLokal.push(logBaru);
+  
+  // ✅ PERBAIKAN JALUR GANDA: Kirim ke penyimpanan lokal dan Firebase Cloud
+  window.sinkronisasiKeCloudDanLokal(uidAman, `wellnessLogs_${uidAman}`, "wellnessLogs", dataWellnessLokal);
+  wellnessData = dataWellnessLokal;
 
-  console.log('Log kesehatan on-time berhasil dikunci di memori lokal, yaa! 🪻');
-  tampilkanWellnessDashboard(); 
+  console.log('Log kesehatan on-time berhasil dikunci ke cloud & lokal! 🪻☁️🔒');
+
+  if (inputAktivitas) inputAktivitas.value = "";
+  if (inputJamTarget) inputJamTarget.value = "";
+  if (inputCatatan) inputCatatan.value = "";
+
+  if (typeof window.sinkronisasiDanRender === "function") {
+    window.sinkronisasiDanRender();
+  } else {
+    if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
+  }
 }
 
-function tampilkanWellnessDashboard() {
+window.tampilkanWellnessDashboard = function() {
   const containerWellness = document.getElementById('containerListWellness'); 
-  if (!containerWellness) return;
+  if (!containerWellness || !auth.currentUser) return;
   
-  dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
+  const uidAman = auth.currentUser.uid;
+  // ✅ PERBAIKAN: Membaca secara aman terenkripsi
+  const dataWellnessMurni = ambilDataAman(`wellnessLogs_${uidAman}`) || [];
   containerWellness.innerHTML = '';
   
-  if (dataWellness.length === 0) {
-    containerWellness.innerHTML = '<p style="color: #666; text-align: center;">Belum ada target log kesehatan harian, yaa.</p>';
+  const wellnessAktif = dataWellnessMurni.filter(w => !w.completed);
+
+  if (wellnessAktif.length === 0) {
+    containerWellness.innerHTML = '<p style="color: #94a3b8; text-align: center; font-style: italic; font-size: 14px;">Belum ada target log kesehatan harian, yaa.</p>';
     return;
   }
   
-  dataWellness.forEach(w => {
+  wellnessAktif.sort((a, b) => a.jam.localeCompare(b.jam));
+
+  wellnessAktif.forEach(w => {
     containerWellness.innerHTML += `
       <div class="wellness-card" id="${w.id}">
         <h3>💧 ${w.aktivitas}</h3>
         <p><strong>Waktu Rutin:</strong> Setiap Hari jam ${w.jam} WIB</p>
-        <div class="wellness-buttons">
-          <button class="done-btn" onclick="hapusWellness('${w.id}')">Selesai</button>
+        <div class="wellness-buttons" style="margin-top: 10px;">
+          <button class="btn-selesai-wellness" data-id="${w.id}">Selesai</button>
         </div>
       </div>
     `;
   });
+
+  document.querySelectorAll('.btn-selesai-wellness').forEach(tombol => {
+    tombol.addEventListener('click', (e) => {
+      const idWellness = e.target.getAttribute('data-id');
+      if (typeof window.hapusWellness === 'function') window.hapusWellness(idWellness);
+    });
+  });
 }
 
-function hapusWellness(idWellness) {
-  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-  if (!uidAman) return;
+window.hapusWellness = function(idWellness) {
+  if (!auth.currentUser) return;
+  const uidAman = auth.currentUser.uid;
 
-  const dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
-  const hasilFilterWellness = dataWellnessLokal.filter(w => w.id !== idWellness);
+  let dataWellnessLokal = ambilDataAman(`wellnessLogs_${uidAman}`) || [];
+  const index = dataWellnessLokal.findIndex(w => w.id === idWellness);
+  if (index !== -1) {
+    dataWellnessLokal[index].completed = true;
+    
+    // ✅ PERBAIKAN JALUR GANDA: Perbarui status log selesai ke lokal dan cloud
+    window.sinkronisasiKeCloudDanLokal(uidAman, `wellnessLogs_${uidAman}`, "wellnessLogs", dataWellnessLokal);
+    wellnessData = dataWellnessLokal;
+    console.log("Log wellness ditandai selesai di cloud & lokal! ✅☁️🔒");
+  }
   
-  localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(hasilFilterWellness));
-  tampilkanWellnessDashboard();
+  if (typeof window.sinkronisasiDanRender === "function") {
+    window.sinkronisasiDanRender();
+  } else {
+    if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
+  }
 }
-window.hapusWellness = hapusWellness;
 
-
-// 2. SATPAM WELLNESS: PENGAWAS DETIK ON-TIME (CEK TIAP MENIT)
+/* ================= 6. SATPAM WELLNESS ON-TIME ================= */
 let gembokWellnessTerakhir = ""; 
 
 setInterval(() => {
@@ -1666,62 +943,194 @@ setInterval(() => {
 
   if (gembokWellnessTerakhir === waktuSekarang) return;
 
-  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
-  const dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+  const uidAman = auth.currentUser.uid; 
+  
+  // ✅ PERBAIKAN: Membaca secara aman terenkripsi
+  const dataWellness = ambilDataAman(`wellnessLogs_${uidAman}`) || [];
+  let adaNotifikasiWellnessDipicu = false;
 
-  const logCocok = dataWellness.find(w => w.jam === waktuSekarang);
+  dataWellness.forEach(w => {
+    const jamReminder = w.jam || w.time;
+    const namaAktivitas = w.aktivitas || w.type || "Reminder Kesehatan";
 
-  if (logCocok) {
+    if (jamReminder === waktuSekarang && !w.completed) {
+      if (typeof window.triggerNotifWellnessOffline === 'function') {
+        window.triggerNotifWellnessOffline(namaAktivitas);
+      }
+      adaNotifikasiWellnessDipicu = true;
+    }
+  });
+
+  if (adaNotifikasiWellnessDipicu) {
     gembokWellnessTerakhir = waktuSekarang; 
-    triggerNotifWellnessOffline(logCocok.aktivitas); 
   }
-}, 30000); 
-
+}, 30000);
 
 function triggerNotifWellnessOffline(namaAktivitas) {
+  console.log(`Memicu alarm wellness untuk: ${namaAktivitas} 🪻`);
+
+  // ✅ Panggil fungsi pemutar audio terpusat
+  putarSuaraAlarm();
+
+  // 2. Tampilkan Pop-up Visual
   if (Notification.permission === 'granted') {
-    navigator.serviceWorker.ready.then((registration) => {
-      registration.showNotification('🪻 WELLNESS CHECK-IN, yaa!', {
-        body: `Waktunya on-time untuk: "${namaAktivitas}". Jaga kesehatan jiwa dan fisik lu, gass eksekusi!`,
-        icon: '/flower.png', 
-        vibrate: [200, 100, 200, 100, 400], 
-        badge: '/flower.png',
-        tag: 'wellness-alert-' + namaAktivitas,
-        requireInteraction: true 
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.showNotification('🪻 WELLNESS CHECK-IN, yaa!', {
+          body: `Waktunya on-time untuk: "${namaAktivitas}". Jaga kesehatan jiwa dan fisik lu, gass eksekusi! 🌸`,
+          icon: 'flower.png', 
+          badge: 'flower.png',
+          vibrate: [200, 100, 200, 100, 400], 
+          tag: 'wellness-alert-' + namaAktivitas,
+          requireInteraction: true 
+        });
+      }).catch(() => {
+        new Notification('🪻 WELLNESS CHECK-IN, yaa!', { 
+          body: `Waktunya on-time untuk: "${namaAktivitas}". Jaga kesehatan jiwa dan fisik lu! 🌸`, 
+          icon: 'flower.png' 
+        });
       });
-    });
+    } else {
+      new Notification('🪻 WELLNESS CHECK-IN, yaa!', { 
+        body: `Waktunya on-time untuk: "${namaAktivitas}". Jaga kesehatan jiwa dan fisik lu! 🌸`, 
+        icon: 'flower.png' 
+      });
+    }
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  tampilkanWellnessDashboard();
-});
+window.displayWellnessHistory = function() {
+  const containerHistory = document.getElementById('containerWellnessHistory') || document.getElementById('listWellnessHistory');
+  if (!containerHistory || !auth.currentUser) return;
 
+  const uidAman = auth.currentUser.uid;
+  // ✅ PERBAIKAN: Membaca secara aman terenkripsi
+  const dataWellness = ambilDataAman(`wellnessLogs_${uidAman}`) || [];
+  containerHistory.innerHTML = '';
 
-// 1. STRUKTUR UTAMA SEGMEN FOCUS MODE (POMODORO LAVENDER) WITH OFFLINE NOTIF
+  const selesai = dataWellness.filter(w => w.completed);
+  if (selesai.length === 0) {
+    containerHistory.innerHTML = '<p style="color: #94a3b8; font-style: italic; text-align:center;">Belum ada rutinitas yang di-check-in hari ini.</p>';
+    return;
+  }
+
+  selesai.forEach(w => {
+    containerHistory.innerHTML += `
+      <div style="padding: 8px; border-bottom: 1px dashed #cbd5e1; font-size: 14px;">
+        🌟 <b>${w.aktivitas}</b> sukses diselesaikan pada target jam ${w.jam} WIB.
+      </div>
+    `;
+  });
+}
+
+window.displayFocusHistory = function() {
+  const containerFocus = document.getElementById('containerFocusHistory') || document.getElementById('listFocusHistory');
+  if (!containerFocus || !auth.currentUser) return;
+
+  const uidAman = auth.currentUser.uid;
+  // ✅ PERBAIKAN: Membaca riwayat fokus secara aman terenkripsi
+  const historyFocus = ambilDataAman(`focusHistory_${uidAman}`) || [];
+  containerFocus.innerHTML = '';
+
+  if (historyFocus.length === 0) {
+    containerFocus.innerHTML = '<p style="color: #94a3b8; font-style: italic; text-align:center;">Jurnal fokus masih kosong. Yuk mulai belajar!</p>';
+    return;
+  }
+
+  historyFocus.forEach(f => {
+    containerFocus.innerHTML += `
+      <div style="padding: 10px; background: #f8fafc; border-left: 4px solid #a855f7; margin-bottom: 8px; border-radius: 4px;">
+        📅 <b>${f.tanggal}</b> - ${f.jam}<br>
+        🎯 ${f.target} selama <b>${f.durasi} menit</b> secara penuh.
+      </div>
+    `;
+  });
+}
+
+/* ================= 7. STRUKTUR UTAMA SEGMEN FOCUS MODE (POMODORO) ================= */
 let timerFokus;
 let sisaDetikFokus = 0;
 let sedangBerjalan = false;
 
-function mulaiFocusMode(menitDurasi) {
+function catatRiwayatFocusSelesai(durasiMenit, targetNama) {
+  if (!auth.currentUser) return;
+  const uidAman = auth.currentUser.uid;
+  
+  // ✅ PERBAIKAN JALUR GANDA: Membaca riwayat lama secara terenkripsi
+  const riwayatLama = ambilDataAman(`focusHistory_${uidAman}`) || [];
+  
+  const waktuSekarang = new Date();
+  const opsiTanggal = { year: 'numeric', month: 'long', day: 'numeric' };
+  const formatTanggal = waktuSekarang.toLocaleDateString('id-ID', opsiTanggal);
+  const formatJam = String(waktuSekarang.getHours()).padStart(2, '0') + ":" + String(waktuSekarang.getMinutes()).padStart(2, '0') + " WIB";
+
+  const dataBaru = {
+    tanggal: formatTanggal,
+    jam: formatJam,
+    target: targetNama,
+    durasi: durasiMenit
+  };
+
+  riwayatLama.unshift(dataBaru); 
+  
+  // ✅ PERBAIKAN JALUR GANDA: Simpan ke lokal browser AND kirim ke database cloud Firebase Firestore!
+  window.sinkronisasiKeCloudDanLokal(uidAman, `focusHistory_${uidAman}`, "focusHistory", riwayatLama);
+  
+  console.log("Satpam Jurnal: Sesi fokus berhasil di-backup ke Cloud & Lokal! 📝🏆☁️🔒");
+  
+  // Memicu render ulang visual riwayat secara instan jika user sedang di halaman focus
+  if (typeof window.sinkronisasiDanRender === "function") window.sinkronisasiDanRender();
+}
+
+window.mulaiFocusMode = function(menitDurasi, targetTeks = "Sesi Fokus Belajar", catatanTeks = "-") {
   if (sedangBerjalan) return; 
   
+  if (!auth.currentUser) {
+    alert("Silakan login terlebih dahulu untuk memulai sesi fokus!");
+    return;
+  }
+
   sisaDetikFokus = menitDurasi * 60;
   sedangBerjalan = true;
   
-  console.log(`Focus Mode aktif selama ${menitDurasi} menit, yaa! Pintu offline dikunci. 🪻`);
+  const uidAman = auth.currentUser.uid; 
+  const targetWaktuSelesai = Date.now() + (sisaDetikFokus * 1000);
+  
+  simpanDataAman(`focusTargetEnd_${uidAman}`, targetWaktuSelesai);
+  simpanDataAman(`focusStatus_${uidAman}`, "running");
+  simpanDataAman(`focusTargetText_${uidAman}`, targetTeks);
+  simpanDataAman(`focusNoteText_${uidAman}`, catatanTeks);
+
+  console.log(`Focus Mode aktif selama ${menitDurasi} menit untuk: ${targetTeks}`);
+  
+  HubungkanVisualFocusDanKunci(true, targetTeks, catatanTeks);
   
   timerFokus = setInterval(() => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser) {
+      clearInterval(timerFokus);
+      return;
+    }
+    
+    const timestampSekarang = Date.now();
+    const sisaWaktuAsli = Math.max(0, Math.round((targetWaktuSelesai - timestampSekarang) / 1000));
+    sisaDetikFokus = sisaWaktuAsli;
+
     if (sisaDetikFokus <= 0) {
       clearInterval(timerFokus);
       sedangBerjalan = false;
       updateVisualTimer(0, 0);
       
-      triggerNotifFocusOffline(); 
-    } else {
-      sisaDetikFokus--;
+      // ✅ PERBAIKAN BALIKAN COST: Gunakan NULL aman daripada merusak token local storage bawaan browser
+      simpanDataAman(`focusTargetEnd_${uidAman}`, null);
+      simpanDataAman(`focusStatus_${uidAman}`, "stopped");
+      simpanDataAman(`focusTargetText_${uidAman}`, "");
+      simpanDataAman(`focusNoteText_${uidAman}`, "");
       
+      catatRiwayatFocusSelesai(menitDurasi, targetTeks);
+      triggerNotifFocusOffline(); 
+
+      HubungkanVisualFocusDanKunci(false, "Belum ada target belajar.", "Belum ada catatan.");
+    } else {
       const m = Math.floor(sisaDetikFokus / 60);
       const s = sisaDetikFokus % 60;
       updateVisualTimer(m, s);
@@ -1729,82 +1138,422 @@ function mulaiFocusMode(menitDurasi) {
   }, 1000); 
 }
 
-function stopFocusMode() {
+window.cekSesiTimerPasRefresh = function() {
+  if (!auth.currentUser) return;
+  const uidAman = auth.currentUser.uid; 
+
+  const statusTimer = ambilDataAman(`focusStatus_${uidAman}`);
+  const targetEnd = ambilDataAman(`focusTargetEnd_${uidAman}`);
+  
+  const teksTargetCadangan = ambilDataAman(`focusTargetText_${uidAman}`) || "Sesi Fokus Belajar";
+  const teksCatatanCadangan = ambilDataAman(`focusNoteText_${uidAman}`) || "-";
+  
+  if (statusTimer === "running" && targetEnd) {
+    // ✅ PERBAIKAN COST: Amankan parsing data agar kebal dari nilai string kosong / NaN
+    const targetWaktuMili = Number(targetEnd);
+    const sisaWaktuMili = targetWaktuMili - Date.now();
+    
+    if (sisaWaktuMili > 0) {
+      const sisaMenitKonversi = Math.ceil(sisaWaktuMili / 1000 / 60);
+      
+      sedangBerjalan = false; 
+      window.mulaiFocusMode(sisaMenitKonversi, teksTargetCadangan, teksCatatanCadangan);
+    } else {
+      simpanDataAman(`focusTargetEnd_${uidAman}`, null);
+      simpanDataAman(`focusStatus_${uidAman}`, "stopped");
+      simpanDataAman(`focusTargetText_${uidAman}`, "");
+      simpanDataAman(`focusNoteText_${uidAman}`, "");
+    }
+  }
+}
+
+window.stopFocusMode = function() {
   clearInterval(timerFokus);
   sedangBerjalan = false;
   sisaDetikFokus = 0;
   updateVisualTimer(0, 0);
+  
+  if (auth.currentUser) {
+    const uidAman = auth.currentUser.uid;
+    // ✅ PERBAIKAN: Stabilkan pengosongan data lewat simpanDataAman, bukan removeItem mentah
+    simpanDataAman(`focusTargetEnd_${uidAman}`, null);
+    simpanDataAman(`focusStatus_${uidAman}`, "stopped");
+    simpanDataAman(`focusTargetText_${uidAman}`, "");
+    simpanDataAman(`focusNoteText_${uidAman}`, "");
+  }
+  
+  HubungkanVisualFocusDanKunci(false, "Belum ada target belajar.", "Belum ada catatan.");
   console.log('Focus Mode dihentikan paksa, yaa.');
+}
+
+// FUNGSI UTILITAS BARU: Mengatur status UI (Kunci input & Teks Papan Display)
+function HubungkanVisualFocusDanKunci(apakahKunci, teksTarget, teksCatatan) {
+  const inputMenit = document.getElementById('focusMinutes');
+  const inputTarget = document.getElementById('focusTarget');
+  const inputNote = document.getElementById('focusNote');
+  const targetDisplay = document.getElementById('targetDisplay');
+  const noteDisplay = document.getElementById('noteDisplay');
+
+  if (inputMenit) inputMenit.disabled = apakahKunci;
+  if (inputTarget) inputTarget.disabled = apakahKunci;
+  if (inputNote) inputNote.disabled = apakahKunci;
+
+  if (targetDisplay) targetDisplay.innerText = teksTarget;
+  if (noteDisplay) noteDisplay.innerText = teksCatatan;
+  
+  // Jika sedang reset/berhenti, kosongkan isi form ketikan
+  if (!apakahKunci) {
+    if (inputMenit) inputMenit.value = "";
+    if (inputTarget) inputTarget.value = "";
+    if (inputNote) inputNote.value = "";
+  }
 }
 
 function updateVisualTimer(menit, detik) {
   const elemenTimer = document.getElementById('displayTimerFokus'); 
   if (!elemenTimer) return;
-  
-  const formatMenit = String(menit).padStart(2, '0');
-  const formatDetik = String(detik).padStart(2, '0');
-  elemenTimer.innerText = `${formatMenit}:${formatDetik}`;
+  elemenTimer.innerText = `${String(menit).padStart(2, '0')}:${String(detik).padStart(2, '0')}`;
 }
 
-
 function triggerNotifFocusOffline() {
+  console.log("Memicu alarm suara dan notifikasi visual Focus Mode... 🔔");
+
+  // ✅ Panggil fungsi pemutar audio terpusat
+  putarSuaraAlarm();
+
+  // 2. Tampilkan Jendela Pop-up Notifikasi Sistem
   if (Notification.permission === 'granted') {
-    navigator.serviceWorker.ready.then((registration) => {
-      registration.showNotification('🪻 SESSION FOCUS SELESAI, yaa!', {
-        body: 'Sesi belajar/ngoding lu udah kelar. Berdiri dulu, regangkan fisik, dan ambil minum air! Sukses besar!',
-        icon: '/flower.png', 
-        vibrate: [400, 200, 400, 200, 400], 
-        badge: '/flower.png',
-        tag: 'focus-alert-done',
-        requireInteraction: true 
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.showNotification('🪻 SESSION FOCUS SELESAI, yaa!', {
+          body: 'Sesi belajar/ngoding lu udah kelar. Berdiri dulu, regangkan fisik, dan ambil minum air! Sukses besar! 🌸',
+          icon: '/flower.png', 
+          vibrate: [400, 200, 400, 200, 400], 
+          badge: '/flower.png',
+          tag: 'focus-alert-done',
+          requireInteraction: true 
+        });
+      }).catch(() => {
+        new Notification('🪻 SESSION FOCUS SELESAI, yaa!', { 
+          body: 'Sesi belajar/ngoding lu udah kelar. Rehat sejenak, yuk! 🌸', 
+          icon: '/flower.png' 
+        });
       });
-    });
+    } else {
+      new Notification('🪻 SESSION FOCUS SELESAI, yaa!', { 
+        body: 'Sesi belajar/ngoding lu udah kelar. Rehat sejenak, yuk! 🌸', 
+        icon: '/flower.png' 
+      });
+    }
   }
 }
 
-// PERBAIKAN: Registrasi Service Worker duplikat polosan di sini telah dihapus sepenuhnya 
-// agar tidak bentrok dengan registrasi berparameter konfigurasi yang ada di bawah.
-
-
-window.addEventListener("DOMContentLoaded", () => {
-  // 1. Inisialisasi awal (Notifikasi, Service Worker, Alarm)
-  if (Notification.permission !== "granted") Notification.requestPermission();
-  if (typeof jalankanSatpamOtomatis === "function") jalankanSatpamOtomatis();
-  if (typeof jalankanSatpamWellnessOtomatis === "function") jalankanSatpamWellnessOtomatis();
-  if (typeof jalankanAlarmTodoOtomatis === "function") jalankanAlarmTodoOtomatis();
-  if (typeof cekSesiTimerPasRefresh === "function") cekSesiTimerPasRefresh();
-  
-  // 2. Fungsi Tunggal untuk Sinkronisasi Data (Dipanggil saat Auth siap)
-  window.sinkronisasiDanRender = () => {
-    if (!auth.currentUser) return;
-    
-    // Pastikan kunci LocalStorage konsisten di sini (Pilih salah satu: tasks_ atau todoTugas_)
-    // Kamu pakai 'tasks_', 'schedules_', dan 'wellnessData_'. Pastikan ini SAMA di seluruh file!
-    tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
-    dataTodo = tasks;
-
-    schedules = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
-    dataJadwal = schedules;
-
-    wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${auth.currentUser.uid}`)) || [];
-    dataWellness = wellnessData;
-
-    // Render Semua
-    [tampilkanTodoDashboard, tampilkanJadwalDashboard, tampilkanWellnessDashboard, displayTodoHistory, displayGagalHistory, displayWellnessHistory, displayFocusHistory].forEach(fn => {
-        if (typeof fn === "function") fn();
+// Meminta izin akses notifikasi otomatis saat halaman dimuat
+document.addEventListener("DOMContentLoaded", () => {
+  if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+    Notification.requestPermission().then(permission => {
+      if (permission === "granted") {
+        console.log("Izin notifikasi resmi diberikan oleh pengguna! 🎉");
+      }
     });
-    console.log("Data sinkron & dirender!");
-  };
-
-  // 3. Pemicu Render (Gunakan onAuthStateChanged yang sudah ada di atas filemu, 
-  // tapi panggil window.sinkronisasiDanRender() di dalamnya)
-  // Tambahkan setTimeout di sini untuk memastikan DOM sudah siap saat Auth terdeteksi
-  setTimeout(window.sinkronisasiDanRender, 500);
-
-  // 4. Navigasi (Tetap gunakan logika yang sudah kamu buat, tapi arahkan ke sinkronisasi)
-  document.querySelectorAll('nav a, .sidebar-menu a, [data-page]').forEach(tombol => {
-    tombol.addEventListener("click", () => {
-      setTimeout(window.sinkronisasiDanRender, 200);
-    });
-  });
+  }
 });
+
+onAuthStateChanged(auth, async (user) => {
+  const path = window.location.pathname.toLowerCase(); 
+  const isTodoPage = path.includes("todo");
+  const isWellnessPage = path.includes("wellness");
+  const isFocusPage = path.includes("focus");
+  const isLoginPage = path.includes("index") || path === "/" || path.endsWith("/");
+
+  if (user && isLoginPage) {
+    window.location.replace("home.html");
+    return;
+  }
+
+  if (user) {
+    console.log("Satpam Auth: User aktif ->", user.email);
+
+    // ✅ JALUR GANDA: Ambil data dari Firebase Cloud dulu, jika gagal/offline langsung pakai lokal
+    const uidAman = user.uid;
+    let jadwalLokal = ambilDataAman(`jadwalKuliah_${uidAman}`) || [];
+    let todoLokal = ambilDataAman(`todoTugas_${uidAman}`) || []; 
+    let wellnessLokal = ambilDataAman(`wellnessLogs_${uidAman}`) || [];
+    let focusLokal = ambilDataAman(`focusHistory_${uidAman}`) || []; // 👈 Tambah inisialisasi lokal
+
+    try {
+      console.log("☁️ Mencoba mengunduh data terbaru dari Firebase Cloud...");
+      const userDocRef = doc(db, "users", uidAman);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const cloudData = userDocSnap.data();
+        
+        // Jika data di cloud ada, gunakan data cloud dan perbarui cache lokal browser
+        if (cloudData.jadwalKuliah) {
+          jadwalLokal = cloudData.jadwalKuliah;
+          simpanDataAman(`jadwalKuliah_${uidAman}`, jadwalLokal);
+        }
+        if (cloudData.todoTugas) {
+          todoLokal = cloudData.todoTugas;
+          simpanDataAman(`todoTugas_${uidAman}`, todoLokal);
+        }
+        if (cloudData.wellnessLogs) {
+          wellnessLokal = cloudData.wellnessLogs;
+          simpanDataAman(`wellnessLogs_${uidAman}`, wellnessLokal);
+        }
+        // 👇 Sinkronisasi otomatis data Riwayat Sesi Fokus dari Cloud
+        if (cloudData.focusHistory) {
+          focusLokal = cloudData.focusHistory;
+          simpanDataAman(`focusHistory_${uidAman}`, focusLokal);
+        }
+        console.log("☁️ Sinkronisasi Cloud ke Lokal berhasil diselaraskan!");
+      } else {
+        console.log("ℹ️ Pengguna baru terdeteksi di Cloud Firestore. Menggunakan penyimpanan lokal awal.");
+      }
+    } catch (error) {
+      console.warn("⚠️ Gagal terhubung ke Cloud Firebase (Mode Offline aktif). Menggunakan data lokal terenkripsi:", error.message);
+    }
+
+    // Masukkan data final (baik hasil cloud maupun lokal) ke variabel RAM global
+    schedules = jadwalLokal;
+    tasks = todoLokal;
+    wellnessData = wellnessLokal;
+    // Catatan: riwayat fokus diakses dinamis lewat storage terenkripsi saat render
+
+    // Mesin Sinkronisasi Terpusat untuk Render UI
+    window.sinkronisasiDanRender = () => {
+      if (!auth.currentUser) return;
+
+      if (typeof window.bersihkanWellnessGantiHariOtomatis === "function") {
+        window.bersihkanWellnessGantiHariOtomatis();
+      }
+
+      // Selaraskan ulang variabel RAM dari storage terenkripsi lokal saat ada manipulasi data halaman
+      schedules = ambilDataAman(`jadwalKuliah_${uidAman}`) || [];
+      tasks = ambilDataAman(`todoTugas_${uidAman}`) || [];
+      wellnessData = ambilDataAman(`wellnessLogs_${uidAman}`) || [];
+
+      // Jalankan fungsi render bawaan visual halaman kamu
+      if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
+      if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+      if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
+      
+      if (isTodoPage) {
+        if (typeof displayTodoHistory === "function") displayTodoHistory();
+        if (typeof displayGagalHistory === "function") displayGagalHistory();
+      }
+      if (isWellnessPage) {
+        if (typeof displayWellnessHistory === "function") displayWellnessHistory();
+      }
+      if (isFocusPage) {
+        if (typeof displayFocusHistory === "function") displayFocusHistory();
+        if (typeof cekSesiTimerPasRefresh === "function") cekSesiTimerPasRefresh();
+      }
+
+      console.log("Mesin Sinkronisasi Terpusat: Render Visual Selesai! ✅");
+    };
+
+    // Jalankan render awal secara instan setelah data terisi
+    window.sinkronisasiDanRender();
+
+    // Pasang listener navigasi agar perpindahan halaman tetap sinkron
+    document.querySelectorAll('nav a, .sidebar-menu a, [data-page]').forEach(tombol => {
+      tombol.addEventListener("click", () => {
+        setTimeout(() => {
+          if (typeof window.sinkronisasiDanRender === "function") window.sinkronisasiDanRender();
+        }, 150);
+      });
+    });
+
+  } else {
+    if (!isLoginPage) {
+      alert("Akses ditolak! Silakan login terlebih dahulu.");
+      window.location.replace("index.html");
+    }
+  }
+});
+
+// ✅ Fungsi Sinkronisasi Cloud + Lokal Terpusat
+window.sinkronisasiKeCloudDanLokal = async function(uidAman, keyStorage, namaFieldFirebase, dataArray) {
+  // 1. Amankan ke Lokal Browser dulu (Terenkripsi - Mode Offline)
+  simpanDataAman(keyStorage, dataArray);
+  
+  // 2. Kirim ke Cloud Firebase jika ada koneksi internet
+  try {
+    // Menyimpan data murni ke dokumen user masing-masing di database Firestore
+    await setDoc(doc(db, "users", uidAman), {
+      [namaFieldFirebase]: dataArray
+    }, { merge: true }); // merge: true agar data field lain tidak saling menimpa
+    console.log(`☁️ Berhasil sinkronisasi field [${namaFieldFirebase}] ke Firebase Cloud!`);
+  } catch (error) {
+    console.warn(`⚠️ Gagal kirim ke cloud (Mungkin offline), data tetap aman di lokal:`, error.message);
+  }
+}
+
+/* ================= LEVEL 4: WINDOW EXPOSE TO GLOBAL SCOPE ================= */
+const globalFunctions = {
+  register,
+  login,
+  loginDenganGoogle,
+  logout,
+  forgotPassword,
+  changePassword,
+  showRegister,
+  showLogin,
+  toggleMenu,
+  openProfile,
+  privacySecurity,
+  scrollDashboard,
+  aktifkanNotificationFCM,
+  sendNotification,
+  triggerNotifWellnessOffline,
+  triggerNotifFocusOffline,
+  bersihkanWellnessGantiHariOtomatis,
+  tambahJadwalKuliah,
+  tampilkanJadwalDashboard,
+  hapusJadwal,
+  tambahTodoTugas,
+  tampilkanTodoDashboard,
+  hapusTodo,
+  displayTodoHistory,
+  displayGagalHistory,
+  tambahWellnessLog,
+  tampilkanWellnessDashboard,
+  hapusWellness,
+  displayWellnessHistory,
+  mulaiFocusMode,
+  stopFocusMode,
+  cekSesiTimerPasRefresh
+};
+
+Object.keys(globalFunctions).forEach((key) => {
+  window[key] = globalFunctions[key];
+});
+
+/* ================= LOGIKA BARU: PENGENDALI INTERFASE (LEBIH AMAN & ANTI-MOGOK) ================= */
+document.addEventListener("DOMContentLoaded", () => {
+  
+  // --- TOMBOL STRUKTUR FORM UTAMA ---
+  document.getElementById('btnTambahJadwal')?.addEventListener('click', () => {
+    if (typeof window.tambahJadwalKuliah === 'function') window.tambahJadwalKuliah();
+  });
+
+  document.getElementById('btnTambahTugas')?.addEventListener('click', () => {
+    if (typeof window.tambahTodoTugas === 'function') window.tambahTodoTugas();
+  });
+
+  document.getElementById('btnTambahWellness')?.addEventListener('click', () => {
+    if (typeof window.tambahWellnessLog === 'function') window.tambahWellnessLog();
+  });
+
+  // --- TOMBOL STRUKTUR AUTH (index.html) ---
+  document.getElementById("btnKirimLogin")?.addEventListener("click", () => {
+    if (typeof window.login === "function") window.login();
+  });
+
+  document.getElementById("btnGoogleLogin")?.addEventListener("click", () => {
+    if (typeof window.loginDenganGoogle === "function") window.loginDenganGoogle();
+  });
+
+  document.getElementById("btnKeHalamanRegister")?.addEventListener("click", () => {
+    if (typeof window.showRegister === "function") window.showRegister();
+  });
+
+  document.getElementById("btnKirimRegister")?.addEventListener("click", () => {
+    if (typeof window.register === "function") window.register();
+  });
+
+  document.getElementById("btnKeHalamanLogin")?.addEventListener("click", () => {
+    if (typeof window.showLogin === "function") window.showLogin();
+  });
+
+  document.getElementById("btnLupaPassword")?.addEventListener("click", () => {
+    if (typeof window.forgotPassword === "function") window.forgotPassword();
+  });
+
+  // --- TOMBOL MENU & PROFIL (Navigasi Atas) ---
+  document.getElementById("btnAvatarProfil")?.addEventListener("click", () => {
+    if (typeof window.toggleMenu === "function") window.toggleMenu();
+  });
+
+  document.getElementById("btnLihatProfil")?.addEventListener("click", () => {
+    if (typeof window.openProfile === "function") window.openProfile();
+  });
+
+  document.getElementById("btnGantiPassword")?.addEventListener("click", () => {
+    if (typeof window.changePassword === "function") window.changePassword();
+  });
+
+  document.getElementById("btnPrivasiKeamanan")?.addEventListener("click", () => {
+    if (typeof window.privacySecurity === "function") window.privacySecurity();
+  });
+
+  document.getElementById("btnProsesLogout")?.addEventListener("click", () => {
+    if (typeof window.logout === "function") window.logout();
+  });
+
+  document.getElementById("btnScrollDasbor")?.addEventListener("click", () => {
+    if (typeof window.scrollDashboard === "function") window.scrollDashboard();
+  });
+
+  // --- TOMBOL UTILITAS SISTEM (FCM & PWA) ---
+  document.getElementById("btnMintaIzinFCM")?.addEventListener("click", () => {
+    if (typeof window.aktifkanNotificationFCM === "function") window.aktifkanNotificationFCM();
+  });
+
+  // --- TOMBOL KENDALI TIMER POMODORO (focus.html) ---
+  const tombolDurasi = document.querySelectorAll(".btn-opsi-durasi");
+  if (tombolDurasi.length > 0) {
+    tombolDurasi.forEach(tombol => {
+      tombol.addEventListener("click", (e) => {
+        const durasiMenit = parseInt(e.target.getAttribute("data-menit"));
+        if (!isNaN(durasiMenit) && typeof window.mulaiFocusMode === "function") {
+          window.mulaiFocusMode(durasiMenit);
+        }
+      });
+    });
+  }
+
+  document.getElementById("btnBerhentiFokus")?.addEventListener("click", () => {
+    if (typeof window.stopFocusMode === "function") window.stopFocusMode();
+  });
+
+  // 1. Toggle Riwayat di Halaman focus.html
+  const btnToggleFocus = document.getElementById("btnToggleFocus");
+  const boxHistoriFocus = document.getElementById("pembungkusHistoriFocus");
+  if (btnToggleFocus && boxHistoriFocus) {
+    btnToggleFocus.addEventListener("click", () => {
+      const isHidden = boxHistoriFocus.style.display === "none";
+      boxHistoriFocus.style.display = isHidden ? "block" : "none";
+      btnToggleFocus.innerText = isHidden ? "📜 Jurnal Riwayat Fokus (Tutup)" : "📜 Jurnal Riwayat Fokus (Buka)";
+      btnToggleFocus.classList.toggle("aktif", isHidden);
+    });
+  }
+
+  // 2. Toggle Riwayat di Halaman todo.html
+  const btnToggleTodo = document.getElementById("btnToggleTodo");
+  const boxHistoriTodo = document.getElementById("pembungkusHistoriTodo");
+  if (btnToggleTodo && boxHistoriTodo) {
+    btnToggleTodo.addEventListener("click", () => {
+      const isHidden = boxHistoriTodo.style.display === "none";
+      boxHistoriTodo.style.display = isHidden ? "block" : "none";
+      btnToggleTodo.innerText = isHidden ? "📜 Riwayat Tugas (Tutup)" : "📜 Riwayat Tugas (Buka)";
+      btnToggleTodo.classList.toggle("aktif", isHidden);
+    });
+  }
+
+  // 3. Toggle Riwayat di Halaman wellness.html
+  const btnToggleWellness = document.getElementById("btnToggleWellness");
+  const boxHistoriWellness = document.getElementById("pembungkusHistoriWellness");
+  if (btnToggleWellness && boxHistoriWellness) {
+    btnToggleWellness.addEventListener("click", () => {
+      const isHidden = boxHistoriWellness.style.display === "none";
+      boxHistoriWellness.style.display = isHidden ? "block" : "none";
+      btnToggleWellness.innerText = isHidden ? "📜 Log Kesehatan Hari Ini (Tutup)" : "📜 Log Kesehatan Hari Ini (Buka)";
+      btnToggleWellness.classList.toggle("aktif", isHidden);
+    });
+  }
+});
+
+

@@ -1,0 +1,744 @@
+/* ================= MANAGEMENT DATA (TODO TASKS) ================= */
+
+// Sinkronisasi Variabel Global RAM
+tasks = [];
+
+function formatTampilanTanggal(tanggalStr, jamStr) {
+  if (!tanggalStr) return "-";
+  const [tahun, bulan, hari] = tanggalStr.split("-");
+  return `${hari}-${bulan}-${tahun} Pukul ${jamStr || "00:00"}`;
+}
+
+function displayTasks() {  
+  let taskList = document.getElementById("taskList"); 
+  if (!taskList) return;
+  taskList.innerHTML = "";
+
+  if (!auth.currentUser) return;
+
+  // KONSISTEN: Ambil dari key standar todoTugas_
+  tasks = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
+  const sekarang = new Date().getTime();
+
+  if (tasks.length === 0) {
+    taskList.innerHTML = `<p style="color: #94a3b8; font-style: italic;">Tenang, belum ada tugas yang numpuk. 🔥</p>`;
+    return;
+  }
+
+  tasks.forEach((item) => {
+    // FIX: Gunakan properti terpisah sesuai standarisasi RAM Satpam Auth
+    if (!item.tanggal || !item.jam) return;
+    const waktuDeadline = new Date(`${item.tanggal}T${item.jam}`).getTime();
+    
+    // Tampilkan hanya tugas yang belum selesai dan belum melewati batas deadline
+    if (!item.completed && waktuDeadline >= sekarang) {
+      taskList.innerHTML += `
+        <div class="task-card" id="${item.id}" style="padding: 16px; margin-bottom: 12px; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+          <h3 style="margin: 0; font-size: 18px; color: #1e293b;">🌸 ${item.tugas}</h3>
+          <p style="margin: 6px 0; font-size: 14px; color: #64748b;"><strong>Deadline:</strong> ${formatTampilanTanggal(item.tanggal, item.jam)} WIB</p>
+          
+          <div class="task-buttons" style="display: flex; gap: 8px; margin-top: 12px;">
+            <button class="btn-complete-task done-btn" data-index="${item.id}" style="background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">Selesai</button>
+            <button class="btn-delete-task delete-btn" data-index="${item.id}" style="background: #ef4444; color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">Hapus</button>
+          </div>
+        </div>
+      `;
+    }
+  });
+}
+
+function addTask() {
+  let taskInput = document.getElementById("taskInput");
+  let dateInput = document.getElementById("deadlineDate");
+  let timeInput = document.getElementById("deadlineTime");
+  if (!taskInput || !dateInput || !timeInput) return;
+
+  let taskName = taskInput.value.trim();
+  let dateVal = dateInput.value; 
+  let timeVal = timeInput.value; 
+
+  if (taskName === "" || dateVal === "" || timeVal === "") {
+    alert("Isi nama tugas, tanggal, beserta jam deadlinenya!");
+    return;
+  }
+  if (!auth.currentUser) return;
+
+  tasks = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
+  
+  // FIX SINKRONISASI: Simpan data pecahan terpisah agar klop dibaca oleh Satpam Tracker & Pipa Render
+  tasks.push({
+    id: 'todo_' + Date.now(),
+    tugas: taskName,  // Menggunakan .tugas sesuai standar displayTasks
+    tanggal: dateVal, // Properti tanggal mandiri
+    jam: timeVal,     // Properti jam mandiri
+    completed: false        
+  });
+
+  localStorage.setItem(`todoTugas_${auth.currentUser.uid}`, JSON.stringify(tasks));
+  
+  // FIX: Sinkronisasi ke variabel kembaran RAM dataTodo TELAH DIHAPUS TOTAL DISINI 🛡️
+
+  // Salurkan langsung ke pipa render terpusat agar UI langsung update instan
+  if (typeof window.sinkronisasiDanRender === "function") {
+    window.sinkronisasiDanRender();
+  } else {
+    displayTasks();
+    if (typeof displayTodoHistory === "function") displayTodoHistory();
+    if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+  }
+
+  // Reset form input
+  taskInput.value = ""; 
+  dateInput.value = ""; 
+  timeInput.value = "";
+}
+
+
+window.completeTask = function(taskId) {
+  if (!auth.currentUser) return;
+
+  tasks = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
+  const targetIndex = tasks.findIndex(task => task.id === taskId);
+  
+  if (targetIndex !== -1) {
+    tasks[targetIndex].completed = true;
+    localStorage.setItem(`todoTugas_${auth.currentUser.uid}`, JSON.stringify(tasks));
+    
+    // FIX: Sinkronisasi ke variabel kembaran RAM dataTodo telah dihapus total dari sini 🛡️
+
+    if (typeof window.sinkronisasiDanRender === "function") {
+      window.sinkronisasiDanRender();
+    } else {
+      displayTasks();
+      if (typeof displayTodoHistory === "function") displayTodoHistory();
+      if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+    }
+  }
+}
+
+window.deleteTask = function(taskId) {
+  if (!auth.currentUser) return;
+
+  tasks = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
+  tasks = tasks.filter(task => task.id !== taskId);
+  
+  localStorage.setItem(`todoTugas_${auth.currentUser.uid}`, JSON.stringify(tasks));
+  
+  // FIX: Sinkronisasi ke variabel kembaran RAM dataTodo telah dihapus total dari sini 🛡️
+
+  if (typeof window.sinkronisasiDanRender === "function") {
+    window.sinkronisasiDanRender();
+  } else {
+    displayTasks();
+    if (typeof displayTodoHistory === "function") displayTodoHistory();
+    if (typeof displayGagalHistory === "function") displayGagalHistory(); 
+    if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+  }
+}
+
+
+// --- HISTORI 1: TUGAS SELESAI ---
+window.displayTodoHistory = function() {
+  const historyList = document.getElementById("todoHistoryList");
+  if (!historyList) return;
+  historyList.innerHTML = "";
+
+  if (!auth.currentUser) return;
+
+  const tasksLokal = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
+
+  const tugasSelesai = tasksLokal.filter(task => task.completed);
+  if (tugasSelesai.length === 0) {
+    historyList.innerHTML = `<p style="color: #94a3b8; font-style: italic; font-size: 14px;">Belum ada riwayat tugas selesai.</p>`;
+    return;
+  }
+
+  tugasSelesai.forEach((task) => {
+    historyList.innerHTML += `
+      <div class="history-item-box" style="background: #f8fafc; padding: 14px 18px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #10b981; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <span style="font-weight: 700; color: #1e293b; text-decoration: line-through;">${task.tugas}</span>
+          <p style="font-size: 12px; color: #64748b; margin-top: 4px;">✅ Selesai dikerjakan</p>
+        </div>
+        <button onclick="deleteTask('${task.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">Hapus Jejak</button>
+      </div>`;
+  });
+}
+
+// --- HISTORI 2: TUGAS GAGAL/OVERDUE ---
+window.displayGagalHistory = function() {
+  const gagalList = document.getElementById("todoGagalList");
+  if (!gagalList) return;
+  gagalList.innerHTML = "";
+
+  if (!auth.currentUser) return;
+
+  const tasksLokal = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
+  const sekarang = new Date().getTime();
+
+  const tugasGagal = tasksLokal.filter(task => !task.completed && new Date(`${task.tanggal}T${task.jam}`).getTime() < sekarang);
+
+  if (tugasGagal.length === 0) {
+    gagalList.innerHTML = `<p style="color: #94a3b8; font-style: italic; font-size: 14px;">Bersih! Tidak ada tugas yang telat. Mantap! 🔥</p>`;
+    return;
+  }
+
+  tugasGagal.forEach((task) => {
+    gagalList.innerHTML += `
+      <div class="history-item-box" style="background: #fff5f5; padding: 14px 18px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #ef4444; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <span style="font-weight: 700; color: #991b1b;">❌ ${task.tugas}</span>
+          <p style="font-size: 12px; color: #b91c1c; margin-top: 4px;">Terlewat: ${formatTampilanTanggal(task.tanggal, task.jam)}</p>
+        </div>
+        <button onclick="deleteTask('${task.id}')" style="background: #7f1d1d; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">Ihlaskan & Hapus</button>
+      </div>`;
+  });
+}
+
+function jalankanAlarmTodoOtomatis() {
+  setInterval(() => {
+    if (!auth.currentUser) return;
+    const sekarang = new Date();
+    const tanggalKunciStr = Bird = sekarang.toDateString(); 
+    const timestampSekarang = sekarang.getTime();
+    
+    const tugasAktif = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
+    periksaDeadlineOtomatis();
+
+    tugasAktif.forEach((task) => {
+      if (!task.completed && task.tanggal) {
+        const waktuDeadline = new Date(`${task.tanggal}T${task.jam}`);
+        const selisihMilidetik = waktuDeadline.getTime() - timestampSekarang;
+        
+        const selisihMenitTodo = Math.round(selisihMilidetik / (1000 * 60));
+        const idKunciTodo = `${tanggalKunciStr}_${task.id}`;
+
+        if (selisihMenitTodo === 10) {
+          if (!gembokTodoH5[idKunciTodo]) {
+            gembokTodoH5[idKunciTodo] = true; 
+
+            if (Notification.permission === "granted") {
+              const keyNotifTodo = `notif_todo_${task.id}_5`;
+              
+              if (!sessionStorage.getItem(keyNotifTodo)) {
+                new Notification(`🚨 DEADLINE TUGAS: ${task.tugas}`, {
+                  body: `Gawat! Sisa sekitar 10 menit lagi batas pengumpulan tugas "${task.tugas}" habis! Buruan submit, yaa! 😱`,
+                  icon: '/flower.png',
+                  requireInteraction: true 
+                });
+                sessionStorage.setItem(keyNotifTodo, "sent");
+              }
+            }
+          }
+        }
+      }
+    });
+  }, 20000); 
+}
+
+function periksaDeadlineOtomatis() {
+  if (!auth.currentUser) return;
+  const sekarang = new Date().getTime();
+  let tasksLokal = JSON.parse(localStorage.getItem(`todoTugas_${auth.currentUser.uid}`)) || [];
+  let adaPerubahan = false;
+
+  tasksLokal.forEach((task) => {
+    if (!task.completed && task.tanggal) {
+      const waktuDeadline = new Date(`${task.tanggal}T${task.jam}`).getTime();
+
+      if (waktuDeadline <= sekarang) {
+        if (!sessionStorage.getItem(`gagal_alert_${task.id}`)) {
+          triggerNotifTugasGagal(task.tugas);
+          sessionStorage.setItem(`gagal_alert_${task.id}`, "sent");
+          adaPerubahan = true;
+        }
+      }
+    }
+  });
+
+  if (adaPerubahan) {
+    if (typeof window.sinkronisasiDanRender === "function") {
+      window.sinkronisasiDanRender();
+    } else {
+      displayTasks();
+      displayGagalHistory();
+      if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+    }
+  }
+}
+
+function triggerNotifTugasGagal(judulTugas) {
+  if (Notification.permission === 'granted') {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.showNotification('🚨 DEADLINE LEWAT, YAA!', {
+          body: `Tugas "${judulTugas}" udah melewati batas waktu pengumpulan. Tetap semangat, yuk gaspol tugas lainnya!`,
+          icon: '/flower.png',
+          badge: '/flower.png',
+          tag: 'task-failed-alert',
+          vibrate: [500, 100, 500],
+          requireInteraction: true
+        });
+      });
+    } else {
+      new Notification('🚨 DEADLINE LEWAT, YAA!', {
+        body: `Tugas "${judulTugas}" udah melewati batas waktu pengumpulan. Tetap semangat, yuk gaspol tugas lainnya!`,
+        requireInteraction: true
+      });
+    }
+  }
+}
+
+
+/* ================= MANAGEMENT DATA (WELLNESS) ================= */
+// Catatan: Inisialisasi tanpa UID sudah dibuang total sesuai standarisasi keamanan RAM.
+
+window.displayWellness = function() {
+  const wellnessList = document.getElementById("wellnessList");
+  if (!wellnessList) return;
+  wellnessList.innerHTML = "";
+
+  if (!auth.currentUser) return;
+
+  // Ambil data murni dari kamar log UID aktif
+  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
+
+  // Urutkan berdasarkan waktu masuk
+  dataWellnessLokal.sort((a, b) => a.time.localeCompare(b.time));
+
+  dataWellnessLokal.forEach((item) => {
+    if (!item.completed) {
+      wellnessList.innerHTML += `
+        <div class="wellness-card">
+          <h3>💧 ${item.type}</h3>
+          <p>⏰ Waktu: <strong>${item.time} WIB</strong></p>
+          <p>🌸 Catatan: ${item.note || "-"}</p>
+          <div class="wellness-buttons" style="display: flex; gap: 8px; margin-top: 10px;">
+            <button class="done-btn" onclick="completeWellness('${item.id}')">Selesai</button>
+            <button class="delete-btn" onclick="deleteWellness('${item.id}')">Hapus</button>
+          </div>
+        </div>`;
+    }
+  });
+}
+
+window.addWellness = function() {
+  if (!auth.currentUser) {
+    alert("Maaf harus login dulu, yaa!");
+    return;
+  }
+
+  const uidAman = auth.currentUser.uid;
+  const type = document.getElementById("wellnessType")?.value;
+  const time = document.getElementById("wellnessTime")?.value;
+  const note = document.getElementById("wellnessNote")?.value || "";
+
+  if (!type || !time) {
+    alert("Aktivitas dan Jam wajib diisi!");
+    return;
+  }
+
+  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+
+  // SINKRONISASI STRUKTUR: Pastikan ID disimpan sebagai String ('well_' + timestamp) agar seragam dengan metode Lavender
+  const idUnikStr = 'well_' + Date.now();
+
+  dataWellnessLokal.push({
+    id: idUnikStr,
+    type: type,
+    time: time,
+    note: note,
+    completed: false
+  });
+
+  localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
+  
+  // FIX: Hanya sinkronkan ke variabel RAM global Inggris utama (wellnessData), duplikat dataWellness dihapus 🛡️
+  wellnessData = dataWellnessLokal;
+
+  // Reset Form
+  if(document.getElementById("wellnessType")) document.getElementById("wellnessType").value = "";
+  if(document.getElementById("wellnessTime")) document.getElementById("wellnessTime").value = "";
+  if(document.getElementById("wellnessNote")) document.getElementById("wellnessNote").value = "";
+
+  // Pemicu Render Serentak (Internal Halaman & Dashboard Utama Lavender)
+  displayWellness();
+  if (typeof displayWellnessHistory === "function") displayWellnessHistory();
+  if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
+}
+
+
+window.completeWellness = function(id) {
+  if (!auth.currentUser) return;
+  const uidAman = auth.currentUser.uid;
+  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+
+  // Fleksibel: Menggunakan '==' untuk mengantisipasi data lama yang masih bertipe Number
+  const index = dataWellnessLokal.findIndex(item => item.id == id);
+  if (index !== -1) {
+    dataWellnessLokal[index].completed = true;
+    localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
+    
+    // FIX: Hanya menyisakan 1 variabel global Inggris (wellnessData), duplikat dataWellness dihapus 🛡️
+    wellnessData = dataWellnessLokal;
+
+    // Segarkan seluruh komponen visual
+    displayWellness();
+    if (typeof displayWellnessHistory === "function") displayWellnessHistory();
+    if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
+  }
+}
+
+window.deleteWellness = function(id) {
+  if (!auth.currentUser) return;
+  const uidAman = auth.currentUser.uid;
+  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+
+  const index = dataWellnessLokal.findIndex(item => item.id == id);
+  if (index !== -1) {
+    dataWellnessLokal.splice(index, 1);
+    localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellnessLokal));
+    
+    // FIX: Hanya menyisakan 1 variabel global Inggris (wellnessData), duplikat dataWellness dihapus 🛡️
+    wellnessData = dataWellnessLokal;
+
+    // Segarkan seluruh komponen visual
+    displayWellness();
+    if (typeof displayWellnessHistory === "function") displayWellnessHistory();
+    if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
+  }
+}
+
+
+function jalankanSatpamWellnessOtomatis() {
+  // Set interval dipertahankan di 30 detik dengan pengecekan sessionStorage agar toleran namun tetap presisi
+  setInterval(() => {
+    if (!auth.currentUser) return; 
+
+    const sekarang = new Date();
+    const jamMenitSekarangStr = `${String(sekarang.getHours()).padStart(2, '0')}:${String(sekarang.getMinutes()).padStart(2, '0')}`;
+    
+    const pengingatWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
+
+    pengingatWellness.forEach((item) => {
+      if (!item.completed && item.time === jamMenitSekarangStr) {
+        if (Notification.permission === "granted") {
+          const keyNotifWellness = `notif_well_${auth.currentUser.uid}_${item.id}_${item.time}`;
+          
+          if (!sessionStorage.getItem(keyNotifWellness)) {
+            new Notification(`💧 TIME FOR WELLNESS`, {
+              body: `Waktunya aktivitas: "${item.type}"`,
+              icon: '/flower.png',
+              requireInteraction: true 
+            });
+            sessionStorage.setItem(keyNotifWellness, "sent");
+          }
+        }
+      }
+    });
+  }, 30000); 
+}
+
+/**
+ * C. WELLNESS HISTORY HANDLER
+ */
+window.displayWellnessHistory = function() {
+  const historyList = document.getElementById("wellnessHistoryList");
+  if (!historyList) return;
+  historyList.innerHTML = "";
+  if (!auth.currentUser) return;
+
+  const uidAman = auth.currentUser.uid;
+  const wellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+  const wellnessSelesai = wellnessLokal.filter(item => item.completed);
+
+  if (wellnessSelesai.length === 0) {
+    historyList.innerHTML = `<p style="color: #94a3b8; font-style: italic; font-size: 14px;">Belum ada aktivitas kesehatan yang tercatat hari ini.</p>`;
+    return;
+  }
+
+  wellnessLokal.forEach((item) => {
+    if (item.completed) {
+      historyList.innerHTML += `
+        <div class="history-item-box" style="background: #faf5ff; padding: 14px 18px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #8b5cf6; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span style="font-weight: 700; color: #1e293b;">${item.type} (${item.time})</span>
+            <p style="font-size: 12px; color: #7c3aed; margin-top: 4px;">💙 Sudah terpenuhi hari ini</p>
+          </div>
+          <button onclick="deleteWellness('${item.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">
+            Hapus Jejak
+          </button>
+        </div>`;
+    }
+  });
+}
+
+ /* ================= MANAGEMENT DATA (FOCUS TIMER) ================= */
+
+// 1. PENGAMAN VARIABEL GLOBAL (Agar tidak reset/hilang saat refresh)
+if (typeof focusInterval === 'undefined') {
+  var focusInterval; 
+}
+
+window.startFocusTimer = function() {
+  const startBtn = document.getElementById("btnMulaiFocus");
+  if (startBtn && startBtn.innerText === "Selesai") {
+    hentikanTimerTengahJalanManual();
+    return;
+  }
+
+  let minutesInput = document.getElementById("focusMinutes");
+  let targetInput = document.getElementById("focusTarget");
+  let noteInput = document.getElementById("focusNote");
+  if (!minutesInput) return;
+
+  let focusValue = minutesInput.value;
+  if (focusValue === "") {
+    alert("Masukkan durasi belajar!");
+    return;
+  }
+
+  // 1. LOCK INPUT
+  minutesInput.disabled = true;
+  if (targetInput) targetInput.disabled = true;
+  if (noteInput) noteInput.disabled = true;
+
+  // 2. KALKULASI TIMESTAMP
+  const sekarang = new Date().getTime();
+  const durasiMilidetik = focusValue * 60 * 1000;
+  const waktuSelesai = sekarang + durasiMilidetik;
+
+  // 3. SIMPAN PAKET DATA TIMER KE LOCALSTORAGE (SUDAH DIGEMBOK PAKE UID USER 🔥)
+  const dataTimer = {
+    endTime: waktuSelesai,
+    initialDuration: focusValue,
+    target: targetInput ? targetInput.value : "",
+    note: noteInput ? noteInput.value : ""
+  };
+  
+  localStorage.setItem(`activeFocusTimer_${auth.currentUser.uid}`, JSON.stringify(dataTimer));
+
+  // 4. JALANKAN MESIN COUNTDOWN
+  jalankanHitungMundur(waktuSelesai, dataTimer.target, dataTimer.note, dataTimer.initialDuration);
+}
+
+
+function jalankanHitungMundur(endTime, targetText, noteText, initialDuration) {
+  let targetDisplay = document.getElementById("targetDisplay");
+  let noteDisplay = document.getElementById("noteDisplay");
+  
+  if (targetDisplay) targetDisplay.innerText = targetText || "Belajar";
+  if (noteDisplay) noteDisplay.innerText = noteText || "-";
+
+  let minutesInput = document.getElementById("focusMinutes");
+  let targetInput = document.getElementById("focusTarget");
+  let noteInput = document.getElementById("focusNote");
+  if (minutesInput) minutesInput.disabled = true;
+  if (targetInput) targetInput.disabled = true;
+  if (noteInput) noteInput.disabled = true;
+
+  const startBtn = document.getElementById("btnMulaiFocus");
+  if (startBtn) {
+    startBtn.innerText = "Selesai";
+    startBtn.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
+    startBtn.style.boxShadow = "0 4px 12px rgba(16, 185, 129, 0.2)";
+    startBtn.disabled = false; // PASTIKAN FALSE BIAR BISA DIKLIK USER
+  }
+
+  clearInterval(focusInterval);
+  
+  focusInterval = setInterval(() => {
+    if (!auth.currentUser) return;
+    const sekarang = new Date().getTime();
+    const selisihMilidetik = endTime - sekarang;
+    let sisaDetikTotal = Math.ceil(selisihMilidetik / 1000);
+    
+    // KONDISI 1: JIKA WAKTU HABIS ALAMI (00:00)
+    if (sisaDetikTotal <= 0) {
+      clearInterval(focusInterval);
+      localStorage.removeItem(`activeFocusTimer_${auth.currentUser.uid}`);
+
+      let timerDisplay = document.getElementById("timerDisplay");
+      if (timerDisplay) timerDisplay.innerText = "00:00";
+
+      bukaGembokFormInputDanKembalikanTombol();
+
+      catatHistoryFocusKeLokal(targetText, initialDuration);
+
+      if (Notification.permission === "granted") {
+        new Notification("⏰ Focus Mode Selesai!", {
+          body: `🎉 Sesi belajar "${targetText || 'Fokus'}" sudah kelar, yaa! Hebattt kamu sudah produktif hari ini 🌸`,
+          icon: '/flower.png',
+          requireInteraction: true
+        });
+      }
+
+      alert(`🎉 Focus session selesai!\nHebattt kamu sudah belajar: ${targetText || 'Fokus'} 🌸`);
+      return;
+    }
+
+    let minutes = Math.floor(sisaDetikTotal / 60);
+    let seconds = sisaDetikTotal % 60;
+    
+    let timerDisplay = document.getElementById("timerDisplay");
+    if (timerDisplay) {
+      timerDisplay.innerText = String(minutes).padStart(2, '0') + ":" + String(seconds).padStart(2, '0');
+    }
+  }, 1000);
+}
+
+// KONDISI 2: USER KLIK TOMBOL "SELESAI" SEBELUM WAKTU HABIS (MANUAL STOP)
+function hentikanTimerTengahJalanManual() {
+  clearInterval(focusInterval);
+  
+  if (!auth.currentUser) return;
+
+  const simpananTimer = localStorage.getItem(`activeFocusTimer_${auth.currentUser.uid}`);
+  if (simpananTimer) {
+    const dataTimer = JSON.parse(simpananTimer);
+    catatHistoryFocusKeLokal(dataTimer.target, dataTimer.initialDuration);
+  }
+
+  localStorage.removeItem(`activeFocusTimer_${auth.currentUser.uid}`);
+  
+  let timerDisplay = document.getElementById("timerDisplay");
+  if (timerDisplay) timerDisplay.innerText = "00:00";
+
+  bukaGembokFormInputDanKembalikanTombol();
+  alert("Sesi fokus telah diselesaikan secara manual dan dicatat ke jurnal! 🌸");
+}
+
+window.resetFocusTimer = function() {
+  if (!auth.currentUser) return;
+  clearInterval(focusInterval);
+  localStorage.removeItem(`activeFocusTimer_${auth.currentUser.uid}`);
+  
+  let timerDisplay = document.getElementById("timerDisplay");
+  if (timerDisplay) timerDisplay.innerText = "00:00";
+  
+  let targetDisplay = document.getElementById("targetDisplay");
+  let noteDisplay = document.getElementById("noteDisplay");
+  if (targetDisplay) targetDisplay.innerText = "Belum ada target belajar.";
+  if (noteDisplay) noteDisplay.innerText = "Belum ada catatan.";
+
+  bukaGembokFormInputDanKembalikanTombol();
+
+  let minutesInput = document.getElementById("focusMinutes");
+  let targetInput = document.getElementById("focusTarget");
+  let noteInput = document.getElementById("focusNote");
+  if (minutesInput) minutesInput.value = "";
+  if (targetInput) targetInput.value = "";
+  if (noteInput) noteInput.value = "";
+}
+
+
+function bukaGembokFormInputDanKembalikanTombol() {
+  let minutesInput = document.getElementById("focusMinutes");
+  let targetInput = document.getElementById("focusTarget");
+  let noteInput = document.getElementById("focusNote");
+  
+  if (minutesInput) minutesInput.disabled = false;
+  if (targetInput) targetInput.disabled = false;
+  if (noteInput) noteInput.disabled = false;
+
+  const startBtn = document.getElementById("btnMulaiFocus");
+  if (startBtn) {
+    startBtn.innerText = "Mulai";
+    startBtn.style.background = "#4b5cff"; 
+    startBtn.style.boxShadow = "0 4px 12px rgba(75, 92, 255, 0.18)";
+    startBtn.disabled = false;
+  }
+}
+
+function catatHistoryFocusKeLokal(targetText, durasiMenit) {
+  if (!auth.currentUser) return;
+  let focusHistory = JSON.parse(localStorage.getItem(`focusHistoryData_${auth.currentUser.uid}`)) || [];
+  
+  focusHistory.push({
+    target: targetText || "Fokus Belajar",
+    duration: durasiMenit || 25,
+    timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  });
+  
+  localStorage.setItem(`focusHistoryData_${auth.currentUser.uid}`, JSON.stringify(focusHistory));
+  displayFocusHistory();
+}
+
+
+window.deleteFocusHistory = function(index) {
+  if (!auth.currentUser) return;
+
+  // AMAN: Diikat langsung ke objek window agar tombol 'onclick' tidak hilang arah
+  let focusHistory = JSON.parse(localStorage.getItem(`focusHistoryData_${auth.currentUser.uid}`)) || [];
+  focusHistory.splice(index, 1);
+  localStorage.setItem(`focusHistoryData_${auth.currentUser.uid}`, JSON.stringify(focusHistory));
+  displayFocusHistory();
+}
+
+window.cekSesiTimerPasRefresh = function() {
+  if (!auth.currentUser) return;
+
+  const simpananTimer = localStorage.getItem(`activeFocusTimer_${auth.currentUser.uid}`);
+  if (simpananTimer) {
+    const dataTimer = JSON.parse(simpananTimer);
+    const sekarang = new Date().getTime();
+
+    // Jika waktu selesai masih di masa depan, pulihkan state secara utuh!
+    if (dataTimer.endTime > sekarang) {
+      // 1. Ambil elemen input di halaman focus.html
+      let minutesInput = document.getElementById("focusMinutes");
+      let targetInput = document.getElementById("focusTarget");
+      let noteInput = document.getElementById("focusNote");
+
+      // 2. Isi kembali nilai form agar tidak kosong melompong setelah reload
+      if (minutesInput) {
+        minutesInput.value = dataTimer.initialDuration;
+        minutesInput.disabled = true; // Kunci lagi form-nya
+      }
+      if (targetInput) {
+        targetInput.value = dataTimer.target;
+        targetInput.disabled = true;
+      }
+      if (noteInput) {
+        noteInput.value = dataTimer.note;
+        noteInput.disabled = true;
+      }
+
+      // 3. Nyalakan kembali mesin hitung mundur melanjutkan sisa waktu riil
+      jalankanHitungMundur(dataTimer.endTime, dataTimer.target, dataTimer.note, dataTimer.initialDuration);
+      console.log("Sesi fokus aktif berhasil dipulihkan pasca-reload! ⏰");
+    } else {
+      // Jika ternyata waktu countdown sudah habis pas ditinggal reload browser
+      localStorage.removeItem(`activeFocusTimer_${auth.currentUser.uid}`);
+    }
+  }
+}
+
+/**
+ * D. FOCUS TIMER HISTORY HANDLER (Permanen Tracker dengan Tombol Hapus)
+ */
+window.displayFocusHistory = function() {
+  const historyList = document.getElementById("focusHistoryList");
+  if (!historyList || !auth.currentUser) return;
+  historyList.innerHTML = "";
+
+  let focusHistory = JSON.parse(localStorage.getItem(`focusHistoryData_${auth.currentUser.uid}`)) || [];
+
+  if (focusHistory.length === 0) {
+    historyList.innerHTML = `<p style="color: #94a3b8; font-style: italic; font-size: 14px;">Belum ada riwayat sesi fokus.</p>`;
+    return;
+  }
+
+  focusHistory.forEach((log, index) => {
+    historyList.innerHTML += `
+      <div class="history-item-box" style="background: #eff6ff; padding: 14px 18px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #4b5cff; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <span style="font-weight: 700; color: #1e293b;">🎯 Sesi: ${log.target}</span>
+          <p style="font-size: 12px; color: #4b5cff; margin-top: 4px;">⏱️ Durasi: ${log.duration} Menit | Waktu: ${log.timestamp}</p>
+        </div>
+        <button onclick="deleteFocusHistory(${index})" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;">
+          Hapus Jejak
+        </button>
+      </div>`;
+  });
+}

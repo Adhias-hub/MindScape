@@ -2,16 +2,15 @@
 <html lang="id">
 
 <head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://apis.google.com https://*.googleapis.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
   <meta name="description" content="MindSpace: Aplikasi produktivitas mahasiswa untuk mengatur jadwal kuliah, tugas, kesehatan, dan fokus belajar dengan notifikasi pintar.">
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="/src/todo.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>To-Do List</title>
-  <link rel="stylesheet" href="todo.css">
-  <link rel="manifest" href="manifest.json">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://*.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
   
-  <!-- HANYA CSS UTK TOMBOL HISTORI YANG NEMPEL -->
+  <link rel="stylesheet" href="/src/todo.css">
+  <link rel="manifest" href="manifest.json">
+  
   <style>
     .btn-toggle-history {
       width: 100%;
@@ -55,14 +54,12 @@
 
 <body>
 
-  <!-- ================= HEADER ================= -->
   <header class="home-header">
     <div class="logo-area">
       <h1>MindSpace 🌸</h1>
     </div>
 
-    <!-- NAVBAR -->
-    <nav class="navbar">
+    <nav class="navbar" aria-label="Menu Navigasi Utama">
       <a href="home.html">Beranda</a>
       <a href="jadwal.html">Jadwal</a>
       <a href="todo.html">To-Do List</a>
@@ -71,46 +68,36 @@
     </nav>
   </header>
 
-  <!-- ================= TODO ================= -->
   <section class="todo-section">
     <h2>📝 To-Do List</h2>
 
-    <!-- FORM -->
-    <div class="todo-form">
-      <input type="text" id="taskInput" placeholder="Nama tugas">
+    <div class="todo-form" role="form" aria-label="Form Tambah Tugas">
+      <input type="text" id="taskInput" placeholder="Nama tugas" aria-label="Nama Tugas">
       
-      <!-- TRIK SAKLEK PLACEHOLDER TANGGAL & JAM DEADLINE 🔒 -->
-      <input type="text" id="deadlineDate" placeholder="Tanggal Batas Tugas"
-             onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'">
-             
-      <input type="text" id="deadlineTime" placeholder="Jam Batas Tugas"
-             onfocus="(this.type='time')" onblur="if(!this.value)this.type='text'">
-             
-      <input type="text" id="taskNote" placeholder="Catatan tugas">
-      <button onclick="addTask()">Tambah Tugas</button>
+      <input type="date" id="deadlineDate" aria-label="Tanggal Batas Tugas">
+           
+      <input type="time" id="deadlineTime" aria-label="Jam Batas Tugas">
+           
+      <input type="text" id="taskNote" placeholder="Catatan tugas" aria-label="Catatan Tugas">
+      
+      <button id="btnTambahTugas">Tambah Tugas</button>
     </div>
 
-    <!-- LIST TUGAS AKTIF -->
     <div id="taskList"></div>
 
-    <!-- ================= BOX HISTORI KEMBAR ================= -->
     <div class="todo-history-section" style="margin-top: 50px; max-width: 1200px; margin-left: auto; margin-right: auto;">
       
-      <!-- 1. Tombol Pemicu Utama Berada di Luar Kontainer yang Sembunyi -->
-      <button onclick="toggleHistori('pembungkusHistoriTodo', 'btnToggleTodo', ' Riwayat Tugas')" class="btn-toggle-history" id="btnToggleTodo">
+      <button class="btn-toggle-history" id="btnToggleTodo">
         📜 Riwayat Tugas (Buka)
       </button>
 
-      <!-- 2. Kontainer Pembungkus Utama (Membungkus ke-2 list histori, default tersembunyi saklek) -->
       <div id="pembungkusHistoriTodo" class="box-histori-pembungkus" style="display: none;">
         
-        <!-- RIWAYAT TUGAS BERHASIL -->
         <div style="margin-bottom: 40px;">
           <h3 style="color: #10b981; margin-bottom: 20px; font-size: 22px; font-weight: 800;">📜 Riwayat Tugas Selesai</h3>
           <div id="todoHistoryList"></div>
         </div>
 
-        <!-- RIWAYAT TUGAS GAGAL (OVERDUE) -->
         <div>
           <h3 style="color: #ef4444; margin-bottom: 20px; font-size: 22px; font-weight: 800;">⚠️ Daftar Tugas Hangus (Lewat Deadline)</h3>
           <div id="todoGagalList"></div>
@@ -122,27 +109,7 @@
 
   </section>
 
-  <!-- LOADING CORE ENGINE -->
   <script type="module" src="/src/main.js"></script>
-
-  <!-- SKRIP UNTUK TOMBOL ONCLICK LANGSUNG AKTIF -->
-  <script>
-    function toggleHistori(boxId, btnId, textAsli) {
-      const box = document.getElementById(boxId);
-      const btn = document.getElementById(btnId);
-      if (!box || !btn) return;
-
-      if (box.style.display === "none") {
-        box.style.display = "block";
-        btn.innerText = "📜" + textAsli + " (Tutup)";
-        btn.classList.add("aktif");
-      } else {
-        box.style.display = "none";
-        btn.innerText = "📜" + textAsli + " (Buka)";
-        btn.classList.remove("aktif");
-      }
-    }
-  </script>
 
 </body>
 </html>

@@ -2,6 +2,7 @@
 <html lang="id">
 
 <head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://apis.google.com https://*.googleapis.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
   <meta name="description" content="MindSpace: Aplikasi produktivitas mahasiswa untuk mengatur jadwal kuliah, tugas, kesehatan, dan fokus belajar dengan notifikasi pintar.">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,14 +10,11 @@
   <title>MindSpace Login</title>
 
   <link rel="stylesheet" href="/src/in.css">
-  
   <link rel="manifest" href="manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/10474/10474662.png">
-  
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://*.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
 </head>
 
 <body>
@@ -27,27 +25,27 @@
       <p>Atur waktu dan kesehatanmu lebih baik</p>
       
       <div class="input-box">
-        <label>Email</label>
+        <label for="loginEmail">Email</label>
         <input type="email" id="loginEmail" placeholder="Masukkan email">
       </div>
       
       <div class="input-box">
-        <label>Password</label>
+        <label for="loginPassword">Password</label>
         <input type="password" id="loginPassword" placeholder="Masukkan password">
       </div>
       
-      <button class="btn" onclick="login()">Login</button>
+      <button class="btn" id="btnKirimLogin">Login</button>
 
       <div class="separator">atau</div>
 
-      <button class="btn-google" onclick="loginDenganGoogle()">Google</button> 
+      <button class="btn-google" id="btnGoogleLogin">Google</button> 
     
       <div class="forgot-password">
-        <a onclick="forgotPassword()">Lupa Password?</a>
+        <a id="btnLupaPassword" href="#">Lupa Password?</a>
       </div>
 
       <div class="switch-text">
-        Belum punya akun? <a onclick="showRegister()">Daftar</a>
+        Belum punya akun? <a id="btnKeHalamanRegister" href="#">Daftar</a>
       </div>
     </div>
   </div>
@@ -58,24 +56,27 @@
       <p>Buat akun untuk mulai menggunakan MindSpace</p>
 
       <div class="input-box">
-        <label>Nama Lengkap</label>
+        <label for="registerName">Nama Lengkap</label>
         <input type="text" id="registerName" placeholder="Masukkan nama lengkap">
       </div>
 
       <div class="input-box">
-        <label>Email</label>
-        <input type="email" id="registerEmail" placeholder="Masukkan email">
+        <label for="registerEmail">Email</label>
+        <input type="email" id="emailUrut" placeholder="Masukkan email"> <script>
+          // Pemetaan id tambahan jika di main.js memanggil registerEmail
+          document.getElementById('emailUrut')?.setAttribute('id', 'registerEmail');
+        </script>
       </div>
     
       <div class="input-box">
-        <label>Password</label>
-        <input type="password" id="registerPassword" placeholder="Masukkan password">
+        <label for="registerPassword">Password</label>
+        <input type="password" id="registerPassword" placeholder="Masukkan password (Min. 6 Karakter)">
       </div>
 
-      <button class="btn" onclick="register()">Daftar</button>
+      <button class="btn" id="btnKirimRegister">Daftar</button>
 
       <div class="switch-text">
-        Sudah punya akun? <a onclick="showLogin()">Login</a>
+        Sudah punya akun? <a id="btnKeHalamanLogin" href="#">Login</a>
       </div>
     </div>
   </div>

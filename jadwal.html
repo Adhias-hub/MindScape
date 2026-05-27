@@ -2,14 +2,14 @@
 <html lang="id">
 
 <head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://apis.google.com https://*.googleapis.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
   <meta name="description" content="MindSpace: Aplikasi produktivitas mahasiswa untuk mengatur jadwal kuliah, tugas, kesehatan, dan fokus belajar dengan notifikasi pintar.">
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="/src/jadwal.css"> 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jadwal Kuliah - MindSpace</title>
-  <link rel="stylesheet" href="jadwal.css">
+  
+  <link rel="stylesheet" href="/src/jadwal.css">
   <link rel="manifest" href="manifest.json">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://*.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
 </head>
 
 <body>
@@ -33,7 +33,6 @@
       <h2>📚 Jadwal Kuliah</h2>
 
       <div class="schedule-form" role="form" aria-label="Form Tambah Jadwal Kuliah">
-        
         <input type="text" id="courseInput" placeholder="Nama Mata Kuliah" aria-label="Nama Mata Kuliah">
 
         <select id="dayInput" aria-label="Pilih Hari Kuliah">
@@ -46,15 +45,13 @@
           <option value="Sabtu">Sabtu</option>
         </select>
 
-        <input type="text" id="startTime" placeholder="Jam Dimulai" aria-label="Jam Mulai Kuliah" 
-               onfocus="(this.type='time')" onblur="if(!this.value)this.type='text'">
+        <input type="time" id="startTime" aria-label="Jam Mulai Kuliah">
                
-        <input type="text" id="endTime" placeholder="Jam Berakhir" aria-label="Jam Selesai Kuliah" 
-               onfocus="(this.type='time')" onblur="if(!this.value)this.type='text'">
+        <input type="time" id="endTime" aria-label="Jam Selesai Kuliah">
 
         <input type="text" id="noteInput" placeholder="Catatan (Ruangan/Dosen)" aria-label="Catatan Tambahan">
 
-        <button onclick="addSchedule()">Tambah Jadwal</button>
+        <button id="btnTambahJadwal">Tambah Jadwal</button>
       </div>
 
       <div class="table-responsive-wrapper">
@@ -72,13 +69,13 @@
           </thead>
 
           <tbody id="scheduleList">
-            </tbody>
+          </tbody>
         </table>
       </div>
     </section>
   </main>
 
   <script type="module" src="/src/main.js"></script>
-</body>
 
+</body>
 </html>
