@@ -686,19 +686,19 @@ function displayWellness(){
   if(!wellnessList) return;
   wellnessList.innerHTML = "";
 
-  // 1. Tarik data paling fresh dari localstorage
-wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${auth.currentUser.uid}`)) || [];
+  // 1. Ambil dari kamar LOGS (Lavender Baru)
+  let dataWellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
 
-  // 2. URUTKAN BERDASARKAN JAM PALING AWAL (Pagi ke Malam)
-  wellnessData.sort((a, b) => a.time.localeCompare(b.time));
+  // 2. Urutkan berdasarkan jam (menggunakan properti 'jam')
+  dataWellnessLokal.sort((a, b) => a.jam.localeCompare(b.jam));
 
-  // 3. Render HANYA aktivitas yang BELUM selesai (item.completed === false)
-  wellnessData.forEach((item, index)=>{
+  // 3. Render menggunakan properti yang sinkron (aktivitas & jam)
+  dataWellnessLokal.forEach((item, index) => {
     if (!item.completed) {
       wellnessList.innerHTML += `
         <div class="wellness-card">
-          <h3>${item.type}</h3>
-          <p>⏰ Waktu: <strong>${item.time}</strong></p>
+          <h3>💧 ${item.aktivitas}</h3>
+          <p>⏰ Waktu: <strong>${item.jam} WIB</strong></p>
           <p>🌸 Catatan: ${item.note || "-"}</p>
           <div class="wellness-buttons">
             <button class="done-btn" onclick="completeWellness(${index})">Selesai</button>
@@ -779,22 +779,23 @@ function deleteWellness(index){
 
 function jalankanSatpamWellnessOtomatis() {
   setInterval(() => {
-    if (!auth.currentUser) return; // Proteksi jika belum login
+    if (!auth.currentUser) return; 
 
     const sekarang = new Date();
     const jamMenitSekarangStr = `${String(sekarang.getHours()).padStart(2, '0')}:${String(sekarang.getMinutes()).padStart(2, '0')}`;
     
-    // 🔥 SOLUSI SAKLEK: Narik data mutlak dari UID yang sedang aktif agar tidak bocor
-    const pengingatWellness = JSON.parse(localStorage.getItem(`wellnessData_${auth.currentUser.uid}`)) || [];
+    // Tarik data dari kamar log yang benar (wellnessLogs_)
+    const pengingatWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
 
     pengingatWellness.forEach((item) => {
-      if (!item.completed && item.time === jamMenitSekarangStr) {
+      // Sesuaikan properti dari 'time' jadi 'jam', dan 'type' jadi 'aktivitas'
+      if (!item.completed && item.jam === jamMenitSekarangStr) {
         if (Notification.permission === "granted") {
-          const keyNotifWellness = `notif_well_${auth.currentUser.uid}_${item.type}_${item.time}`;
+          const keyNotifWellness = `notif_well_${auth.currentUser.uid}_${item.id}_${item.jam}`;
           
           if (!sessionStorage.getItem(keyNotifWellness)) {
-            new Notification(`💧 TIME FOR WELLNESS: ${item.type}`, {
-              body: `yaa, udah jam ${item.time}! Waktunya aktivitas "${item.type}". Catatan: ${item.note || 'Tetap sehat, yaa!'}`,
+            new Notification(`💧 TIME FOR WELLNESS`, {
+              body: `Waktunya aktivitas: "${item.aktivitas}"`,
               icon: 'https://cdn-icons-png.flaticon.com/512/3011/3011285.png',
               requireInteraction: true 
             });
@@ -803,7 +804,7 @@ function jalankanSatpamWellnessOtomatis() {
         }
       }
     });
-  }, 30000); // Menggunakan jeda 30 detik yang aman
+  }, 30000); 
 }
 
 /**
@@ -1036,16 +1037,16 @@ function bukaGembokFormInputDanKembalikanTombol() {
 }
 
 function catatHistoryFocusKeLokal(targetText, durasiMenit) {
-  let focusHistory = JSON.parse(localStorage.getItem("focusHistoryData")) || [];
-  const waktuSekarang = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  const uid = auth.currentUser ? auth.currentUser.uid : "anonim";
+  let focusHistory = JSON.parse(localStorage.getItem(`focusHistoryData_${uid}`)) || [];
   
   focusHistory.push({
     target: targetText || "Fokus Belajar",
     duration: durasiMenit || 25,
-    timestamp: waktuSekarang
+    timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
   });
   
-  localStorage.setItem("focusHistoryData", JSON.stringify(focusHistory));
+  localStorage.setItem(`focusHistoryData_${uid}`, JSON.stringify(focusHistory));
   displayFocusHistory();
 }
 
@@ -1077,10 +1078,10 @@ function cekSesiTimerPasRefresh() {
  */
 window.displayFocusHistory = function() {
   const historyList = document.getElementById("focusHistoryList");
-  if (!historyList) return;
+  if (!historyList || !auth.currentUser) return;
   historyList.innerHTML = "";
 
-  let focusHistory = JSON.parse(localStorage.getItem("focusHistoryData")) || [];
+  let focusHistory = JSON.parse(localStorage.getItem(`focusHistoryData_${auth.currentUser.uid}`)) || [];
 
   if (focusHistory.length === 0) {
     historyList.innerHTML = `<p style="color: #94a3b8; font-style: italic; font-size: 14px;">Belum ada riwayat sesi fokus.</p>`;
