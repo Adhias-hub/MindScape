@@ -1792,7 +1792,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // 4. DAFTARKAN SERVICE WORKER SECARA AMAN
   if ('serviceWorker' in navigator) {
-    // 1. Buat string parameter URL dari env
     const configParams = new URLSearchParams({
       apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
       authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -1802,7 +1801,6 @@ window.addEventListener("DOMContentLoaded", () => {
       appId: import.meta.env.VITE_FIREBASE_APP_ID
     }).toString();
 
-    // 2. Daftarkan file SW dengan parameter query URL
     navigator.serviceWorker.register(`/firebase-messaging-sw.js?${configParams}`)
       .then((reg) => {
         console.log('Service Worker berhasil didaftarkan dengan scope:', reg.scope);
@@ -1821,19 +1819,19 @@ window.addEventListener("DOMContentLoaded", () => {
     
     console.log("Menyelaraskan nama kunci LocalStorage sebelum render awal...");
 
-    // ================= SINKRONISASI KUNCI LOCALSTORAGE =================
+    // ================= SINKRONISASI KUNCI LOCALSTORAGE (FIX ZERO MISTAKE 🔥) =================
     // 1. Sinkronisasi To-Do List (Memastikan memakai 'tasks_')
     tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
     dataTodo = tasks; 
 
-    // 2. Sinkronisasi Jadwal Kuliah (Memastikan memakai 'jadwalKuliah_')
-    schedules = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
+    // 2. Sinkronisasi Jadwal Kuliah (FIX: Menyamakan dari jadwalKuliah_ ke schedules_)
+    schedules = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
     dataJadwal = schedules;
 
-    // 3. Sinkronisasi Wellness Logs
-    wellnessData = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
+    // 3. Sinkronisasi Wellness Logs (FIX: Menyamakan dari wellnessLogs_ ke wellnessData_)
+    wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${auth.currentUser.uid}`)) || [];
     dataWellness = wellnessData;
-    // ===================================================================
+    // =========================================================================================
 
     // PERBAIKAN SINKRONISASI: Menghubungkan ke fungsi baru bertema Lavender Premium
     if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
@@ -1862,16 +1860,16 @@ window.addEventListener("DOMContentLoaded", () => {
 
         console.log(`Menuju halaman: ${targetPage}. Menyelaraskan ulang memori & merender visual...`);
         
-        // ================= FORCE RE-READ SEBELUM PINDAH HALAMAN =================
+        // ================= FORCE RE-READ SEBELUM PINDAH HALAMAN (FIX ZERO MISTAKE 🔥) =================
         tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
         dataTodo = tasks;
 
-        schedules = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
+        schedules = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
         dataJadwal = schedules;
 
-        wellnessData = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
+        wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${auth.currentUser.uid}`)) || [];
         dataWellness = wellnessData;
-        // ========================================================================
+        // =============================================================================================
         
         // PERBAIKAN SINKRONISASI: Menghubungkan navigasi ke fungsi render visual Lavender Premium
         if (targetPage === "wellness") {
