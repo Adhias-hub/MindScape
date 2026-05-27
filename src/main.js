@@ -719,15 +719,19 @@ function addWellness(){
     return;
   }
 
-  // AMAN: Ambil token UID dan gunakan array global 'dataWellness'
   const uidAman = auth.currentUser ? auth.currentUser.uid : "";
   
-  dataWellness.push({ type: type, time: time, note: note, completed: false });
+  // SAKLEK: Properti diubah menjadi 'aktivitas' dan 'jam' agar sinkron dengan fungsi render dashboard kamu
+  dataWellness.push({ 
+    id: 'well_' + Date.now(), // Tambahkan ID unik bawaan Lavender murni lu
+    aktivitas: type, 
+    jam: time, 
+    note: note, 
+    completed: false 
+  });
   
-  // KUNCI SINKRON: Simpan ke kunci 'wellnessLogs_UID' agar bisa dibaca fungsi render
   localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellness));
   
-  // Langsung jalankan fungsi render dashboard biar card-nya langsung muncul di layar tanpa reload
   if (typeof tampilkanWellnessDashboard === "function") {
     tampilkanWellnessDashboard();
   }
@@ -746,22 +750,32 @@ function addWellness(){
 }
 
 
-// SEKARANG REFRESH OTOMATIS SAAT DIKLIK SELESAI
+
 function completeWellness(index){
-  // Mengubah status completed data wellness
-  wellnessData[index].completed = true; 
- localStorage.setItem(`wellnessData_${auth.currentUser.uid}`, JSON.stringify(wellnessData));
+  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+  // Tarik data paling fresh sebelum diubah statusnya
+  dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
   
-  displayWellness();         // Update daftar atas (aktivitas hilang)
-  displayWellnessHistory();  // Update daftar histori (aktivitas muncul di bawah)
+  if (dataWellness[index]) {
+    dataWellness[index].completed = true; 
+    localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellness));
+  }
+  
+  tampilkanWellnessDashboard(); // Gunakan fungsi render barumu
+  if (typeof displayWellnessHistory === "function") displayWellnessHistory();
 }
 
 function deleteWellness(index){
-  wellnessData.splice(index, 1);
-  localStorage.setItem(`wellnessData_${auth.currentUser.uid}`, JSON.stringify(wellnessData));
-  displayWellness();
-  displayWellnessHistory();  // Menghapus histori jika index yang dihapus berupa item selesai
+  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+  dataWellness = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
+  
+  dataWellness.splice(index, 1);
+  localStorage.setItem(`wellnessLogs_${uidAman}`, JSON.stringify(dataWellness));
+  
+  tampilkanWellnessDashboard(); // Gunakan fungsi render barumu
+  if (typeof displayWellnessHistory === "function") displayWellnessHistory();
 }
+
 
 function jalankanSatpamWellnessOtomatis() {
   setInterval(() => {
@@ -799,8 +813,11 @@ window.displayWellnessHistory = function() {
   const historyList = document.getElementById("wellnessHistoryList");
   if (!historyList) return;
   historyList.innerHTML = "";
+  if (!auth.currentUser) return;
 
-  const wellnessLokal = JSON.parse(localStorage.getItem(`wellnessData_${auth.currentUser.uid}`)) || [];
+  const uidAman = auth.currentUser ? auth.currentUser.uid : "";
+  // KUNCI AMAN: Arahkan ke kamar log yang baru
+  const wellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${uidAman}`)) || [];
   const wellnessSelesai = wellnessLokal.filter(item => item.completed);
 
   if (wellnessSelesai.length === 0) {
@@ -1366,25 +1383,39 @@ window.addEventListener('appinstalled', () => {
 
 // 1. STRUKTUR UTAMA SEGMENT JADWAL KULIAH 
 
-// Fungsi untuk menyimpan Jadwal baru dari Form HTML ke LocalStorage
-function tambahJadwalKuliah(namaMatkul, hariTerpilih, jamMenit) {
+function tambahJadwalKuliah() {
+  // Ambil data langsung dari elemen input form HTML kamu
+  let course = document.getElementById("courseInput")?.value || "";
+  let day = document.getElementById("dayInput")?.value || ""; 
+  let start = document.getElementById("startTime")?.value || "";
+
+  if (course === "" || day === "" || start === "") {
+    alert("Isi semua data jadwal kuliah!");
+    return;
+  }
+
   const uidAman = auth.currentUser ? auth.currentUser.uid : "";
   const dataJadwal = JSON.parse(localStorage.getItem(`jadwalKuliah_${uidAman}`)) || [];
-  // Bikin object jadwal baru (Cuma simpan Hari dan Jam murni, )
+  
   const jadwalBaru = {
     id: 'jadwal_' + Date.now(),
-    matkul: namaMatkul,
-    hari: hariTerpilih, 
-    jam: jamMenit      
+    matkul: course,
+    hari: day, 
+    jam: start      
   };
   
   dataJadwal.push(jadwalBaru);
-  localStorage.setItem(`jadwalKuliah_${auth.currentUser.uid}`, JSON.stringify(dataJadwal));
-
+  localStorage.setItem(`jadwalKuliah_${uidAman}`, JSON.stringify(dataJadwal));
   
-  console.log('Jadwal berhasil disimpen di memori lokal, ! 🪻');
-  tampilkanJadwalDashboard(); // Refresh tampilan list di layar
+  console.log('Jadwal berhasil disimpen di memori lokal! 🪻');
+  tampilkanJadwalDashboard(); 
+
+  // Bersihkan form input setelah sukses menambah data
+  if (document.getElementById("courseInput")) document.getElementById("courseInput").value = "";
+  if (document.getElementById("dayInput")) document.getElementById("dayInput").value = "";
+  if (document.getElementById("startTime")) document.getElementById("startTime").value = "";
 }
+
 
 // Fungsi untuk merender daftar jadwal ke HTML biar kelihatan gagah
 function tampilkanJadwalDashboard() {
