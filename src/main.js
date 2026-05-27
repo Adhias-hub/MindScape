@@ -48,7 +48,7 @@ onAuthStateChanged(auth, (user) => {
     // STEP 1: AMBIL DATA SEKALI SAJA DI AWAL MENGGUNAKAN KUNCI LAVENDER PREMIUM
     // =========================================================================
     const jadwalLokal = JSON.parse(localStorage.getItem(`jadwalKuliah_${user.uid}`)) || [];
-    const todoLokal = JSON.parse(localStorage.getItem(`todoTugas_${user.uid}`)) || [];
+    const todoLokal = JSON.parse(localStorage.getItem(`tasks_${user.uid}`)) || [];
     const wellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${user.uid}`)) || [];
 
     // Isi sistem lama agar fungsi-fungsi lama tidak error/broken
@@ -418,7 +418,7 @@ function jalankanSatpamOtomatis() {
     const jamSekarangMenit = (sekarang.getHours() * 60) + sekarang.getMinutes();
     
     // Ambil data terjaga murni berdasarkan UID user aktif
-    const jadwalAktif = JSON.parse(localStorage.getItem(`schedules_${auth.currentUser.uid}`)) || [];
+   const jadwalAktif = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
 
     jadwalAktif.forEach((jadwal) => {
       if (kamusHari[jadwal.day] === hariIniAngka) {
@@ -1799,33 +1799,49 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // 4. DAFTARKAN SERVICE WORKER SECARA AMAN
   if ('serviceWorker' in navigator) {
-  // 1. Buat string parameter URL dari env
-  const configParams = new URLSearchParams({
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID
-  }).toString();
+    // 1. Buat string parameter URL dari env
+    const configParams = new URLSearchParams({
+      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: import.meta.env.VITE_FIREBASE_APP_ID
+    }).toString();
 
-  // 2. Daftarkan file SW dengan parameter query URL
-  navigator.serviceWorker.register(`/firebase-messaging-sw.js?${configParams}`)
-    .then((reg) => {
-      console.log('Service Worker berhasil didaftarkan dengan scope:', reg.scope);
-      if (typeof aktifkanNotificationFCM === "function") {
-        aktifkanNotificationFCM();
-      }
-    })
-    .catch((err) => {
-      console.error('Service Worker gagal didaftarkan:', err);
-    });
-}
+    // 2. Daftarkan file SW dengan parameter query URL
+    navigator.serviceWorker.register(`/firebase-messaging-sw.js?${configParams}`)
+      .then((reg) => {
+        console.log('Service Worker berhasil didaftarkan dengan scope:', reg.scope);
+        if (typeof aktifkanNotificationFCM === "function") {
+          aktifkanNotificationFCM();
+        }
+      })
+      .catch((err) => {
+        console.error('Service Worker gagal didaftarkan:', err);
+      });
+  }
 
-  // 5. INITIAL RENDER DATA (Saat pertama kali web dibuka)
+  // 5. INITIAL RENDER DATA (Saat pertama kali web dibuka / di-reload)
   const jalankanRenderAwalSemuaData = () => {
     if (!auth.currentUser) return;
     
+    console.log("Menyelaraskan nama kunci LocalStorage sebelum render awal...");
+
+    // ================= SINKRONISASI KUNCI LOCALSTORAGE =================
+    // 1. Sinkronisasi To-Do List (Memastikan memakai 'tasks_')
+    tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
+    dataTodo = tasks; 
+
+    // 2. Sinkronisasi Jadwal Kuliah (Memastikan memakai 'jadwalKuliah_')
+    schedules = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
+    dataJadwal = schedules;
+
+    // 3. Sinkronisasi Wellness Logs
+    wellnessData = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
+    dataWellness = wellnessData;
+    // ===================================================================
+
     // PERBAIKAN SINKRONISASI: Menghubungkan ke fungsi baru bertema Lavender Premium
     if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
     if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
@@ -1835,9 +1851,12 @@ window.addEventListener("DOMContentLoaded", () => {
     if (typeof displayGagalHistory === "function") displayGagalHistory();
     if (document.getElementById("wellnessHistoryList") && typeof displayWellnessHistory === "function") displayWellnessHistory();
     if (document.getElementById("focusHistoryList") && typeof displayFocusHistory === "function") displayFocusHistory();
+
+    console.log("Render awal semua data berhasil disinkronkan!");
   };
 
-  setTimeout(jalankanRenderAwalSemuaData, 250);
+  // TETAP JALANKAN TIMEOUT DI SINI AGAR TIDAK BALAPAN SAAT RELOAD
+  setTimeout(jalankanRenderAwalSemuaData, 300);
 
   // 6. SOLUSI JITU PINDAH HALAMAN (ANTI-DATA-HILANG)
   document.querySelectorAll('nav a, .sidebar-menu a, [data-page], .menu-link, .nav-item').forEach(tombol => {
@@ -1848,13 +1867,27 @@ window.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => {
         if (!auth.currentUser) return;
 
-        console.log(`Menuju halaman: ${targetPage}. Merender ulang data...`);
+        console.log(`Menuju halaman: ${targetPage}. Menyelaraskan ulang memori & merender visual...`);
+        
+        // ================= FORCE RE-READ SEBELUM PINDAH HALAMAN =================
+        tasks = JSON.parse(localStorage.getItem(`tasks_${auth.currentUser.uid}`)) || [];
+        dataTodo = tasks;
+
+        schedules = JSON.parse(localStorage.getItem(`jadwalKuliah_${auth.currentUser.uid}`)) || [];
+        dataJadwal = schedules;
+
+        wellnessData = JSON.parse(localStorage.getItem(`wellnessLogs_${auth.currentUser.uid}`)) || [];
+        dataWellness = wellnessData;
+        // ========================================================================
         
         // PERBAIKAN SINKRONISASI: Menghubungkan navigasi ke fungsi render visual Lavender Premium
         if (targetPage === "wellness") {
+          if (typeof displayWellness === "function") displayWellness();
           if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
           if (typeof displayWellnessHistory === "function") displayWellnessHistory();
-        } else if (targetPage === "scheduler" || targetPage === "dashboard") {
+        } else if (targetPage === "scheduler" || targetPage === "dashboard" || targetPage === "todo") {
+          if (typeof displaySchedules === "function") displaySchedules();
+          if (typeof displayTasks === "function") displayTasks();
           if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
           if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
           if (typeof displayTodoHistory === "function") displayTodoHistory();
@@ -1862,7 +1895,7 @@ window.addEventListener("DOMContentLoaded", () => {
         } else if (targetPage === "focus") {
           if (typeof displayFocusHistory === "function") displayFocusHistory();
         }
-      }, 70); 
+      }, 100); // Menggunakan jeda 100ms agar rendering DOM halaman target berjalan mulus
     });
   });
 });
