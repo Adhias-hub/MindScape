@@ -10,6 +10,47 @@
   <link rel="stylesheet" href="todo.css">
   <link rel="manifest" href="manifest.json">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://*.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
+  
+  <!-- HANYA CSS UTK TOMBOL HISTORI YANG NEMPEL -->
+  <style>
+    .btn-toggle-history {
+      width: 100%;
+      padding: 16px;
+      background: #f4f6ff;
+      color: #4b5cff;
+      border: 2px dashed #4b5cff;
+      border-radius: 18px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      outline: none;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(75, 92, 255, 0.02);
+      margin-bottom: 25px;
+    }
+
+    .btn-toggle-history:hover {
+      background: #eef1ff;
+      transform: translateY(-1px);
+    }
+
+    .btn-toggle-history.aktif {
+      background: #4b5cff;
+      color: white;
+      border-style: solid;
+      box-shadow: 0 8px 20px rgba(75, 92, 255, 0.15);
+    }
+
+    .box-histori-pembungkus {
+      animation: slideDownFade 0.3s ease-out;
+    }
+
+    @keyframes slideDownFade {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
 </head>
 
 <body>
@@ -46,19 +87,29 @@
     <!-- LIST TUGAS AKTIF -->
     <div id="taskList"></div>
 
-    <!-- ================= BOX HISTORI KEMBAR (BERDAMPINGAN/BERURUTAN) ================= -->
+    <!-- ================= BOX HISTORI KEMBAR (MODIFIKASI: SINKRONISASI TOMBOL & WRAPPER) ================= -->
     <div class="todo-history-section" style="margin-top: 50px; max-width: 1200px; margin-left: auto; margin-right: auto;">
       
-      <!-- 1. RIWAYAT TUGAS BERHASIL -->
-      <div style="margin-bottom: 40px;">
-        <h3 style="color: #10b981; margin-bottom: 20px; font-size: 22px; font-weight: 800;">📜 Riwayat Tugas Selesai</h3>
-        <div id="todoHistoryList"></div>
-      </div>
+      <!-- 1. Tombol Pemicu Utama Berada di Luar Kontainer yang Sembunyi -->
+      <button onclick="toggleHistori('pembungkusHistoriTodo', 'btnToggleTodo', ' Riwayat Tugas')" class="btn-toggle-history" id="btnToggleTodo">
+        📜 Riwayat Tugas (Buka)
+      </button>
 
-      <!-- 2. RIWAYAT TUGAS GAGAL (OVERDUE) -->
-      <div>
-        <h3 style="color: #ef4444; margin-bottom: 20px; font-size: 22px; font-weight: 800;">⚠️ Daftar Tugas Hangus (Lewat Deadline)</h3>
-        <div id="todoGagalList"></div>
+      <!-- 2. Kontainer Pembungkus Utama (Membungkus ke-2 list histori, default tersembunyi saklek) -->
+      <div id="pembungkusHistoriTodo" class="box-histori-pembungkus" style="display: none;">
+        
+        <!-- RIWAYAT TUGAS BERHASIL -->
+        <div style="margin-bottom: 40px;">
+          <h3 style="color: #10b981; margin-bottom: 20px; font-size: 22px; font-weight: 800;">📜 Riwayat Tugas Selesai</h3>
+          <div id="todoHistoryList"></div>
+        </div>
+
+        <!-- RIWAYAT TUGAS GAGAL (OVERDUE) -->
+        <div>
+          <h3 style="color: #ef4444; margin-bottom: 20px; font-size: 22px; font-weight: 800;">⚠️ Daftar Tugas Hangus (Lewat Deadline)</h3>
+          <div id="todoGagalList"></div>
+        </div>
+
       </div>
 
     </div>
@@ -66,7 +117,26 @@
   </section>
 
   <!-- LOADING CORE ENGINE -->
- <script type="module" src="/src/main.js"></script>
+  <script type="module" src="/src/main.js"></script>
+
+  <!-- SKRIP UNTUK TOMBOL ONCLICK LANGSUNG AKTIF -->
+  <script>
+    function toggleHistori(boxId, btnId, textAsli) {
+      const box = document.getElementById(boxId);
+      const btn = document.getElementById(btnId);
+      if (!box || !btn) return;
+
+      if (box.style.display === "none") {
+        box.style.display = "block";
+        btn.innerText = "📜" + textAsli + " (Tutup)";
+        btn.classList.add("aktif");
+      } else {
+        box.style.display = "none";
+        btn.innerText = "📜" + textAsli + " (Buka)";
+        btn.classList.remove("aktif");
+      }
+    }
+  </script>
 
 </body>
 </html>

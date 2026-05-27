@@ -38,35 +38,46 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     console.log("Satpam Auth: User aktif ->", user.email);
 
-    if (path.includes("home.html") || path.includes("dashboard")) {
-   schedules = JSON.parse(localStorage.getItem(`schedules_${user.uid}`)) || [];
-   tasks = JSON.parse(localStorage.getItem(`tasks_${user.uid}`)) || [];
-   wellnessData = JSON.parse(localStorage.getItem(`wellnessData_${user.uid}`)) || [];
+    // =========================================================================
+    // STEP 1: AMBIL DATA SEKALI SAJA DI AWAL MENGGUNAKAN KUNCI LAVENDER PREMIUM
+    // =========================================================================
+    const jadwalLokal = JSON.parse(localStorage.getItem(`jadwalKuliah_${user.uid}`)) || [];
+    const todoLokal = JSON.parse(localStorage.getItem(`todoTugas_${user.uid}`)) || [];
+    const wellnessLokal = JSON.parse(localStorage.getItem(`wellnessLogs_${user.uid}`)) || [];
 
-  if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
-  if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
-  if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
-}
+    // Isi sistem lama agar fungsi-fungsi lama tidak error/broken
+    schedules = jadwalLokal;
+    tasks = todoLokal;
+    wellnessData = wellnessLokal;
+
+    // Isi sistem Lavender Premium agar sinkron di dashboard dan halaman internal
+    dataJadwal = jadwalLokal;
+    dataTodo = todoLokal;
+    dataWellness = wellnessLokal;
+
+    // =========================================================================
+    // STEP 2: ROUTING & RENDER VISUAL HALAMAN (KUNCI SUDAH AMAN DAN SERAGAM)
+    // =========================================================================
     
-    // 1. ROUTING HALAMAN JADWAL
+    // 1. ROUTING HALAMAN JADWAL INTERNAL
     if (isSchedulePage) {
-      dataJadwal = JSON.parse(localStorage.getItem(`schedules_${user.uid}`)) || [];
       if (typeof displaySchedules === "function") displaySchedules();
+      if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard(); // Jaga-jaga jika fungsi Lavender dipakai di halaman ini
     }
     
-    // 2. ROUTING HALAMAN TO-DO LIST
+    // 2. ROUTING HALAMAN TO-DO LIST INTERNAL
     if (isTodoPage) {
-      dataTodo = JSON.parse(localStorage.getItem(`tasks_${user.uid}`)) || [];
       if (typeof displayTasks === "function") displayTasks();
       if (typeof displayTodoHistory === "function") displayTodoHistory();
       if (typeof displayGagalHistory === "function") displayGagalHistory();
+      if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard(); // Jaga-jaga jika fungsi Lavender dipakai di halaman ini
     }
     
-    // 3. ROUTING HALAMAN WELLNESS
+    // 3. ROUTING HALAMAN WELLNESS INTERNAL
     if (isWellnessPage) {
-      dataWellness = JSON.parse(localStorage.getItem(`wellnessData_${user.uid}`)) || [];
       if (typeof displayWellness === "function") displayWellness();
       if (typeof displayWellnessHistory === "function") displayWellnessHistory();
+      if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard(); // Jaga-jaga jika fungsi Lavender dipakai di halaman ini
     }
     
     // 4. ROUTING HALAMAN FOCUS MODE
@@ -75,23 +86,18 @@ onAuthStateChanged(auth, (user) => {
       if (typeof cekSesiTimerPasRefresh === "function") cekSesiTimerPasRefresh();
     }
     
-    // 5. ROUTING HALAMAN DASHBOARD UTAMA
-   if (isHomePage) {
-  // DISERAGAMKAN KUNCINYA SAKLEK BIAR SINKRON SAMA HALAMAN INTERNAL 🔥
-  dataJadwal = JSON.parse(localStorage.getItem(`schedules_${user.uid}`)) || [];
-  dataTodo = JSON.parse(localStorage.getItem(`tasks_${user.uid}`)) || [];
-  dataWellness = JSON.parse(localStorage.getItem(`wellnessData_${user.uid}`)) || [];
-  
-  if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
-  if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
-  if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
-}
+    // 5. ROUTING HALAMAN DASHBOARD UTAMA (HOME)
+    if (isHomePage || path.includes("dashboard")) {
+      if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
+      if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
+      if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
+    }
 
     if (isLoginPage) window.location.href = "home.html";
 
   } else {
     // Tendang balik ke login jika coba mengakses halaman dalam tanpa akun
-    if (isHomePage || isSchedulePage || isTodoPage || isWellnessPage || isFocusPage) {
+    if (isHomePage || isSchedulePage || isTodoPage || isWellnessPage || isFocusPage || path.includes("dashboard")) {
       alert("Akses ditolak! Silakan login terlebih dahulu.");
       window.location.href = "index.html";
     }
@@ -295,7 +301,7 @@ function scrollDashboard() {
 }
 
 /* ================= MANAGEMENT DATA (JADWAL) ================= */
-let schedules = [];
+schedules = [];
 
 const dayOrder = {
   "Senin": 1, "Selasa": 2, "Rabu": 3, "Kamis": 4, "Jumat": 5, "Sabtu": 6, "Minggu": 7
@@ -462,7 +468,7 @@ window.deleteSchedule = deleteSchedule;
 /* ================= MANAGEMENT DATA (TODO TASKS) ================= */
 
 // 1. INISIALISASI VARIABEL GLOBAL (Murni Array Kosong, Tidak Mencampur Key Polosan)
-let tasks = [];
+tasks = [];
 
 function formatTampilanTanggal(dateString) {
   if (!dateString) return "-";
@@ -1282,17 +1288,22 @@ onMessage(messaging, (payload) => {
   alert(`📢 ${payload.notification.title}\n\n${payload.notification.body}`);
 });
 
-/**
- * A. UTILITY: SATPAM PENJAGA WAKTU GANTI HARI (Khusus Wellness 1 Hari Saklek)
- */
 function bersihkanWellnessGantiHariOtomatis() {
+  // 1. TAMBAHKAN PAGAR PENGAMAN: Jika auth belum siap atau user null, langsung keluar dari fungsi
+  if (!auth.currentUser) {
+    console.log("Satpam Wellness: Firebase belum siap, pembersihan ditunda.");
+    return; 
+  }
+
   const tanggalHariIni = new Date().toDateString(); 
   const tanggalTerakhirSimpan = localStorage.getItem("lastWellnessDate");
 
   if (tanggalTerakhirSimpan !== tanggalHariIni) {
+    // Sekarang baris ini 100% aman karena auth.currentUser dijamin tidak null
     localStorage.removeItem(`wellnessLogs_${auth.currentUser.uid}`);
     dataWellness = [];
     localStorage.setItem("lastWellnessDate", tanggalHariIni);
+    console.log("Satpam Wellness: Hari baru terdeteksi, logs berhasil dibersihkan!");
   }
 }
 
@@ -1783,43 +1794,28 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // 4. DAFTARKAN SERVICE WORKER SECARA AMAN
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/firebase-messaging-sw.js')
-      .then((reg) => {
-        console.log('Service Worker berhasil didaftarkan dengan scope:', reg.scope);
-        
-        const kirimConfigKeSW = () => {
-          if (reg.active) {
-            reg.active.postMessage({
-              type: 'SET_FIREBASE_CONFIG',
-              config: {
-                apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-                authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-                projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-                storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-                messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-                appId: import.meta.env.VITE_FIREBASE_APP_ID
-              }
-            });
-          }
-        };
+  // 1. Buat string parameter URL dari env
+  const configParams = new URLSearchParams({
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID
+  }).toString();
 
-        if (reg.active) {
-          kirimConfigKeSW();
-        } else {
-          reg.addEventListener('updatefound', () => {
-            const newWorker = reg.installing;
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'activated') {
-                kirimConfigKeSW();
-              }
-            });
-          });
-        }
-      })
-      .catch((err) => {
-        console.error('Service Worker gagal didaftarkan:', err);
-      });
-  }
+  // 2. Daftarkan file SW dengan parameter query URL
+  navigator.serviceWorker.register(`/firebase-messaging-sw.js?${configParams}`)
+    .then((reg) => {
+      console.log('Service Worker berhasil didaftarkan dengan scope:', reg.scope);
+      if (typeof aktifkanNotificationFCM === "function") {
+        aktifkanNotificationFCM();
+      }
+    })
+    .catch((err) => {
+      console.error('Service Worker gagal didaftarkan:', err);
+    });
+}
 
   // 5. INITIAL RENDER DATA (Saat pertama kali web dibuka)
   const jalankanRenderAwalSemuaData = () => {

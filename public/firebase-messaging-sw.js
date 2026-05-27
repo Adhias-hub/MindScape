@@ -1,30 +1,31 @@
-// Import SDK Firebase khusus di dalam Service Worker
+// ISI FILE firebase-messaging-sw.js (Taruh importScripts di sini!)
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
 
-// Tunggu kiriman config aman dari main.js
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SET_FIREBASE_CONFIG') {
-    const config = event.data.config;
+const urlParams = new URL(self.location.href).searchParams;
 
-    if (!firebase.apps.length) {
-      firebase.initializeApp(config);
-      const messaging = firebase.messaging();
+const firebaseConfig = {
+  apiKey: urlParams.get('apiKey'),
+  authDomain: urlParams.get('authDomain'),
+  projectId: urlParams.get('projectId'),
+  storageBucket: urlParams.get('storageBucket'),
+  messagingSenderId: urlParams.get('messagingSenderId'),
+  appId: urlParams.get('appId')
+};
 
-      // SATPAM LATAR BELAKANG: Menangkap notif saat tab/browser ditutup
-      messaging.onBackgroundMessage((payload) => {
-        console.log('[firebase-messaging-sw.js] Notif Background Masuk: ', payload);
+if (firebaseConfig.messagingSenderId && !firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+  const messaging = firebase.messaging();
 
-        const notificationTitle = payload.notification.title || "Mind Space Update!";
-        const notificationOptions = {
-          body: payload.notification.body || "Ada pesan baru untukmu.",
-          icon: payload.notification.icon || '/icon.png',
-          badge: '/icon.png',
-          data: payload.data
-        };
-
-        self.registration.showNotification(notificationTitle, notificationOptions);
-      });
-    }
-  }
-});
+  messaging.onBackgroundMessage((payload) => {
+    console.log('[firebase-messaging-sw.js] Notif Background Masuk: ', payload);
+    const notificationTitle = payload.notification?.title || "Mind Space Update!";
+    const notificationOptions = {
+      body: payload.notification?.body || "Ada pesan baru untukmu.",
+      icon: payload.notification?.icon || '/icon.png',
+      badge: '/icon.png',
+      data: payload.data
+    };
+    self.registration.showNotification(notificationTitle, notificationOptions);
+  });
+}

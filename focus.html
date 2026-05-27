@@ -6,11 +6,49 @@
   <link rel="stylesheet" href="/src/focus.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Focus Mode</title>
-  <!-- Diseragamkan ke style.css utama agar gradasi birunya menyatu sempurna -->
   <link rel="stylesheet" href="focus.css">
   <link rel="manifest" href="manifest.json">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://*.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
 
+  <style>
+    .btn-toggle-history {
+      width: 100%;
+      padding: 16px;
+      background: #f4f6ff;
+      color: #4b5cff;
+      border: 2px dashed #4b5cff;
+      border-radius: 18px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      outline: none;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(75, 92, 255, 0.02);
+      margin-bottom: 25px;
+    }
+
+    .btn-toggle-history:hover {
+      background: #eef1ff;
+      transform: translateY(-1px);
+    }
+
+    .btn-toggle-history.aktif {
+      background: #4b5cff;
+      color: white;
+      border-style: solid;
+      box-shadow: 0 8px 20px rgba(75, 92, 255, 0.15);
+    }
+
+    .box-histori-pembungkus {
+      animation: slideDownFade 0.3s ease-out;
+    }
+
+    @keyframes slideDownFade {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
 </head>
 
 <body>
@@ -62,13 +100,41 @@
         </div>
       </div> 
 
-    </div> <div class="focus-history-section">
-      <h3>📜 Jurnal Riwayat Fokus</h3>
-      <div id="focusHistoryList"></div>
+    </div> 
+    
+    <div class="focus-history-section" style="margin-top: 50px; max-width: 1200px; margin-left: auto; margin-right: auto;">
+      
+      <button onclick="toggleHistori('pembungkusHistoriFocus', 'btnToggleFocus', ' Jurnal Riwayat Fokus')" class="btn-toggle-history" id="btnToggleFocus">
+        📜 Jurnal Riwayat Fokus (Buka)
+      </button>
+
+      <div id="pembungkusHistoriFocus" class="box-histori-pembungkus" style="display: none;">
+        <h3>📜 Jurnal Riwayat Fokus</h3>
+        <div id="focusHistoryList"></div>
+      </div>
+      
     </div>
 
   </section>
 
   <script type="module" src="/src/main.js"></script>
+
+  <script>
+    function toggleHistori(boxId, btnId, textAsli) {
+      const box = document.getElementById(boxId);
+      const btn = document.getElementById(btnId);
+      if (!box || !btn) return;
+
+      if (box.style.display === "none") {
+        box.style.display = "block";
+        btn.innerText = "📜" + textAsli + " (Tutup)";
+        btn.classList.add("aktif");
+      } else {
+        box.style.display = "none";
+        btn.innerText = "📜" + textAsli + " (Buka)";
+        btn.classList.remove("aktif");
+      }
+    }
+  </script>
 </body>
 </html>

@@ -8,21 +8,58 @@
   <link rel="stylesheet" href="/src/wellness.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Wellness</title>
-  <!-- Diseragamkan ke style.css utama agar visual gradasi premiumnya sinkron -->
   <link rel="stylesheet" href="wellness.css">
   <link rel="manifest" href="manifest.json">
- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://*.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://*.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
+
+  <style>
+    .btn-toggle-history {
+      width: 100%;
+      padding: 16px;
+      background: #f4f6ff;
+      color: #4b5cff;
+      border: 2px dashed #4b5cff;
+      border-radius: 18px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      outline: none;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(75, 92, 255, 0.02);
+      margin-bottom: 25px;
+    }
+
+    .btn-toggle-history:hover {
+      background: #eef1ff;
+      transform: translateY(-1px);
+    }
+
+    .btn-toggle-history.aktif {
+      background: #4b5cff;
+      color: white;
+      border-style: solid;
+      box-shadow: 0 8px 20px rgba(75, 92, 255, 0.15);
+    }
+
+    .box-histori-pembungkus {
+      animation: slideDownFade 0.3s ease-out;
+    }
+
+    @keyframes slideDownFade {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
 </head>
 
 <body>
 
-  <!-- ================= HEADER ================= -->
   <header class="home-header">
     <div class="logo-area">
       <h1>MindSpace 🌸</h1>
     </div>
 
-    <!-- NAVBAR -->
     <nav class="navbar">
       <a href="home.html">Beranda</a>
       <a href="jadwal.html">Jadwal</a>
@@ -32,11 +69,9 @@
     </nav>
   </header>
 
-  <!-- ================= WELLNESS ================= -->
   <section class="wellness-section">
     <h2>💧 Wellness Reminder</h2>
 
-    <!-- FORM -->
     <div class="wellness-form">
       <select id="wellnessType">
         <option value="">Pilih Reminder</option>
@@ -48,25 +83,46 @@
       <button onclick="addWellness()">Tambah Reminder</button>
     </div>
 
-    <!-- TARGET -->
     <div class="water-target">
       💙 Target minum hari ini: 8 gelas air
     </div>
 
-    <!-- LIST ELEMEN AKTIF -->
     <div id="wellnessList"></div>
 
-    <!-- ================= HISTORI WELLNESS (AUTO RESET SETIAP HARI BARU) ================= -->
     <div class="wellness-history-section" style="margin-top: 50px; max-width: 1200px; margin-left: auto; margin-right: auto;">
-      <h3 style="color: #7c3aed; margin-bottom: 20px; font-size: 22px; font-weight: 800;">📜 Log Kesehatan Hari Ini</h3>
-      <!-- Tempat menampung log cetakan JS yang bakal auto wipe-out pas ganti hari -->
-      <div id="wellnessHistoryList"></div>
+      
+      <button onclick="toggleHistori('pembungkusHistoriWellness', 'btnToggleWellness', ' Log Kesehatan Hari Ini')" class="btn-toggle-history" id="btnToggleWellness">
+        📜 Log Kesehatan Hari Ini (Buka)
+      </button>
+
+      <div id="pembungkusHistoriWellness" class="box-histori-pembungkus" style="display: none;">
+        <h3 style="color: #7c3aed; margin-bottom: 20px; font-size: 22px; font-weight: 800;">📜 Log Kesehatan Hari Ini</h3>
+        <div id="wellnessHistoryList"></div>
+      </div>
+
     </div>
 
   </section>
 
-  <!-- LOADING CORE ENGINE -->
- <script type="module" src="/src/main.js"></script>
+  <script type="module" src="/src/main.js"></script>
+
+  <script>
+    function toggleHistori(boxId, btnId, textAsli) {
+      const box = document.getElementById(boxId);
+      const btn = document.getElementById(btnId);
+      if (!box || !btn) return;
+
+      if (box.style.display === "none") {
+        box.style.display = "block";
+        btn.innerText = "📜" + textAsli + " (Tutup)";
+        btn.classList.add("aktif");
+      } else {
+        box.style.display = "none";
+        btn.innerText = "📜" + textAsli + " (Buka)";
+        btn.classList.remove("aktif");
+      }
+    }
+  </script>
 
 </body>
 </html>
