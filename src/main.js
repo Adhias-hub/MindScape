@@ -1,21 +1,22 @@
 import { initializeApp } from "firebase/app";
+
+// ✅ 1. Import Auth yang LENGKAP
 import { 
-  getAuth, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signInWithPopup, 
-  GoogleAuthProvider, 
-  onAuthStateChanged, 
-  signOut,
-  updateProfile,            
-  sendPasswordResetEmail,   
-  updatePassword            
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
+  signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut,
+  updateProfile, sendPasswordResetEmail, updatePassword            
 } from "firebase/auth";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
-// ✅ TAMBAHKAN INI: Modul Firestore untuk database cloud
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore"; 
 
-// Mengambil data dari file .env secara aman di Vite
+// ✅ 2. Import Firestore 
+import { 
+  getFirestore, enableIndexedDbPersistence, doc, setDoc, getDoc, onSnapshot
+} from "firebase/firestore";
+
+// ✅ 3. Import Keamanan
+import CryptoJS from 'crypto-js';
+
+// 🚨 INI YANG HILANG: KEMBALIKAN KONFIGURASI FIREBASE-MU DI SINI
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -28,7 +29,17 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
-const db = getFirestore(app); // ✅ TAMBAHKAN INI: Jalur database cloud siap digunakan!
+
+// ✅ 4. DATABASE & OFFLINE MODE
+const db = getFirestore(app);
+
+enableIndexedDbPersistence(db).catch((err) => {
+  if (err.code == 'failed-precondition') {
+    console.warn("Gagal mode offline: Ada banyak tab aplikasi yang terbuka.");
+  } else if (err.code == 'unimplemented') {
+    console.warn("Browser ini tidak mendukung fitur offline Firestore.");
+  }
+});
 
 /* ================= LEVEL 2: DEKLARASI VARIABEL GLOBAL RAM ================= */
 let schedules = [];
@@ -202,48 +213,93 @@ function scrollDashboard() {
 
 
 
-/* ================= SECURITY UTILITY (ENKRIPSI STORAGE) ================= */
+/* ================= SECURITY UTILITY (ENKRIPSI & FIRESTORE OFFLINE SYNC) ================= */
 
-// Fungsi untuk mengacak string (enkripsi ringan berbasis Base64 + Custom Salt)
-function encryptData(text) {
-  // Tambahkan salt rahasia agar tidak bisa di-decode instan pakai generator Base64 biasa
-  const salt = "MindSpace_Secure_Salt_2026_"; 
-  const saltedText = salt + text;
-  // Ubah ke format Base64 yang aman dari mata telanjang
-  return btoa(unescape(encodeURIComponent(saltedText)));
+// Kunci AES sesungguhnya (Sebaiknya letakkan di file .env nanti: VITE_ENCRYPTION_KEY)
+const SECRET_KEY = import.meta.env.VITE_ENCRYPTION_KEY || "Kunci_Rahasia_MindSpace_2026";
+
+function encryptDataAman(dataObj) {
+  const jsonStr = JSON.stringify(dataObj);
+  return CryptoJS.AES.encrypt(jsonStr, SECRET_KEY).toString();
 }
 
-// Fungsi untuk mengembalikan string asli (dekripsi)
-function decryptData(cipherText) {
+function decryptDataAman(cipherText) {
   try {
     if (!cipherText) return null;
-    const decoded = decodeURIComponent(escape(atob(cipherText)));
-    const salt = "MindSpace_Secure_Salt_2026_";
-    if (decoded.startsWith(salt)) {
-      return decoded.replace(salt, "");
-    }
-    return null; // Data rusak atau dimanipulasi orang lain
+    const bytes = CryptoJS.AES.decrypt(cipherText, SECRET_KEY);
+    const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
+    return JSON.parse(decryptedStr);
   } catch (e) {
-    console.error("Gagal mendekripsi data. Kemungkinan data telah dimanipulasi lewat DevTools.");
+    console.warn("Gagal dekripsi. Data kosong/rusak:", e.message);
     return null;
   }
 }
 
-// Handler Baru untuk Simpan Data ke LocalStorage secara Terenkripsi
+// ✅ Handler Simpan: Simpan ke LocalStorage (Offline) + Lempar ke Firestore (Cloud)
 function simpanDataAman(key, dataObj) {
-  const jsonString = JSON.stringify(dataObj);
-  const encryptedString = encryptData(jsonString);
+  // 1. Simpan ke memori lokal browser agar super cepat dan bisa dibaca saat offline
+  const encryptedString = encryptDataAman(dataObj);
   localStorage.setItem(key, encryptedString);
+
+  // 2. Lempar ke Firestore di latar belakang (Otomatis ditahan jika tidak ada internet)
+  const user = auth.currentUser;
+  if (user) {
+    const docRef = doc(db, "users", user.uid, "appData", key);
+    setDoc(docRef, { 
+      payload: encryptedString,
+      terakhirDiperbarui: new Date().toISOString()
+    }, { merge: true })
+    .then(() => console.log(`☁️ Data [${key}] sukses diantrekan ke Cloud!`))
+    .catch(err => console.error("Gagal sinkron ke Cloud:", err));
+  }
 }
 
-// Handler Baru untuk Ambil Data dari LocalStorage secara Aman
+// ✅ Handler Ambil: Membaca langsung dari lokal agar tidak ada delay/loading screen
 function ambilDataAman(key) {
   const encryptedData = localStorage.getItem(key);
   if (!encryptedData) return null;
-  const decryptedString = decryptData(encryptedData);
-  if (!decryptedString) return null;
-  return JSON.parse(decryptedString);
+  return decryptDataAman(encryptedData);
 }
+
+// ✅ Fungsi Pendengar Cloud (Aktif secara Real-time)
+function mulaiSinkronisasiCloud() {
+  const user = auth.currentUser;
+  if (!user) return;
+  
+  // Daftar kunci data yang mau kita pantau
+  const tipeData = [`jadwalKuliah_${user.uid}`, `todoTugas_${user.uid}`, `wellnessLogs_${user.uid}`];
+  
+  tipeData.forEach(key => {
+    const docRef = doc(db, "users", user.uid, "appData", key);
+    
+    // onSnapshot akan bereaksi setiap kali ada perubahan di Firestore awan
+    onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const dataAwan = docSnap.data();
+        if (dataAwan.payload) {
+          
+          // Cek apakah data di awan berbeda dengan data di device ini
+          const dataLokal = localStorage.getItem(key);
+          if (dataLokal !== dataAwan.payload) {
+            console.log(`🔄 Mendapatkan pembaruan Cloud untuk ${key}...`);
+            localStorage.setItem(key, dataAwan.payload);
+            
+            // Panggil ulang UI agar sinkron
+            if (key.includes('jadwalKuliah') && typeof tampilkanJadwalDashboard === 'function') tampilkanJadwalDashboard();
+            if (key.includes('todoTugas') && typeof tampilkanTodoDashboard === 'function') tampilkanTodoDashboard();
+          }
+        }
+      }
+    });
+  });
+}
+
+// ✅ Picu Sinkronisasi saat aplikasi baru dibuka atau user login
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    mulaiSinkronisasiCloud();
+  }
+});
 
 /* ================= SYSTEM UTILITY (NOTIFIKASI & SUARA) ================= */
 if (Notification.permission !== "granted" && Notification.permission !== "denied") {
@@ -324,15 +380,17 @@ window.bersihkanWellnessGantiHariOtomatis = function() {
   
   const uidAman = auth.currentUser.uid; 
   const tanggalHariIni = new Date().toDateString(); 
+  
+  // ✅ PERBAIKAN: Baca tanggal menggunakan enkripsi aman agar tidak bisa dimanipulasi dari DevTools
   const tanggalTerakhirSimpan = ambilDataAman(`lastWellnessDate_${uidAman}`);
   
   if (tanggalTerakhirSimpan !== tanggalHariIni) {
-    // ✅ PERBAIKAN JALUR GANDA: Bersihkan log di lokal dan sinkronkan pengosongan ke cloud saat ganti hari
-    window.sinkronisasiKeCloudDanLokal(uidAman, `wellnessLogs_${uidAman}`, "wellnessLogs", []);
+    simpanDataAman(`wellnessLogs_${uidAman}`, []);
     if (typeof wellnessData !== 'undefined') wellnessData = [];
     
+    // ✅ PERBAIKAN: Simpan dengan enkripsi aman
     simpanDataAman(`lastWellnessDate_${uidAman}`, tanggalHariIni);
-    console.log("Satpam Wellness: Hari baru terdeteksi, logs berhasil dibersihkan dari cloud & lokal!");
+    console.log("Satpam Wellness: Hari baru terdeteksi, logs berhasil dibersihkan secara aman!");
   }
 }
 
@@ -376,20 +434,18 @@ window.addEventListener('appinstalled', () => {
 /* ================= 1. STRUKTUR UTAMA SEGMENT JADWAL KULIAH ================= */
 window.tambahJadwalKuliah = function() {
   if (!auth.currentUser) {
-    alert("Maaf, silakan login terlebih dahulu untuk mencatat jadwal kuliah!");
+    alert("Maaf, silakan login terlebih dahulu untuk menambah jadwal!");
     return;
   }
 
-  const inputNamaMK = document.getElementById("scheduleInput");
-  const inputHari = document.getElementById("scheduleDay");
-  const inputJam = document.getElementById("scheduleTime");
+  let course = document.getElementById("courseInput")?.value.trim() || "";
+  let day = document.getElementById("dayInput")?.value || ""; 
+  let start = document.getElementById("startTime")?.value || "";
+  let end = document.getElementById("endTime")?.value || "";
+  let note = document.getElementById("noteInput")?.value.trim() || "-";
 
-  const namaMK = inputNamaMK?.value.trim() || "";
-  const hariMK = inputHari?.value || "";
-  const jamMK = inputJam?.value || "";
-
-  if (namaMK === "" || hariMK === "" || jamMK === "") {
-    alert("Wajib isi Nama Mata Kuliah, Hari, dan Jam Kuliah!");
+  if (course === "" || day === "" || start === "") {
+    alert("Isi setidaknya Nama Mata Kuliah, Hari, dan Jam Mulai!");
     return;
   }
 
@@ -397,21 +453,23 @@ window.tambahJadwalKuliah = function() {
   const dataJadwalLokal = ambilDataAman(`jadwalKuliah_${uidAman}`) || [];
   
   const jadwalBaru = {
-    id: 'sched_' + Date.now(),
-    matakuliah: namaMK,
-    hari: hariMK,
-    jam: jamMK
+    id: 'jadwal_' + Date.now(),
+    matkul: course,
+    hari: day, 
+    jam: start, 
+    end: end,
+    note: note
   };
   
   dataJadwalLokal.push(jadwalBaru);
+  simpanDataAman(`jadwalKuliah_${uidAman}`, dataJadwalLokal);
   
-  // ✅ GANTI KODE LAMA DENGAN JALUR GANDA INI
-  window.sinkronisasiKeCloudDanLokal(uidAman, `jadwalKuliah_${uidAman}`, "jadwalKuliah", dataJadwalLokal);
-  schedules = dataJadwalLokal; 
+  schedules = dataJadwalLokal;
+  console.log('Jadwal baru berhasil disimpan! 📚');
 
-  if (inputNamaMK) inputNamaMK.value = "";
-  if (inputHari) inputHari.value = "";
-  if (inputJam) inputJam.value = "";
+  ["courseInput", "dayInput", "startTime", "endTime", "noteInput"].forEach(id => {
+    if(document.getElementById(id)) document.getElementById(id).value = "";
+  });
 
   if (typeof window.sinkronisasiDanRender === "function") window.sinkronisasiDanRender();
 }
@@ -484,11 +542,11 @@ window.hapusJadwal = function(idJadwal) {
   const dataJadwalLokal = ambilDataAman(`jadwalKuliah_${uidAman}`) || [];
   const hasilFilter = dataJadwalLokal.filter(j => j.id !== idJadwal);
   
-  // ✅ GANTI KODE LAMA DENGAN JALUR GANDA INI
-  window.sinkronisasiKeCloudDanLokal(uidAman, `jadwalKuliah_${uidAman}`, "jadwalKuliah", hasilFilter);
+  // ✅ PERBAIKAN: Masukkan variabel hasilFilter
+  simpanDataAman(`jadwalKuliah_${uidAman}`, hasilFilter);
   schedules = hasilFilter;
   
-  console.log("Jadwal sukses diperbarui di cloud & lokal! 🧼 Cloud+Lokal");
+  console.log("Jadwal sukses dihapus dari storage! 🧼");
   
   if (typeof window.sinkronisasiDanRender === "function") {
     window.sinkronisasiDanRender();
@@ -556,6 +614,7 @@ window.tambahTodoTugas = function() {
   }
 
   const uidAman = auth.currentUser.uid; 
+  // ✅ PERBAIKAN 1: Membaca secara aman terenkripsi
   const dataTodoLokal = ambilDataAman(`todoTugas_${uidAman}`) || [];
   
   const tugasBaru = {
@@ -569,11 +628,11 @@ window.tambahTodoTugas = function() {
   
   dataTodoLokal.push(tugasBaru);
   
-  // ✅ PERBAIKAN JALUR GANDA: Amankan ke lokal dan kirim ke Firebase Cloud
-  window.sinkronisasiKeCloudDanLokal(uidAman, `todoTugas_${uidAman}`, "todoTugas", dataTodoLokal);
+  // ✅ PERBAIKAN 2: Menyimpan secara aman terenkripsi (tidak perlu JSON.stringify manual)
+  simpanDataAman(`todoTugas_${uidAman}`, dataTodoLokal);
   tasks = dataTodoLokal; 
 
-  console.log('Tugas baru sukses disinkronkan ke cloud & lokal! 📝☁️🔒');
+  console.log('Tugas baru sukses disimpan ke storage aman! 📝🔒');
 
   if (inputNama) inputNama.value = "";
   if (inputTanggal) inputTanggal.value = "";
@@ -647,15 +706,16 @@ window.hapusTodo = function(idTodo) {
   if (!auth.currentUser) return;
   const uidAman = auth.currentUser.uid; 
 
+  // ✅ PERBAIKAN 3: Membaca secara aman terenkripsi
   let dataTodoLokal = ambilDataAman(`todoTugas_${uidAman}`) || [];
   const index = dataTodoLokal.findIndex(t => t.id === idTodo);
   if (index !== -1) {
     dataTodoLokal[index].completed = true;
     
-    // ✅ PERBAIKAN JALUR GANDA: Perbarui status selesai ke lokal dan cloud
-    window.sinkronisasiKeCloudDanLokal(uidAman, `todoTugas_${uidAman}`, "todoTugas", dataTodoLokal);
+    // ✅ PERBAIKAN 4: Menyimpan kembali hasil update secara terenkripsi
+    simpanDataAman(`todoTugas_${uidAman}`, dataTodoLokal);
     tasks = dataTodoLokal; 
-    console.log("Tugas ditandai selesai di cloud & lokal! ✅☁️🔒");
+    console.log("Tugas ditandai selesai dan dienkripsi! ✅🔒");
   }
   
   if (typeof window.sinkronisasiDanRender === "function") window.sinkronisasiDanRender();
@@ -839,6 +899,7 @@ window.tambahWellnessLog = function() {
   }
 
   const uidAman = auth.currentUser.uid; 
+  // ✅ PERBAIKAN: Membaca secara aman terenkripsi
   const dataWellnessLokal = ambilDataAman(`wellnessLogs_${uidAman}`) || [];
   
   const logBaru = {
@@ -852,12 +913,11 @@ window.tambahWellnessLog = function() {
   };
   
   dataWellnessLokal.push(logBaru);
-  
-  // ✅ PERBAIKAN JALUR GANDA: Kirim ke penyimpanan lokal dan Firebase Cloud
-  window.sinkronisasiKeCloudDanLokal(uidAman, `wellnessLogs_${uidAman}`, "wellnessLogs", dataWellnessLokal);
+  // ✅ PERBAIKAN: Menyimpan secara aman terenkripsi tanpa JSON.stringify manual
+  simpanDataAman(`wellnessLogs_${uidAman}`, dataWellnessLokal);
   wellnessData = dataWellnessLokal;
 
-  console.log('Log kesehatan on-time berhasil dikunci ke cloud & lokal! 🪻☁️🔒');
+  console.log('Log kesehatan on-time berhasil dikunci secara terenkripsi! 🪻🔒');
 
   if (inputAktivitas) inputAktivitas.value = "";
   if (inputJamTarget) inputJamTarget.value = "";
@@ -912,15 +972,15 @@ window.hapusWellness = function(idWellness) {
   if (!auth.currentUser) return;
   const uidAman = auth.currentUser.uid;
 
+  // ✅ PERBAIKAN: Membaca secara aman terenkripsi
   let dataWellnessLokal = ambilDataAman(`wellnessLogs_${uidAman}`) || [];
   const index = dataWellnessLokal.findIndex(w => w.id === idWellness);
   if (index !== -1) {
     dataWellnessLokal[index].completed = true;
-    
-    // ✅ PERBAIKAN JALUR GANDA: Perbarui status log selesai ke lokal dan cloud
-    window.sinkronisasiKeCloudDanLokal(uidAman, `wellnessLogs_${uidAman}`, "wellnessLogs", dataWellnessLokal);
+    // ✅ PERBAIKAN: Menyimpan kembali hasil update secara terenkripsi
+    simpanDataAman(`wellnessLogs_${uidAman}`, dataWellnessLokal);
     wellnessData = dataWellnessLokal;
-    console.log("Log wellness ditandai selesai di cloud & lokal! ✅☁️🔒");
+    console.log("Log wellness ditandai selesai dan dienkripsi! ✅🔒");
   }
   
   if (typeof window.sinkronisasiDanRender === "function") {
@@ -1056,7 +1116,7 @@ function catatRiwayatFocusSelesai(durasiMenit, targetNama) {
   if (!auth.currentUser) return;
   const uidAman = auth.currentUser.uid;
   
-  // ✅ PERBAIKAN JALUR GANDA: Membaca riwayat lama secara terenkripsi
+  // ✅ PERBAIKAN: Membaca riwayat lama secara terenkripsi
   const riwayatLama = ambilDataAman(`focusHistory_${uidAman}`) || [];
   
   const waktuSekarang = new Date();
@@ -1073,13 +1133,9 @@ function catatRiwayatFocusSelesai(durasiMenit, targetNama) {
 
   riwayatLama.unshift(dataBaru); 
   
-  // ✅ PERBAIKAN JALUR GANDA: Simpan ke lokal browser AND kirim ke database cloud Firebase Firestore!
-  window.sinkronisasiKeCloudDanLokal(uidAman, `focusHistory_${uidAman}`, "focusHistory", riwayatLama);
-  
-  console.log("Satpam Jurnal: Sesi fokus berhasil di-backup ke Cloud & Lokal! 📝🏆☁️🔒");
-  
-  // Memicu render ulang visual riwayat secara instan jika user sedang di halaman focus
-  if (typeof window.sinkronisasiDanRender === "function") window.sinkronisasiDanRender();
+  // ✅ PERBAIKAN: Menyimpan riwayat baru secara terenkripsi
+  simpanDataAman(`focusHistory_${uidAman}`, riwayatLama);
+  console.log("Satpam Jurnal: Sesi fokus berhasil ditulis ke riwayat! 📝🏆");
 }
 
 window.mulaiFocusMode = function(menitDurasi, targetTeks = "Sesi Fokus Belajar", catatanTeks = "-") {
@@ -1259,7 +1315,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-onAuthStateChanged(auth, async (user) => {
+/* ================= LEVEL 5: AUTH STATE OBSERVER & SYNC ================= */
+onAuthStateChanged(auth, (user) => {
   const path = window.location.pathname.toLowerCase(); 
   const isTodoPage = path.includes("todo");
   const isWellnessPage = path.includes("wellness");
@@ -1274,67 +1331,26 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     console.log("Satpam Auth: User aktif ->", user.email);
 
-    // ✅ JALUR GANDA: Ambil data dari Firebase Cloud dulu, jika gagal/offline langsung pakai lokal
-    const uidAman = user.uid;
-    let jadwalLokal = ambilDataAman(`jadwalKuliah_${uidAman}`) || [];
-    let todoLokal = ambilDataAman(`todoTugas_${uidAman}`) || []; 
-    let wellnessLokal = ambilDataAman(`wellnessLogs_${uidAman}`) || [];
-    let focusLokal = ambilDataAman(`focusHistory_${uidAman}`) || []; // 👈 Tambah inisialisasi lokal
-
-    try {
-      console.log("☁️ Mencoba mengunduh data terbaru dari Firebase Cloud...");
-      const userDocRef = doc(db, "users", uidAman);
-      const userDocSnap = await getDoc(userDocRef);
-
-      if (userDocSnap.exists()) {
-        const cloudData = userDocSnap.data();
-        
-        // Jika data di cloud ada, gunakan data cloud dan perbarui cache lokal browser
-        if (cloudData.jadwalKuliah) {
-          jadwalLokal = cloudData.jadwalKuliah;
-          simpanDataAman(`jadwalKuliah_${uidAman}`, jadwalLokal);
-        }
-        if (cloudData.todoTugas) {
-          todoLokal = cloudData.todoTugas;
-          simpanDataAman(`todoTugas_${uidAman}`, todoLokal);
-        }
-        if (cloudData.wellnessLogs) {
-          wellnessLokal = cloudData.wellnessLogs;
-          simpanDataAman(`wellnessLogs_${uidAman}`, wellnessLokal);
-        }
-        // 👇 Sinkronisasi otomatis data Riwayat Sesi Fokus dari Cloud
-        if (cloudData.focusHistory) {
-          focusLokal = cloudData.focusHistory;
-          simpanDataAman(`focusHistory_${uidAman}`, focusLokal);
-        }
-        console.log("☁️ Sinkronisasi Cloud ke Lokal berhasil diselaraskan!");
-      } else {
-        console.log("ℹ️ Pengguna baru terdeteksi di Cloud Firestore. Menggunakan penyimpanan lokal awal.");
-      }
-    } catch (error) {
-      console.warn("⚠️ Gagal terhubung ke Cloud Firebase (Mode Offline aktif). Menggunakan data lokal terenkripsi:", error.message);
-    }
-
-    // Masukkan data final (baik hasil cloud maupun lokal) ke variabel RAM global
-    schedules = jadwalLokal;
-    tasks = todoLokal;
-    wellnessData = wellnessLokal;
-    // Catatan: riwayat fokus diakses dinamis lewat storage terenkripsi saat render
-
-    // Mesin Sinkronisasi Terpusat untuk Render UI
     window.sinkronisasiDanRender = () => {
       if (!auth.currentUser) return;
+      const uidAman = auth.currentUser.uid;
 
       if (typeof window.bersihkanWellnessGantiHariOtomatis === "function") {
         window.bersihkanWellnessGantiHariOtomatis();
       }
 
-      // Selaraskan ulang variabel RAM dari storage terenkripsi lokal saat ada manipulasi data halaman
-      schedules = ambilDataAman(`jadwalKuliah_${uidAman}`) || [];
-      tasks = ambilDataAman(`todoTugas_${uidAman}`) || [];
-      wellnessData = ambilDataAman(`wellnessLogs_${uidAman}`) || [];
+      // ✅ KODE LAMA DIGANTI: Membaca storage menggunakan fungsi dekripsi aman
+      const jadwalLokal = ambilDataAman(`jadwalKuliah_${uidAman}`) || [];
+      const todoLokal = ambilDataAman(`todoTugas_${uidAman}`) || []; 
+      const wellnessLokal = ambilDataAman(`wellnessLogs_${uidAman}`) || [];
 
-      // Jalankan fungsi render bawaan visual halaman kamu
+      schedules = jadwalLokal;
+      tasks = todoLokal;
+      wellnessData = wellnessLokal;
+
+      console.log("🔒 Data berhasil didekripsi dan dimuat ke memori RAM.");
+
+      // Blok render UI bawaan kodemu (dipertahankan penuh)
       if (typeof tampilkanJadwalDashboard === "function") tampilkanJadwalDashboard();
       if (typeof tampilkanTodoDashboard === "function") tampilkanTodoDashboard();
       if (typeof tampilkanWellnessDashboard === "function") tampilkanWellnessDashboard();
@@ -1351,13 +1367,13 @@ onAuthStateChanged(auth, async (user) => {
         if (typeof cekSesiTimerPasRefresh === "function") cekSesiTimerPasRefresh();
       }
 
-      console.log("Mesin Sinkronisasi Terpusat: Render Visual Selesai! ✅");
+      console.log("Mesin Sinkronisasi Terpusat: Selesai! ✅");
     };
 
-    // Jalankan render awal secara instan setelah data terisi
-    window.sinkronisasiDanRender();
+    setTimeout(() => {
+      if (typeof window.sinkronisasiDanRender === "function") window.sinkronisasiDanRender();
+    }, 400);
 
-    // Pasang listener navigasi agar perpindahan halaman tetap sinkron
     document.querySelectorAll('nav a, .sidebar-menu a, [data-page]').forEach(tombol => {
       tombol.addEventListener("click", () => {
         setTimeout(() => {
@@ -1373,23 +1389,6 @@ onAuthStateChanged(auth, async (user) => {
     }
   }
 });
-
-// ✅ Fungsi Sinkronisasi Cloud + Lokal Terpusat
-window.sinkronisasiKeCloudDanLokal = async function(uidAman, keyStorage, namaFieldFirebase, dataArray) {
-  // 1. Amankan ke Lokal Browser dulu (Terenkripsi - Mode Offline)
-  simpanDataAman(keyStorage, dataArray);
-  
-  // 2. Kirim ke Cloud Firebase jika ada koneksi internet
-  try {
-    // Menyimpan data murni ke dokumen user masing-masing di database Firestore
-    await setDoc(doc(db, "users", uidAman), {
-      [namaFieldFirebase]: dataArray
-    }, { merge: true }); // merge: true agar data field lain tidak saling menimpa
-    console.log(`☁️ Berhasil sinkronisasi field [${namaFieldFirebase}] ke Firebase Cloud!`);
-  } catch (error) {
-    console.warn(`⚠️ Gagal kirim ke cloud (Mungkin offline), data tetap aman di lokal:`, error.message);
-  }
-}
 
 /* ================= LEVEL 4: WINDOW EXPOSE TO GLOBAL SCOPE ================= */
 const globalFunctions = {
@@ -1555,5 +1554,4 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
-
 
