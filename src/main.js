@@ -1344,8 +1344,6 @@ window.cekSesiTimerPasRefresh = function() {
   
   const teksTargetCadangan = ambilDataAman(`focusTargetText_${uidAman}`) || "Sesi Fokus Belajar";
   const teksCatatanCadangan = ambilDataAman(`focusNoteText_${uidAman}`) || "-";
-  
-  // Ambil durasi asli biar history nggak ikutan rusak
   const durasiAsli = ambilDataAman(`focusOriginalDuration_${uidAman}`) || 25; 
   
   if (statusTimer === "running" && targetEnd) {
@@ -1353,15 +1351,35 @@ window.cekSesiTimerPasRefresh = function() {
     const sisaWaktuMili = targetWaktuMili - Date.now();
     
     if (sisaWaktuMili > 0) {
+      // 1. Kasus jika kamu balik dan waktu MASIH ADA -> Lanjutkan timer!
       sedangBerjalan = false; 
-      // 🔥 PERBAIKAN 2: Lempar ke mulaiFocusMode dengan mode RESUME (true)
       window.mulaiFocusMode(durasiAsli, teksTargetCadangan, teksCatatanCadangan, true, targetWaktuMili);
     } else {
+      // 2. 🔥 KASUS BARU: Jika waktu habis saat kamu buka halaman lain / tutup tab
+      
+      // Bersihkan state di memori biar tidak nyangkut
       simpanDataAman(`focusTargetEnd_${uidAman}`, null);
       simpanDataAman(`focusStatus_${uidAman}`, "stopped");
       simpanDataAman(`focusTargetText_${uidAman}`, "");
       simpanDataAman(`focusNoteText_${uidAman}`, "");
       simpanDataAman(`focusOriginalDuration_${uidAman}`, null);
+      
+      // Kunci datanya ke dalam buku jurnal riwayat!
+      if (typeof catatRiwayatFocusSelesai === "function") {
+        catatRiwayatFocusSelesai(durasiAsli, teksTargetCadangan, teksCatatanCadangan);
+      }
+      
+      // Bunyikan notifikasi "Selesai" sesaat setelah kamu balik ke halaman ini
+      if (typeof triggerNotifFocusOffline === "function") {
+        triggerNotifFocusOffline();
+      }
+
+      // Refresh tabel riwayat supaya langsung muncul
+      if (typeof window.displayFocusHistory === "function") {
+        window.displayFocusHistory();
+      }
+      
+      console.log("Kamu melewatkan momen timer habis karena berada di halaman lain, tapi riwayat aman tersimpan! 🏆");
     }
   }
 }
