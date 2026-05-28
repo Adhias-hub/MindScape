@@ -4,13 +4,13 @@ import { initializeApp } from "firebase/app";
 import { 
   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
   signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut,
-  updateProfile, sendPasswordResetEmail, updatePassword            
+  updateProfile, sendPasswordResetEmail, updatePassword,          
 } from "firebase/auth";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 // ✅ 2. Import Firestore 
 import { 
-  getFirestore, enableIndexedDbPersistence, doc, setDoc, getDoc, onSnapshot
+  getFirestore, enableIndexedDbPersistence, doc, setDoc, getDoc, onSnapshot, deleteDoc  
 } from "firebase/firestore";
 
 // ✅ 3. Import Keamanan
@@ -705,24 +705,51 @@ function penangananKlikSelesaiTodo(e) {
 }
 
 
+window.hapusTodoPermanen = function(idTodo) {
+  if (!auth.currentUser) return alert("Silakan login terlebih dahulu!");
+  
+  if (!confirm("Apakah Anda yakin ingin menghapus tugas ini dari riwayat secara permanen?")) return;
+
+  const uidAman = auth.currentUser.uid;
+  // 1. Ambil array tugas terenkripsi yang ada saat ini
+  let dataTodoLokal = ambilDataAman(`todoTugas_${uidAman}`) || [];
+  
+  // 2. Buang tugas yang ID-nya cocok dengan target hapus
+  const dataTerfilter = dataTodoLokal.filter(t => {
+    // Fallback: Jika ID tugas lama tidak ada, kita cocokkan berdasarkan nama tugasnya
+    const idPembanding = t.id || t.tugas; 
+    return idPembanding !== idTodo;
+  });
+  
+  // 3. Simpan kembali array bersih yang baru ke LocalStorage & Cloud via Enkripsi
+  simpanDataAman(`todoTugas_${uidAman}`, dataTerfilter);
+  
+  alert("Riwayat berhasil dihapus!");
+
+  // 4. Segarkan langsung tampilan di layar tanpa perlu reload browser
+  if (typeof window.displayTodoHistory === "function") window.displayTodoHistory();
+  if (typeof window.displayGagalHistory === "function") window.displayGagalHistory();
+  if (typeof window.renderTasks === "function") window.renderTasks(); // update halaman utama jika ada
+};
+
 window.hapusTodo = function(idTodo) {
   if (!auth.currentUser) return;
-  const uidAman = auth.currentUser.uid; 
+  const uidAman = auth.currentUser.uid;
 
-  // ✅ PERBAIKAN 3: Membaca secara aman terenkripsi
   let dataTodoLokal = ambilDataAman(`todoTugas_${uidAman}`) || [];
   const index = dataTodoLokal.findIndex(t => t.id === idTodo);
+  
   if (index !== -1) {
-    dataTodoLokal[index].completed = true;
-    
-    // ✅ PERBAIKAN 4: Menyimpan kembali hasil update secara terenkripsi
+    dataTodoLokal[index].completed = true; // Tandai selesai, bukan dihapus permanen
     simpanDataAman(`todoTugas_${uidAman}`, dataTodoLokal);
-    tasks = dataTodoLokal; 
-    console.log("Tugas ditandai selesai dan dienkripsi! ✅🔒");
+    tasks = dataTodoLokal;
+    console.log("Tugas ditandai selesai! ✅");
   }
   
-  if (typeof window.sinkronisasiDanRender === "function") window.sinkronisasiDanRender();
-}
+  if (typeof window.sinkronisasiDanRender === "function") {
+    window.sinkronisasiDanRender();
+  }
+};
 
 function parsingTanggalAman(tanggalStr, jamStr) {
   // Proteksi jika tanggalStr atau jamStr tidak ada/undefined
@@ -750,11 +777,20 @@ window.displayTodoHistory = function() {
     return;
   }
 
+  // ✅ PERBAIKAN: Gunakan variabel 'selesai', bukan 'hangus'
   selesai.forEach(t => {
+    const idTargetHapus = t.id || t.tugas; 
+
+    // ✅ PERBAIKAN: Gunakan 'containerSelesai', bukan 'containerHangus'
     containerSelesai.innerHTML += `
-      <div style="padding: 10px; background: #f0fdf4; border-left: 4px solid #10b981; margin-bottom: 8px; border-radius: 6px; font-size: 14px; text-align: left;">
-        ✅ <b>${t.tugas}</b> (Selesai dilakukan) <br>
-        <small style="color: #64748b;">Batas waktu asli: ${t.tanggal} jam ${t.jam} WIB</small>
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #ecfdf5; border-left: 4px solid #10b981; margin-bottom: 8px; border-radius: 6px; font-size: 14px;">
+        <div>
+          ✅ <b>${t.tugas}</b> (Selesai) <br>
+          <small style="color: #64748b;">Batas: ${t.tanggal} - ${t.jam} WIB</small>
+        </div>
+        <button onclick="window.hapusTodoPermanen('${idTargetHapus}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; padding: 5px;">
+          🗑️
+        </button>
       </div>
     `;
   });
@@ -771,7 +807,6 @@ window.displayGagalHistory = function() {
   const sekarang = new Date().getTime();
   const hangus = dataTodo.filter(t => {
     if (t.completed) return false;
-    // Pastikan properti tanggal dan jam ada sebelum di-parsing
     if (!t.tanggal || !t.jam) return false; 
     
     const waktuDeadline = parsingTanggalAman(t.tanggal, t.jam);
@@ -785,13 +820,21 @@ window.displayGagalHistory = function() {
   }
 
   hangus.forEach(t => {
-    containerHangus.innerHTML += `
-      <div style="padding: 10px; background: #fef2f2; border-left: 4px solid #ef4444; margin-bottom: 8px; border-radius: 6px; font-size: 14px; text-align: left;">
-        ⚠️ <b>${t.tugas}</b> (Melewati batas deadline) <br>
-        <small style="color: #64748b;">Hangus pada: ${t.tanggal} jam ${t.jam} WIB</small>
+  // Gunakan ID unik, jika tidak ada (tugas lama) pakai teks namanya sebagai pengenal
+  const idTargetHapus = t.id || t.tugas; 
+
+  containerHangus.innerHTML += `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #fef2f2; border-left: 4px solid #ef4444; margin-bottom: 8px; border-radius: 6px; font-size: 14px;">
+      <div>
+        ⚠️ <b>${t.tugas}</b> (Melewati deadline) <br>
+        <small style="color: #64748b;">Batas: ${t.tanggal} - ${t.jam} WIB</small>
       </div>
-    `;
-  });
+      <button onclick="window.hapusTodoPermanen('${idTargetHapus}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; padding: 5px;">
+        🗑️
+      </button>
+    </div>
+  `;
+});
 }
 
 /* ================= 4. SATPAM TO-DO DEADLINE H-5 MIN ================= */
@@ -880,6 +923,22 @@ function triggerNotifTodoGagal(namaTugas) {
     });
   }
 }
+
+// Fungsi hapus item Todo dari Firestore
+window.hapusTodoHistori = async function(todoId) {
+  const user = auth.currentUser;
+  if (!user) return alert("Silakan login terlebih dahulu!");
+
+  if (confirm("Apakah Anda yakin ingin menghapus riwayat tugas ini?")) {
+    try {
+      const docRef = doc(db, "users", user.uid, "todos", todoId);
+      await deleteDoc(docRef);
+      alert("Riwayat tugas berhasil dihapus!");
+    } catch (error) {
+      console.error("Gagal menghapus todo:", error);
+    }
+  }
+};
 
 /* ================= 5. STRUKTUR UTAMA SEGMENT WELLNESS LOG ================= */
 window.tambahWellnessLog = function() {
@@ -1086,29 +1145,84 @@ window.displayWellnessHistory = function() {
   });
 }
 
+// ================= KENDALI DATA RIWAYAT FOKUS =================
+
+// 1. Fungsi Menampilkan Riwayat Fokus ke HTML
 window.displayFocusHistory = function() {
-  const containerFocus = document.getElementById('containerFocusHistory') || document.getElementById('listFocusHistory');
+  const containerFocus = document.getElementById('containerFocusHistory');
   if (!containerFocus || !auth.currentUser) return;
 
   const uidAman = auth.currentUser.uid;
-  // ✅ PERBAIKAN: Membaca riwayat fokus secara aman terenkripsi
   const historyFocus = ambilDataAman(`focusHistory_${uidAman}`) || [];
   containerFocus.innerHTML = '';
 
   if (historyFocus.length === 0) {
-    containerFocus.innerHTML = '<p style="color: #94a3b8; font-style: italic; text-align:center;">Jurnal fokus masih kosong. Yuk mulai belajar!</p>';
+    containerFocus.innerHTML = '<p style="color: #94a3b8; font-style: italic; text-align:center; font-size: 14px; margin-top: 15px;">Jurnal fokus masih kosong. Yuk mulai belajar!</p>';
     return;
   }
 
   historyFocus.forEach(f => {
+    // Membuat fallback ID menggunakan tanggal & jam jika ID unik belum ada
+    const matchId = f.id || `${f.tanggal}_${f.jam}`;
+    
     containerFocus.innerHTML += `
-      <div style="padding: 10px; background: #f8fafc; border-left: 4px solid #a855f7; margin-bottom: 8px; border-radius: 4px;">
-        📅 <b>${f.tanggal}</b> - ${f.jam}<br>
-        🎯 ${f.target} selama <b>${f.durasi} menit</b> secara penuh.
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #f8fafc; border-left: 4px solid #a855f7; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: left;">
+        <div>
+          <span style="font-size: 11px; color: #a855f7; font-weight: bold; background: #f3e8ff; padding: 2px 8px; border-radius: 12px;">📅 ${f.tanggal} - ${f.jam}</span>
+          <p style="margin: 6px 0 2px 0; font-weight: bold; color: #1e293b;">🎯 Target: ${f.target}</p>
+          <p style="margin: 0 0 4px 0; font-size: 13px; color: #64748b;">📝 Catatan: ${f.catatan || f.note || '-'}</p>
+          <span style="font-size: 12px; font-weight: bold; color: #6b21a8;">⏱️ Berhasil: ${f.durasi} Menit</span>
+        </div>
+        
+        <button onclick="window.hapusFocusHistoryPermanen('${matchId}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 18px; padding: 5px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
+          🗑️
+        </button>
       </div>
     `;
   });
 }
+
+// 2. Fungsi Eksekusi Hapus Catatan Fokus Permanen (Lokal & Cloud)
+window.hapusFocusHistoryPermanen = function(matchId) {
+  if (!auth.currentUser) return;
+  if (!confirm("Apakah Anda yakin ingin menghapus catatan riwayat fokus ini secara permanen?")) return;
+
+  const uidAman = auth.currentUser.uid;
+  let historyFocus = ambilDataAman(`focusHistory_${uidAman}`) || [];
+  
+  // Memfilter dan membuang item yang dipilih
+  historyFocus = historyFocus.filter(f => {
+    const idUnik = f.id || `${f.tanggal}_${f.jam}`;
+    return idUnik !== matchId;
+  });
+
+  // Simpan kembali data terbaru ke penyimpanan lokal terenkripsi & Cloud
+  simpanDataAman(`focusHistory_${uidAman}`, historyFocus);
+  
+  // Segarkan tampilan jurnal di halaman saat itu juga
+  window.displayFocusHistory();
+  
+  // Picu sinkronisasi background Firebase jika ada
+  if (typeof window.sinkronisasiDanRender === "function") window.sinkronisasiDanRender();
+}
+
+window.cekDanBersihkanWellnessOtomatis = async function(snapshotDocs, uid) {
+  const SEHARI_MS = 24 * 60 * 60 * 1000; // 24 Jam dalam milidetik
+  const sekarang = new Date().getTime();
+
+  snapshotDocs.forEach(async (document) => {
+    const data = document.data();
+    // Pastikan saat menyimpan wellness, kamu menyimpan field 'createdAt' atau 'timestamp' dalam bentuk angka (ms/Timestamp)
+    const waktuDibuat = data.createdAt ? data.createdAt.toMillis() : null; 
+
+    if (waktuDibuat && (sekarang - waktuDibuat > SEHARI_MS)) {
+      // Jika umur data sudah lebih dari 24 jam, hapus otomatis dari Cloud & Lokal
+      const docRef = doc(db, "users", uid, "wellness", document.id);
+      await deleteDoc(docRef);
+      console.log(`Log Wellness ${document.id} otomatis dihapus karena sudah 1 hari.`);
+    }
+  });
+};
 
 /* ================= 7. STRUKTUR UTAMA SEGMEN FOCUS MODE (POMODORO) ================= */
 let timerFokus;
@@ -1119,29 +1233,39 @@ function catatRiwayatFocusSelesai(durasiMenit, targetNama) {
   if (!auth.currentUser) return;
   const uidAman = auth.currentUser.uid;
   
-  // ✅ PERBAIKAN: Membaca riwayat lama secara terenkripsi
   const riwayatLama = ambilDataAman(`focusHistory_${uidAman}`) || [];
-  
-  const waktuSekarang = new Date();
-  const opsiTanggal = { year: 'numeric', month: 'long', day: 'numeric' };
-  const formatTanggal = waktuSekarang.toLocaleDateString('id-ID', opsiTanggal);
-  const formatJam = String(waktuSekarang.getHours()).padStart(2, '0') + ":" + String(waktuSekarang.getMinutes()).padStart(2, '0') + " WIB";
+  const sekarang = new Date();
+
+  // Buat format YYYY-MM-DD
+  const formatTanggal = sekarang.toLocaleDateString('id-ID', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).split('/').reverse().join('-'); 
+
+  // Buat format jam
+  const formatJam = sekarang.toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
 
   const dataBaru = {
+    id: 'focus_' + Date.now() + '_' + Math.floor(Math.random() * 1000), 
     tanggal: formatTanggal,
     jam: formatJam,
-    target: targetNama,
+    target: targetNama, // Disesuaikan dengan parameter fungsi
+    catatan: "-", // Fallback default
     durasi: durasiMenit
   };
 
   riwayatLama.unshift(dataBaru); 
   
-  // ✅ PERBAIKAN: Menyimpan riwayat baru secara terenkripsi
   simpanDataAman(`focusHistory_${uidAman}`, riwayatLama);
   console.log("Satpam Jurnal: Sesi fokus berhasil ditulis ke riwayat! 📝🏆");
 }
 
-window.mulaiFocusMode = function(menitDurasi, targetTeks = "Sesi Fokus Belajar", catatanTeks = "-") {
+window.mulaiFocusMode = function(menitDurasi, targetTeks = "Sesi Fokus Belajar", catatanTeks = "-", isResume = false, targetSelesaiResume = null) {
   if (sedangBerjalan) return; 
   
   if (!auth.currentUser) {
@@ -1149,18 +1273,28 @@ window.mulaiFocusMode = function(menitDurasi, targetTeks = "Sesi Fokus Belajar",
     return;
   }
 
-  sisaDetikFokus = menitDurasi * 60;
-  sedangBerjalan = true;
-  
   const uidAman = auth.currentUser.uid; 
-  const targetWaktuSelesai = Date.now() + (sisaDetikFokus * 1000);
   
-  simpanDataAman(`focusTargetEnd_${uidAman}`, targetWaktuSelesai);
-  simpanDataAman(`focusStatus_${uidAman}`, "running");
-  simpanDataAman(`focusTargetText_${uidAman}`, targetTeks);
-  simpanDataAman(`focusNoteText_${uidAman}`, catatanTeks);
+  // LOGIKA BARU: Jika ini resume dari reload, gunakan target selesai lama. Jika baru, buat target baru.
+  const targetWaktuSelesai = (isResume && targetSelesaiResume) 
+    ? targetSelesaiResume 
+    : Date.now() + (menitDurasi * 60 * 1000);
+  
+  if (!isResume) {
+    simpanDataAman(`focusTargetEnd_${uidAman}`, targetWaktuSelesai);
+    simpanDataAman(`focusStatus_${uidAman}`, "running");
+    simpanDataAman(`focusTargetText_${uidAman}`, targetTeks);
+    simpanDataAman(`focusNoteText_${uidAman}`, catatanTeks);
+    
+    // Simpan durasi asli biar pas selesai catatannya akurat, bukan kecatat sisa waktunya
+    simpanDataAman(`focusOriginalDuration_${uidAman}`, menitDurasi);
+  }
 
-  console.log(`Focus Mode aktif selama ${menitDurasi} menit untuk: ${targetTeks}`);
+  // Ambil durasi asli untuk dicatat di histori nanti
+  const durasiAsli = ambilDataAman(`focusOriginalDuration_${uidAman}`) || menitDurasi;
+
+  sedangBerjalan = true;
+  console.log(`Focus Mode aktif untuk: ${targetTeks}`);
   
   HubungkanVisualFocusDanKunci(true, targetTeks, catatanTeks);
   
@@ -1179,14 +1313,18 @@ window.mulaiFocusMode = function(menitDurasi, targetTeks = "Sesi Fokus Belajar",
       sedangBerjalan = false;
       updateVisualTimer(0, 0);
       
-      // ✅ PERBAIKAN BALIKAN COST: Gunakan NULL aman daripada merusak token local storage bawaan browser
       simpanDataAman(`focusTargetEnd_${uidAman}`, null);
       simpanDataAman(`focusStatus_${uidAman}`, "stopped");
       simpanDataAman(`focusTargetText_${uidAman}`, "");
       simpanDataAman(`focusNoteText_${uidAman}`, "");
+      simpanDataAman(`focusOriginalDuration_${uidAman}`, null);
       
-      catatRiwayatFocusSelesai(menitDurasi, targetTeks);
+      // Catat menggunakan durasi asli yang aman
+      catatRiwayatFocusSelesai(durasiAsli, targetTeks);
       triggerNotifFocusOffline(); 
+
+      // 🔥 PERBAIKAN 1: Refresh UI otomatis agar tombol "Hapus" di histori langsung muncul!
+      if (typeof window.displayFocusHistory === "function") window.displayFocusHistory();
 
       HubungkanVisualFocusDanKunci(false, "Belum ada target belajar.", "Belum ada catatan.");
     } else {
@@ -1207,21 +1345,23 @@ window.cekSesiTimerPasRefresh = function() {
   const teksTargetCadangan = ambilDataAman(`focusTargetText_${uidAman}`) || "Sesi Fokus Belajar";
   const teksCatatanCadangan = ambilDataAman(`focusNoteText_${uidAman}`) || "-";
   
+  // Ambil durasi asli biar history nggak ikutan rusak
+  const durasiAsli = ambilDataAman(`focusOriginalDuration_${uidAman}`) || 25; 
+  
   if (statusTimer === "running" && targetEnd) {
-    // ✅ PERBAIKAN COST: Amankan parsing data agar kebal dari nilai string kosong / NaN
     const targetWaktuMili = Number(targetEnd);
     const sisaWaktuMili = targetWaktuMili - Date.now();
     
     if (sisaWaktuMili > 0) {
-      const sisaMenitKonversi = Math.ceil(sisaWaktuMili / 1000 / 60);
-      
       sedangBerjalan = false; 
-      window.mulaiFocusMode(sisaMenitKonversi, teksTargetCadangan, teksCatatanCadangan);
+      // 🔥 PERBAIKAN 2: Lempar ke mulaiFocusMode dengan mode RESUME (true)
+      window.mulaiFocusMode(durasiAsli, teksTargetCadangan, teksCatatanCadangan, true, targetWaktuMili);
     } else {
       simpanDataAman(`focusTargetEnd_${uidAman}`, null);
       simpanDataAman(`focusStatus_${uidAman}`, "stopped");
       simpanDataAman(`focusTargetText_${uidAman}`, "");
       simpanDataAman(`focusNoteText_${uidAman}`, "");
+      simpanDataAman(`focusOriginalDuration_${uidAman}`, null);
     }
   }
 }
@@ -1234,18 +1374,19 @@ window.stopFocusMode = function() {
   
   if (auth.currentUser) {
     const uidAman = auth.currentUser.uid;
-    // ✅ PERBAIKAN: Stabilkan pengosongan data lewat simpanDataAman, bukan removeItem mentah
     simpanDataAman(`focusTargetEnd_${uidAman}`, null);
     simpanDataAman(`focusStatus_${uidAman}`, "stopped");
     simpanDataAman(`focusTargetText_${uidAman}`, "");
     simpanDataAman(`focusNoteText_${uidAman}`, "");
+    
+    // 🔥 PERBAIKAN 3: Bersihkan juga variabel durasi aslinya
+    simpanDataAman(`focusOriginalDuration_${uidAman}`, null);
   }
   
   HubungkanVisualFocusDanKunci(false, "Belum ada target belajar.", "Belum ada catatan.");
   console.log('Focus Mode dihentikan paksa, yaa.');
 }
 
-// FUNGSI UTILITAS BARU: Mengatur status UI (Kunci input & Teks Papan Display)
 function HubungkanVisualFocusDanKunci(apakahKunci, teksTarget, teksCatatan) {
   const inputMenit = document.getElementById('focusMinutes');
   const inputTarget = document.getElementById('focusTarget');
@@ -1253,12 +1394,29 @@ function HubungkanVisualFocusDanKunci(apakahKunci, teksTarget, teksCatatan) {
   const targetDisplay = document.getElementById('targetDisplay');
   const noteDisplay = document.getElementById('noteDisplay');
 
+  // Ambil tombol Berhenti (Asumsi ID tombol berhentimu adalah btnBerhentiFokus)
+  const btnBerhenti = document.getElementById('btnBerhentiFokus');
+
   if (inputMenit) inputMenit.disabled = apakahKunci;
   if (inputTarget) inputTarget.disabled = apakahKunci;
   if (inputNote) inputNote.disabled = apakahKunci;
 
   if (targetDisplay) targetDisplay.innerText = teksTarget;
   if (noteDisplay) noteDisplay.innerText = teksCatatan;
+
+  // 🔥 PERBAIKAN 4: Logika ubah teks tombol Stop/Selesai
+  if (btnBerhenti) {
+    btnBerhenti.innerText = apakahKunci ? "Selesai (Akhiri)" : "Berhenti";
+    // Biar makin keren, bisa ubah warnanya (Opsional)
+    btnBerhenti.style.backgroundColor = apakahKunci ? "#ef4444" : ""; 
+  }
+
+  // Kunci/Matikan tombol pilihan menit (.btn-opsi-durasi) biar gak dobel klik saat timer jalan
+  document.querySelectorAll('.btn-opsi-durasi').forEach(btn => {
+    btn.disabled = apakahKunci;
+    btn.style.opacity = apakahKunci ? "0.5" : "1";
+    btn.style.cursor = apakahKunci ? "not-allowed" : "pointer";
+  });
   
   // Jika sedang reset/berhenti, kosongkan isi form ketikan
   if (!apakahKunci) {
@@ -1285,7 +1443,7 @@ function triggerNotifFocusOffline() {
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
       navigator.serviceWorker.ready.then((registration) => {
         registration.showNotification('🪻 SESSION FOCUS SELESAI, yaa!', {
-          body: 'Sesi belajar/ngoding lu udah kelar. Berdiri dulu, regangkan fisik, dan ambil minum air! Sukses besar! 🌸',
+          body: 'Sesi fokus kamu udah selesai. Berdiri dulu, regangkan fisik, dan ambil minum air! Sukses besar! 🌸',
           icon: '/flower.png', 
           vibrate: [400, 200, 400, 200, 400], 
           badge: '/flower.png',
@@ -1294,13 +1452,13 @@ function triggerNotifFocusOffline() {
         });
       }).catch(() => {
         new Notification('🪻 SESSION FOCUS SELESAI, yaa!', { 
-          body: 'Sesi belajar/ngoding lu udah kelar. Rehat sejenak, yuk! 🌸', 
+          body: 'Sesi fokus kamu udah selesai. Rehat sejenak, yuk! 🌸', 
           icon: '/flower.png' 
         });
       });
     } else {
       new Notification('🪻 SESSION FOCUS SELESAI, yaa!', { 
-        body: 'Sesi belajar/ngoding lu udah kelar. Rehat sejenak, yuk! 🌸', 
+        body: 'Sesi fokus kamu udah selesai. Rehat sejenak, yuk! 🌸', 
         icon: '/flower.png' 
       });
     }
@@ -1317,6 +1475,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
 
 /* ================= LEVEL 5: AUTH STATE OBSERVER & SYNC ================= */
 onAuthStateChanged(auth, (user) => {
@@ -1412,6 +1571,9 @@ const globalFunctions = {
   triggerNotifWellnessOffline,
   triggerNotifFocusOffline,
   bersihkanWellnessGantiHariOtomatis,
+  displayFocusHistory,          // 👈 Tambahkan Ini jika belum ada
+  hapusFocusHistoryPermanen,
+  hapusTodoPermanen,
   tambahJadwalKuliah,
   tampilkanJadwalDashboard,
   hapusJadwal,
@@ -1427,7 +1589,6 @@ const globalFunctions = {
   mulaiFocusMode,
   stopFocusMode,
   cekSesiTimerPasRefresh
-  
 };
 
 Object.keys(globalFunctions).forEach((key) => {
@@ -1526,10 +1687,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("btnLihatProfil")?.addEventListener("click", () => {
     if (typeof window.openProfile === "function") window.openProfile();
-  });
-
-  document.getElementById("btnLupaPassword")?.addEventListener("click", () => {
-    if (typeof window.changePassword === "function") window.changePassword();
   });
 
   document.getElementById("btnPrivasiKeamanan")?.addEventListener("click", () => {
