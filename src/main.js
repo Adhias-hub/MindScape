@@ -272,25 +272,28 @@ function mulaiSinkronisasiCloud() {
   tipeData.forEach(key => {
     const docRef = doc(db, "users", user.uid, "appData", key);
     
-    // onSnapshot akan bereaksi setiap kali ada perubahan di Firestore awan
-    onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const dataAwan = docSnap.data();
-        if (dataAwan.payload) {
-          
-          // Cek apakah data di awan berbeda dengan data di device ini
-          const dataLokal = localStorage.getItem(key);
-          if (dataLokal !== dataAwan.payload) {
-            console.log(`🔄 Mendapatkan pembaruan Cloud untuk ${key}...`);
-            localStorage.setItem(key, dataAwan.payload);
-            
-            // Panggil ulang UI agar sinkron
-            if (key.includes('jadwalKuliah') && typeof tampilkanJadwalDashboard === 'function') tampilkanJadwalDashboard();
-            if (key.includes('todoTugas') && typeof tampilkanTodoDashboard === 'function') tampilkanTodoDashboard();
-          }
+    // ✅ REVISI LOGIKA: Tambahkan parameter pemantau asal data (Metadata)
+onSnapshot(docRef, (docSnap) => {
+  // metadata.hasPendingWrites artinya data ini baru saja ditulis oleh device ini 
+  // dan sedang proses otw ke server. Jika TRUE, abaikan saja (jangan timpa lokal).
+  if (docSnap.metadata.hasPendingWrites) return; 
+
+  if (docSnap.exists()) {
+    const dataAwan = docSnap.data();
+    if (dataAwan.payload) {
+      const dataLokal = localStorage.getItem(key);
+      if (dataLokal !== dataAwan.payload) {
+        console.log(`🔄 [Cloud Sync] Sinkronisasi data baru dari server untuk: ${key}`);
+        localStorage.setItem(key, dataAwan.payload);
+        
+        // Panggil mesin sinkronisasi terpusat kamu agar RAM & UI ter-update otomatis
+        if (typeof window.sinkronisasiDanRender === 'function') {
+          window.sinkronisasiDanRender();
         }
       }
-    });
+    }
+  }
+  });
   });
 }
 
@@ -1431,7 +1434,7 @@ Object.keys(globalFunctions).forEach((key) => {
 });
 
 /* ================= LOGIKA BARU: PENGENDALI INTERFASE (LEBIH AMAN & ANTI-MOGOK) ================= */
-document.addEventListener("DOMContentLoaded", () => {
+
   
   // --- TOMBOL STRUKTUR FORM UTAMA ---
   document.getElementById('btnTambahJadwal')?.addEventListener('click', () => {
@@ -1553,5 +1556,5 @@ document.addEventListener("DOMContentLoaded", () => {
       btnToggleWellness.classList.toggle("aktif", isHidden);
     });
   }
-});
+
 

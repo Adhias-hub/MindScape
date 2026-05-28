@@ -742,3 +742,27 @@ window.displayFocusHistory = function() {
       </div>`;
   });
 }
+
+
+// ✅ REVISI LOGIKA: Tambahkan parameter pemantau asal data (Metadata)
+onSnapshot(docRef, (docSnap) => {
+  // metadata.hasPendingWrites artinya data ini baru saja ditulis oleh device ini 
+  // dan sedang proses otw ke server. Jika TRUE, abaikan saja (jangan timpa lokal).
+  if (docSnap.metadata.hasPendingWrites) return; 
+
+  if (docSnap.exists()) {
+    const dataAwan = docSnap.data();
+    if (dataAwan.payload) {
+      const dataLokal = localStorage.getItem(key);
+      if (dataLokal !== dataAwan.payload) {
+        console.log(`🔄 [Cloud Sync] Sinkronisasi data baru dari server untuk: ${key}`);
+        localStorage.setItem(key, dataAwan.payload);
+        
+        // Panggil mesin sinkronisasi terpusat kamu agar RAM & UI ter-update otomatis
+        if (typeof window.sinkronisasiDanRender === 'function') {
+          window.sinkronisasiDanRender();
+        }
+      }
+    }
+  }
+});
