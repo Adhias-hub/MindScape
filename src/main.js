@@ -1229,21 +1229,19 @@ let timerFokus;
 let sisaDetikFokus = 0;
 let sedangBerjalan = false;
 
-function catatRiwayatFocusSelesai(durasiMenit, targetNama) {
+function catatRiwayatFocusSelesai(durasiMenit, targetNama, catatanTeks = "-") {
   if (!auth.currentUser) return;
   const uidAman = auth.currentUser.uid;
   
   const riwayatLama = ambilDataAman(`focusHistory_${uidAman}`) || [];
   const sekarang = new Date();
 
-  // Buat format YYYY-MM-DD
   const formatTanggal = sekarang.toLocaleDateString('id-ID', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'
   }).split('/').reverse().join('-'); 
 
-  // Buat format jam
   const formatJam = sekarang.toLocaleTimeString('id-ID', {
     hour: '2-digit',
     minute: '2-digit',
@@ -1254,8 +1252,8 @@ function catatRiwayatFocusSelesai(durasiMenit, targetNama) {
     id: 'focus_' + Date.now() + '_' + Math.floor(Math.random() * 1000), 
     tanggal: formatTanggal,
     jam: formatJam,
-    target: targetNama, // Disesuaikan dengan parameter fungsi
-    catatan: "-", // Fallback default
+    target: targetNama, 
+    catatan: catatanTeks, // 🔥 PERBAIKAN: Sekarang pakai data asli, bukan hardcode "-"
     durasi: durasiMenit
   };
 
@@ -1286,7 +1284,7 @@ window.mulaiFocusMode = function(menitDurasi, targetTeks = "Sesi Fokus Belajar",
     simpanDataAman(`focusTargetText_${uidAman}`, targetTeks);
     simpanDataAman(`focusNoteText_${uidAman}`, catatanTeks);
     
-    // Simpan durasi asli biar pas selesai catatannya akurat, bukan kecatat sisa waktunya
+    // Simpan durasi asli biar pas selesai catatannya akurat
     simpanDataAman(`focusOriginalDuration_${uidAman}`, menitDurasi);
   }
 
@@ -1313,21 +1311,23 @@ window.mulaiFocusMode = function(menitDurasi, targetTeks = "Sesi Fokus Belajar",
       sedangBerjalan = false;
       updateVisualTimer(0, 0);
       
+      const teksCatatanAkhir = ambilDataAman(`focusNoteText_${uidAman}`) || catatanTeks || "-";
+
       simpanDataAman(`focusTargetEnd_${uidAman}`, null);
       simpanDataAman(`focusStatus_${uidAman}`, "stopped");
       simpanDataAman(`focusTargetText_${uidAman}`, "");
       simpanDataAman(`focusNoteText_${uidAman}`, "");
       simpanDataAman(`focusOriginalDuration_${uidAman}`, null);
       
-      // Catat menggunakan durasi asli yang aman
-      catatRiwayatFocusSelesai(durasiAsli, targetTeks);
+      catatRiwayatFocusSelesai(durasiAsli, targetTeks, teksCatatanAkhir);
+      
       triggerNotifFocusOffline(); 
 
-      // 🔥 PERBAIKAN 1: Refresh UI otomatis agar tombol "Hapus" di histori langsung muncul!
       if (typeof window.displayFocusHistory === "function") window.displayFocusHistory();
 
       HubungkanVisualFocusDanKunci(false, "Belum ada target belajar.", "Belum ada catatan.");
     } else {
+      // 🔥 INI DIA YANG SEMPAT HILANG: Perintah untuk update angka di layar!
       const m = Math.floor(sisaDetikFokus / 60);
       const s = sisaDetikFokus % 60;
       updateVisualTimer(m, s);
@@ -1369,22 +1369,41 @@ window.cekSesiTimerPasRefresh = function() {
 window.stopFocusMode = function() {
   clearInterval(timerFokus);
   sedangBerjalan = false;
-  sisaDetikFokus = 0;
-  updateVisualTimer(0, 0);
   
   if (auth.currentUser) {
     const uidAman = auth.currentUser.uid;
+    
+    // Ambil data sebelum dihapus
+    const durasiAsli = ambilDataAman(`focusOriginalDuration_${uidAman}`);
+    const targetEnd = ambilDataAman(`focusTargetEnd_${uidAman}`);
+    const teksTarget = ambilDataAman(`focusTargetText_${uidAman}`) || "Sesi Fokus";
+    const teksCatatan = ambilDataAman(`focusNoteText_${uidAman}`) || "-"; // 🔥 PERBAIKAN: Ambil catatannya!
+
+    let menitTerlewati = durasiAsli || 0;
+    if (targetEnd && durasiAsli) {
+      const sisaMenit = Math.ceil((targetEnd - Date.now()) / 60000);
+      menitTerlewati = Math.max(1, durasiAsli - sisaMenit); 
+    }
+
+    if (menitTerlewati > 0) {
+      // 🔥 PERBAIKAN: Masukkan teksCatatan ke parameter ketiga
+      catatRiwayatFocusSelesai(menitTerlewati, teksTarget, teksCatatan); 
+    }
+
     simpanDataAman(`focusTargetEnd_${uidAman}`, null);
     simpanDataAman(`focusStatus_${uidAman}`, "stopped");
     simpanDataAman(`focusTargetText_${uidAman}`, "");
     simpanDataAman(`focusNoteText_${uidAman}`, "");
-    
-    // 🔥 PERBAIKAN 3: Bersihkan juga variabel durasi aslinya
     simpanDataAman(`focusOriginalDuration_${uidAman}`, null);
   }
   
+  sisaDetikFokus = 0;
+  updateVisualTimer(0, 0);
   HubungkanVisualFocusDanKunci(false, "Belum ada target belajar.", "Belum ada catatan.");
-  console.log('Focus Mode dihentikan paksa, yaa.');
+  
+  if (typeof window.displayFocusHistory === "function") window.displayFocusHistory();
+  
+  console.log('Focus Mode dihentikan paksa, progress berhasil disimpan ke jurnal! 📝');
 }
 
 function HubungkanVisualFocusDanKunci(apakahKunci, teksTarget, teksCatatan) {
@@ -1718,6 +1737,17 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   }
+  // Trigger mulai dari tombol Mulai (untuk form manual)
+  document.getElementById("btnMulaiFokus")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    const inputMenit = parseInt(document.getElementById('focusMinutes')?.value) || 25;
+    const inputTarget = document.getElementById('focusTarget')?.value || "Sesi Fokus Belajar";
+    const inputNote = document.getElementById('focusNote')?.value || "-";
+
+    if (typeof window.mulaiFocusMode === "function") {
+      window.mulaiFocusMode(inputMenit, inputTarget, inputNote);
+    }
+  });
 
   document.getElementById("btnBerhentiFokus")?.addEventListener("click", () => {
     if (typeof window.stopFocusMode === "function") window.stopFocusMode();
