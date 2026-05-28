@@ -71,29 +71,29 @@
   <section class="wellness-section">
     <h2>💧 Wellness Reminder</h2>
 
-    <div class="wellness-form" role="form" aria-label="Form Tambah Reminder Kesehatan">
-  <select id="wellnessType" aria-label="Pilih Jenis Reminder">
-    <option value="">Pilih Jenis Aktivitas 🪻</option>
-    <option value="Minum Air">💧 Minum Air</option>
-    <option value="Makan">🍽️ Makan Tepat Waktu</option>
-    <option value="Peregangan Fisik">🧘 Peregangan & Istirahat Mata</option>
-    <option value="Minum Vitamin">💊 Minum Vitamin / Obat</option>
-  </select>
-  
-  <input 
-    type="text" 
-    id="wellnessTime" 
-    placeholder="Set Jam Operasional ⏰" 
-    aria-label="Pilih Jam Reminder"
-    onfocus="(this.type='time')" 
-    onblur="if(!this.value) this.type='text'"
-    required
-  >
-         
-  <input type="text" id="wellnessNote" placeholder="Tulis pesan motivasi (opsional)" aria-label="Pesan Motivasi">
-  
-  <button id="btnTambahWellness">Tambah Reminder</button>
-</div>
+   <div class="wellness-form" role="form" aria-label="Form Tambah Reminder Kesehatan">
+      <select id="wellnessType" aria-label="Pilih Jenis Reminder">
+        <option value="">Pilih Jenis Aktivitas 🪻</option>
+        <option value="Minum Air">💧 Minum Air</option>
+        <option value="Makan">🍽️ Makan Tepat Waktu</option>
+        <option value="Peregangan Fisik">🧘 Peregangan & Istirahat Mata</option>
+        <option value="Minum Vitamin">💊 Minum Vitamin / Obat</option>
+      </select>
+      
+      <input 
+        type="text" 
+        id="wellnessTime" 
+        placeholder="Set Jam Operasional ⏰" 
+        aria-label="Pilih Jam Reminder"
+        onfocus="(this.type='time')" 
+        onblur="if(!this.value) this.type='text'"
+        required
+      >
+             
+      <input type="text" id="wellnessNote" placeholder="Tulis pesan motivasi (opsional)" aria-label="Pesan Motivasi">
+      
+      <button type="button" id="btnTambahWellness">Tambah Reminder</button>
+    </div>
 
     <div class="water-target">
       💙 Target minum hari ini: 8 gelas air
@@ -109,9 +109,10 @@
 
       <div id="pembungkusHistoriWellness" class="box-histori-pembungkus" style="display: none;">
         <h3 style="color: #7c3aed; margin-bottom: 20px; font-size: 22px; font-weight: 800;">📜 Log Kesehatan Hari Ini</h3>
-        <div id="wellnessHistoryList"></div>
+        
+        <div id="listWellnessHistory"></div>
+        
       </div>
-
     </div>
 
   </section>

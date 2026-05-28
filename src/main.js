@@ -3,7 +3,7 @@ import { initializeApp } from "firebase/app";
 // ✅ 1. Import Auth yang LENGKAP
 import { 
   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
-  signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut,
+  signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut,
   updateProfile, sendPasswordResetEmail, updatePassword            
 } from "firebase/auth";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
@@ -1427,50 +1427,95 @@ const globalFunctions = {
   mulaiFocusMode,
   stopFocusMode,
   cekSesiTimerPasRefresh
+  
 };
 
 Object.keys(globalFunctions).forEach((key) => {
   window[key] = globalFunctions[key];
 });
 
+// 🚨 WAJIB: Taruh kode ini di luar event listener (di kode global main.js)
+// Fungsi ini berguna untuk menangkap data user SETELAH halaman ter-redirect kembali ke aplikasi
+getRedirectResult(auth)
+  .then((result) => {
+    if (result) {
+      // Skenario jika sukses login via redirect
+      console.log("User berhasil login via redirect:", result.user);
+      window.location.href = "/dashboard.html"; 
+    }
+  })
+  .catch((error) => {
+    console.error("Error hasil redirect:", error);
+  });
+
 /* ================= LOGIKA BARU: PENGENDALI INTERFASE (LEBIH AMAN & ANTI-MOGOK) ================= */
 
-  
+// ✅ PERBAIKAN 1: Dibungkus DOMContentLoaded agar tanda "}" di akhir file seimbang & tidak bikin crash iOS
+document.addEventListener("DOMContentLoaded", () => {
+
   // --- TOMBOL STRUKTUR FORM UTAMA ---
-  document.getElementById('btnTambahJadwal')?.addEventListener('click', () => {
+  document.getElementById('btnTambahJadwal')?.addEventListener('click', (e) => {
+    e.preventDefault();
     if (typeof window.tambahJadwalKuliah === 'function') window.tambahJadwalKuliah();
   });
 
-  document.getElementById('btnTambahTugas')?.addEventListener('click', () => {
+  document.getElementById('btnTambahTugas')?.addEventListener('click', (e) => {
+    e.preventDefault();
     if (typeof window.tambahTodoTugas === 'function') window.tambahTodoTugas();
   });
 
-  document.getElementById('btnTambahWellness')?.addEventListener('click', () => {
+  document.getElementById('btnTambahWellness')?.addEventListener('click', (e) => {
+    e.preventDefault();
     if (typeof window.tambahWellnessLog === 'function') window.tambahWellnessLog();
   });
 
   // --- TOMBOL STRUKTUR AUTH (index.html) ---
-  document.getElementById("btnKirimLogin")?.addEventListener("click", () => {
+  document.getElementById("btnKirimLogin")?.addEventListener("click", (e) => {
+    e.preventDefault(); // ✅ Mencegah form reload otomatis di Safari
     if (typeof window.login === "function") window.login();
   });
 
-  document.getElementById("btnGoogleLogin")?.addEventListener("click", () => {
-    if (typeof window.loginDenganGoogle === "function") window.loginDenganGoogle();
-  });
+  // Deteksi apakah user menggunakan iOS atau mode PWA Standalone
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone === true;
 
-  document.getElementById("btnKeHalamanRegister")?.addEventListener("click", () => {
+  const btnGoogleLogin = document.getElementById("btnGoogleLogin");
+  if (btnGoogleLogin) {
+    btnGoogleLogin.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (isIOS || isStandalone) {
+        signInWithRedirect(auth, googleProvider);
+      } else {
+        signInWithPopup(auth, googleProvider)
+          .then((result) => {
+            window.location.href = "/dashboard.html"; 
+          })
+          .catch((error) => {
+            console.error("Gagal Login Popup:", error);
+          });
+      }
+    });
+  }
+
+  // ✅ PERBAIKAN 2: Ditambahkan (e) & e.preventDefault() agar link "Daftar" tidak memicu refresh di iOS
+  document.getElementById("btnKeHalamanRegister")?.addEventListener("click", (e) => {
+    e.preventDefault(); 
     if (typeof window.showRegister === "function") window.showRegister();
   });
 
-  document.getElementById("btnKirimRegister")?.addEventListener("click", () => {
+  document.getElementById("btnKirimRegister")?.addEventListener("click", (e) => {
+    e.preventDefault();
     if (typeof window.register === "function") window.register();
   });
 
-  document.getElementById("btnKeHalamanLogin")?.addEventListener("click", () => {
+  // ✅ PERBAIKAN 3: Ditambahkan e.preventDefault() untuk link kembali ke Login
+  document.getElementById("btnKeHalamanLogin")?.addEventListener("click", (e) => {
+    e.preventDefault();
     if (typeof window.showLogin === "function") window.showLogin();
   });
 
-  document.getElementById("btnLupaPassword")?.addEventListener("click", () => {
+  document.getElementById("btnLupaPassword")?.addEventListener("click", (e) => {
+    e.preventDefault();
     if (typeof window.forgotPassword === "function") window.forgotPassword();
   });
 
@@ -1483,7 +1528,7 @@ Object.keys(globalFunctions).forEach((key) => {
     if (typeof window.openProfile === "function") window.openProfile();
   });
 
-  document.getElementById("btnGantiPassword")?.addEventListener("click", () => {
+  document.getElementById("btnLupaPassword")?.addEventListener("click", () => {
     if (typeof window.changePassword === "function") window.changePassword();
   });
 
@@ -1556,5 +1601,4 @@ Object.keys(globalFunctions).forEach((key) => {
       btnToggleWellness.classList.toggle("aktif", isHidden);
     });
   }
-
-
+});
