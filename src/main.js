@@ -1620,6 +1620,14 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
+getRedirectResult(auth).then((result) => {
+  if (result) {
+    window.location.href = "home.html"; // ✅ Pas sukses balik dari Google, langsung lempar ke home
+  }
+}).catch((error) => {
+  console.error("Error Redirect:", error);
+});
+
 /* ================= LEVEL 4: WINDOW EXPOSE TO GLOBAL SCOPE ================= */
 const globalFunctions = {
   register,
@@ -1695,7 +1703,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         signInWithPopup(auth, googleProvider)
           .then((result) => {
-            window.location.href = "/dashboard.html"; 
+            window.location.href = "home.html"; 
           })
           .catch((error) => {
             console.error("Gagal Login Popup:", error);
