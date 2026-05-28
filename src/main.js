@@ -352,7 +352,7 @@ function putarSuaraAlarm() {
 }
 
 function sendNotification(title, message) {
-  if (Notification.permission === "granted") {
+  if (typeof Notification !== "undefined" && Notification.permission === "granted") {
     new Notification(title, {
       body: message,
       icon: "/flower.png"
@@ -1661,6 +1661,37 @@ getRedirectResult(auth)
 // ✅ PERBAIKAN 1: Dibungkus DOMContentLoaded agar tanda "}" di akhir file seimbang & tidak bikin crash iOS
 document.addEventListener("DOMContentLoaded", () => {
 
+  // Deteksi apakah user menggunakan iOS atau mode PWA Standalone
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone === true;
+
+  const btnGoogleLogin = document.getElementById("btnGoogleLogin");
+  if (btnGoogleLogin) {
+    btnGoogleLogin.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (isIOS || isStandalone) {
+        signInWithRedirect(auth, googleProvider);
+      } else {
+        signInWithPopup(auth, googleProvider)
+          .then((result) => {
+            window.location.href = "/dashboard.html"; 
+          })
+          .catch((error) => {
+            console.error("Gagal Login Popup:", error);
+          });
+      }
+    });
+  }
+
+  document.body.addEventListener('touchstart', () => {
+    // Memancing iOS agar mengizinkan audio berbunyi nanti dari background/timer
+    if (typeof alarmSound !== "undefined" && alarmSound.currentTime === 0) {
+        alarmSound.play().catch(()=>{}); // Pancing play
+        alarmSound.pause();              // Langsung pause secepat kilat (gak kedengeran)
+        alarmSound.currentTime = 0;
+    }
+}, { passive: true, once: true });
+
   document.querySelectorAll('nav a, .sidebar-menu a, [data-page]').forEach(tombol => {
   tombol.addEventListener("click", () => {
     setTimeout(() => {
@@ -1708,28 +1739,6 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault(); // ✅ Mencegah form reload otomatis di Safari
     if (typeof window.login === "function") window.login();
   });
-
-  // Deteksi apakah user menggunakan iOS atau mode PWA Standalone
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  const isStandalone = window.navigator.standalone === true;
-
-  const btnGoogleLogin = document.getElementById("btnGoogleLogin");
-  if (btnGoogleLogin) {
-    btnGoogleLogin.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (isIOS || isStandalone) {
-        signInWithRedirect(auth, googleProvider);
-      } else {
-        signInWithPopup(auth, googleProvider)
-          .then((result) => {
-            window.location.href = "/dashboard.html"; 
-          })
-          .catch((error) => {
-            console.error("Gagal Login Popup:", error);
-          });
-      }
-    });
-  }
 
   // ✅ PERBAIKAN 2: Ditambahkan (e) & e.preventDefault() agar link "Daftar" tidak memicu refresh di iOS
   document.getElementById("btnKeHalamanRegister")?.addEventListener("click", (e) => {
