@@ -567,13 +567,9 @@ setInterval(() => {
   const uidAman = auth.currentUser.uid;
   const sekarang = new Date();
   
-  // LOGIKA VARIABEL YANG TADI HILANG KITA BUAT DI SINI
   const daftarHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
   const hariIni = daftarHari[sekarang.getDay()];
   const totalMenitSekarang = (sekarang.getHours() * 60) + sekarang.getMinutes();
-  const kunciMenit = `${hariIni}_${totalMenitSekarang}`;
-
-  if (rentangWaktuTerakhir === kunciMenit) return;
 
   const ambilDataJadwalLokal = ambilDataAman(`jadwalKuliah_${uidAman}`) || [];
 
@@ -583,16 +579,20 @@ setInterval(() => {
       const totalMenitJadwal = (jamJadwal * 60) + menitJadwal;
       const selisihMenit = totalMenitJadwal - totalMenitSekarang;
 
-      if (selisihMenit === 20) {
-        rentangWaktuTerakhir = kunciMenit;
+      // Kunci spesifik per matkul dan per menit pengingat
+      const kunci20Min = `${jadwal.id}_20`;
+      const kunci10Min = `${jadwal.id}_10`;
+
+      if (selisihMenit === 20 && rentangWaktuTerakhir !== kunci20Min) {
+        rentangWaktuTerakhir = kunci20Min;
         sendNotification(`🚨 Kelas ${jadwal.matkul}`, "20 menit lagi masuk, yaa! Siap-siap otw kelas.");
-      } else if (selisihMenit === 5) {
-        rentangWaktuTerakhir = kunciMenit;
-        sendNotification(`🚨 Kelas ${jadwal.matkul}`, "5 menit lagi kelas dimulai! Jangan nyasar, gass masuk.");
+      } else if (selisihMenit === 5 && rentangWaktuTerakhir !== kunci10Min) {
+        rentangWaktuTerakhir = kunci10Min;
+        sendNotification(`🚨 Kelas ${jadwal.matkul}`, "5 menit lagi kelas dimulai! Amankan posisi dudukmu.");
       }
     }
   });
-}, 30000); 
+}, 10000); // 🔥 Pengecekan setiap 10 detik
 
 /* ================= 3. STRUKTUR UTAMA SEGMENT TO DO TASKS ================= */
 window.tambahTodoTugas = function() {
@@ -837,8 +837,8 @@ window.displayGagalHistory = function() {
 });
 }
 
-/* ================= 4. SATPAM TO-DO DEADLINE H-5 MIN ================= */
-let gembokTodoTerakhir = ""; 
+/* ================= 4. SATPAM TO-DO DEADLINE H-10 MIN ================= */
+let daftarGembokTodo = {}; 
 
 setInterval(() => {
   if (!auth.currentUser) return;
@@ -847,9 +847,7 @@ setInterval(() => {
   const sekarang = new Date();
   const timestampSekarang = sekarang.getTime();
   
-  // ✅ PERBAIKAN 5: Membaca secara aman terenkripsi
   const dataTodo = ambilDataAman(`todoTugas_${uidAman}`) || [];
-  
   let adaPerubahan = false;
 
   dataTodo.forEach(item => {
@@ -859,8 +857,12 @@ setInterval(() => {
     if (!isNaN(waktuDeadline.getTime())) {
       const timestampDeadline = waktuDeadline.getTime();
       
-      const selisihMenit = Math.floor((timestampDeadline - timestampSekarang) / 1000 / 60);
-      if (selisihMenit === 5) {
+      // Pembulatan akurat
+      const selisihMenit = Math.round((timestampDeadline - timestampSekarang) / 1000 / 60);
+      
+      // 🔥 Hanya bunyikan alert di 10 menit sebelum deadline
+      if (selisihMenit === 10 && !daftarGembokTodo[`${item.id}_10`]) {
+        daftarGembokTodo[`${item.id}_10`] = true;
         triggerNotifTodoOffline(item.tugas);
       }
 
@@ -873,25 +875,21 @@ setInterval(() => {
   });
 
   if (adaPerubahan) {
-    // ✅ PERBAIKAN 6: Menyimpan status tugas gagal/hangus secara terenkripsi
     simpanDataAman(`todoTugas_${uidAman}`, dataTodo);
-    
     if (typeof window.tampilkanTodoDashboard === 'function') {
       window.tampilkanTodoDashboard();
     }
   }
-}, 30000);
+}, 10000); // 🔥 Pengecekan setiap 10 detik
 
 function triggerNotifTodoOffline(namaTugas) {
-  // ✅ Panggil fungsi pemutar audio terpusat
   putarSuaraAlarm();
 
-  // 2. Tampilkan Pop-up Visual (Service Worker / Desktop Notification)
   if (Notification.permission === 'granted') {
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
       navigator.serviceWorker.ready.then((registration) => {
         registration.showNotification('🚨 DEADLINE DEPAN MATA, yaa!', {
-          body: `Tugas "${namaTugas}" kamu sisa 5 menit lagi! Ayoo buruan submit ke sistem! 🌸`,
+          body: `Tugas "${namaTugas}" kamu sisa 10 MENIT lagi! Ayoo buruan submit ke sistem! 🌸`, // 🔥 Teks diupdate
           icon: '/flower.png', 
           vibrate: [500, 100, 500, 100, 500], 
           badge: '/flower.png',
@@ -900,13 +898,13 @@ function triggerNotifTodoOffline(namaTugas) {
         });
       }).catch(() => {
         new Notification('🚨 DEADLINE DEPAN MATA, yaa!', { 
-          body: `Tugas "${namaTugas}" kamu sisa 5 menit lagi! Ayoo buruan submit! 🌸`, 
+          body: `Tugas "${namaTugas}" kamu sisa 10 MENIT lagi! Ayoo buruan submit! 🌸`, // 🔥 Teks diupdate
           icon: '/flower.png' 
         });
       });
     } else {
       new Notification('🚨 DEADLINE DEPAN MATA, yaa!', { 
-        body: `Tugas "${namaTugas}" kamu sisa 5 menit lagi! Ayoo buruan submit! 🌸`, 
+        body: `Tugas "${namaTugas}" kamu sisa 10 MENIT lagi! Ayoo buruan submit! 🌸`, // 🔥 Teks diupdate
         icon: '/flower.png' 
       });
     }
@@ -1057,36 +1055,28 @@ let gembokWellnessTerakhir = "";
 
 setInterval(() => {
   if (!auth.currentUser) return;
-  const sekarang = new Date();
   
-  const jamSekarang = String(sekarang.getHours()).padStart(2, '0');
-  const menitSekarang = String(sekarang.getMinutes()).padStart(2, '0');
-  const waktuSekarang = `${jamSekarang}:${menitSekarang}`;
-
+  // 1. JALAN PINTAS: Ambil jam format "HH:MM" cuma dalam 1 baris kode!
+  const waktuSekarang = new Date().toTimeString().slice(0, 5); 
+  
   if (gembokWellnessTerakhir === waktuSekarang) return;
 
-  const uidAman = auth.currentUser.uid; 
-  
-  // ✅ PERBAIKAN: Membaca secara aman terenkripsi
-  const dataWellness = ambilDataAman(`wellnessLogs_${uidAman}`) || [];
-  let adaNotifikasiWellnessDipicu = false;
+  const dataWellness = ambilDataAman(`wellnessLogs_${auth.currentUser.uid}`) || [];
+  let adaNotifikasi = false;
 
   dataWellness.forEach(w => {
-    const jamReminder = w.jam || w.time;
-    const namaAktivitas = w.aktivitas || w.type || "Reminder Kesehatan";
-
-    if (jamReminder === waktuSekarang && !w.completed) {
-      if (typeof window.triggerNotifWellnessOffline === 'function') {
-        window.triggerNotifWellnessOffline(namaAktivitas);
-      }
-      adaNotifikasiWellnessDipicu = true;
+    // 2. JALAN PINTAS: Langsung gabungkan pengecekan logika di dalam satu if
+    if ((w.jam || w.time) === waktuSekarang && !w.completed) {
+      
+      // 3. JALAN PINTAS: Gunakan "?." (Optional Chaining) sebagai pengganti "typeof"
+      window.triggerNotifWellnessOffline?.(w.aktivitas || w.type || "Reminder Kesehatan");
+      adaNotifikasi = true;
     }
   });
 
-  if (adaNotifikasiWellnessDipicu) {
-    gembokWellnessTerakhir = waktuSekarang; 
-  }
-}, 30000);
+  if (adaNotifikasi) gembokWellnessTerakhir = waktuSekarang; 
+  
+}, 10000); // 🔥 Pengecekan setiap 10 detik biar responsif!
 
 function triggerNotifWellnessOffline(namaAktivitas) {
   console.log(`Memicu alarm wellness untuk: ${namaAktivitas} 🪻`);
