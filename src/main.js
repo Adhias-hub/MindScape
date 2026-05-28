@@ -100,7 +100,7 @@ function loginDenganGoogle() {
   signInWithPopup(auth, googleProvider)
     .then(() => {
       alert("Login Google Berhasil! 🌸");
-      window.location.href = "home.html";
+      window.location.href = "/home.html";
     })
     .catch((error) => {
       console.error("Gagal Login Google:", error);
@@ -1620,14 +1620,6 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-getRedirectResult(auth).then((result) => {
-  if (result) {
-    window.location.href = "home.html"; // ✅ Pas sukses balik dari Google, langsung lempar ke home
-  }
-}).catch((error) => {
-  console.error("Error Redirect:", error);
-});
-
 /* ================= LEVEL 4: WINDOW EXPOSE TO GLOBAL SCOPE ================= */
 const globalFunctions = {
   register,
@@ -1675,16 +1667,17 @@ Object.keys(globalFunctions).forEach((key) => {
 // Fungsi ini berguna untuk menangkap data user SETELAH halaman ter-redirect kembali ke aplikasi
 getRedirectResult(auth)
   .then((result) => {
+    // Kalau ada hasil login (redirect sukses), langsung lempar ke home.html
     if (result) {
-      // Skenario jika sukses login via redirect
       console.log("User berhasil login via redirect:", result.user);
-      window.location.href = "/dashboard.html"; 
+      window.location.href = "/home.html"; // ✅ WAJIB: Ganti dashboard ke home!
     }
   })
   .catch((error) => {
     console.error("Error hasil redirect:", error);
+    // Tambahin alert dikit biar user tahu kalau gagal
+    alert("Gagal memproses login Google: " + error.message);
   });
-
 /* ================= LOGIKA BARU: PENGENDALI INTERFASE (LEBIH AMAN & ANTI-MOGOK) ================= */
 
 // ✅ PERBAIKAN 1: Dibungkus DOMContentLoaded agar tanda "}" di akhir file seimbang & tidak bikin crash iOS
@@ -1703,7 +1696,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         signInWithPopup(auth, googleProvider)
           .then((result) => {
-            window.location.href = "home.html"; 
+            window.location.href = "/home.html"; 
           })
           .catch((error) => {
             console.error("Gagal Login Popup:", error);
