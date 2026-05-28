@@ -240,19 +240,22 @@ function decryptDataAman(cipherText) {
 
 // ✅ Handler Simpan: Simpan ke LocalStorage (Offline) + Lempar ke Firestore (Cloud)
 function simpanDataAman(key, dataObj) {
-  // 1. Simpan ke memori lokal browser agar super cepat dan bisa dibaca saat offline
+  // 1. Simpan ke LocalStorage pakai key asli (ada UID-nya)
   const encryptedString = encryptDataAman(dataObj);
   localStorage.setItem(key, encryptedString);
 
-  // 2. Lempar ke Firestore di latar belakang (Otomatis ditahan jika tidak ada internet)
+  // 2. Lempar ke Firestore (Ubah nama dokumen jadi statis tanpa UID di ujungnya)
   const user = auth.currentUser;
   if (user) {
-    const docRef = doc(db, "users", user.uid, "appData", key);
+    // Menghapus substring _UID agar nama dokumen di Firestore jadi bersih (misal: jadwalKuliah_123 -> jadwalKuliah)
+    const cleanKeyForCloud = key.replace(`_${user.uid}`, ""); 
+
+    const docRef = doc(db, "users", user.uid, "appData", cleanKeyForCloud);
     setDoc(docRef, { 
       payload: encryptedString,
       terakhirDiperbarui: new Date().toISOString()
     }, { merge: true })
-    .then(() => console.log(`☁️ Data [${key}] sukses diantrekan ke Cloud!`))
+    .then(() => console.log(`☁️ Data [${cleanKeyForCloud}] sukses diantrekan ke Cloud!`))
     .catch(err => console.error("Gagal sinkron ke Cloud:", err));
   }
 }
@@ -261,52 +264,54 @@ async function mulaiSinkronisasiCloud() {
   const user = auth.currentUser;
   if (!user) return;
   
-  // Daftar kunci data yang mau kita pantau
-  const tipeData = [`jadwalKuliah_${user.uid}`, `todoTugas_${user.uid}`, `wellnessLogs_${user.uid}`, `focusHistory_${user.uid}`];
+  // ✅ PERBAIKAN: Gunakan nama key statis yang konsisten untuk nama dokumen di Cloud
+  // Tapi untuk LocalStorage, kita tetap petakan dengan UID agar tidak tertukar jika 1 device ganti akun.
+  const pemetaanData = [
+    { lokal: `jadwalKuliah_${user.uid}`, awan: "jadwalKuliah" },
+    { lokal: `todoTugas_${user.uid}`,    awan: "todoTugas" },
+    { lokal: `wellnessLogs_${user.uid}`,  awan: "wellnessLogs" },
+    { lokal: `focusHistory_${user.uid}`,  awan: "focusHistory" }
+  ];
   
-  // 🔥 FASE 1: SEDOT DATA AWAL DARI FIRESTORE (Khusus buat HP yang baru login)
   console.log("☁️ Memulai proses sedot data awal dari awan...");
-  for (const key of tipeData) {
+  for (const item of pemetaanData) {
     try {
-      const docRef = doc(db, "users", user.uid, "appData", key);
-      const docSnap = await getDoc(docRef); // Tarik paksa sekali dari server
+      const docRef = doc(db, "users", user.uid, "appData", item.awan); // Pakai key awan yang rapi
+      const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
         const dataAwan = docSnap.data();
         if (dataAwan.payload) {
-          const dataLokal = localStorage.getItem(key);
-          // Kalau lokal kosong atau beda sama awan, timpa pakai awan!
+          const dataLokal = localStorage.getItem(item.lokal);
           if (!dataLokal || dataLokal !== dataAwan.payload) {
-            console.log(`📥 [Initial Sync] Menarik data ${key} dari awan ke lokal.`);
-            localStorage.setItem(key, dataAwan.payload);
+            console.log(`📥 [Initial Sync] Menarik data ${item.awan} dari awan ke lokal.`);
+            localStorage.setItem(item.lokal, dataAwan.payload);
           }
         }
       }
     } catch (err) {
-      console.warn(`Gagal menarik data ${key} dari awan:`, err);
+      console.warn(`Gagal menarik data ${item.awan} dari awan:`, err);
     }
   }
 
-  // Refresh UI setelah semua data awal kesedot
   if (typeof window.sinkronisasiDanRender === 'function') {
     window.sinkronisasiDanRender();
   }
 
-  // 🔥 FASE 2: PASANG PENDENGAR (Untuk update real-time misal lu buka di 2 HP barengan)
-  tipeData.forEach(key => {
-    const docRef = doc(db, "users", user.uid, "appData", key);
+  // 🔥 FASE 2: Pasang Real-time Snapshot Listener
+  pemetaanData.forEach(item => {
+    const docRef = doc(db, "users", user.uid, "appData", item.awan);
     
     onSnapshot(docRef, (docSnap) => {
-      // Abaikan pantulan balik (kalau device ini yang ngirim, jangan di-download ulang)
       if (docSnap.metadata.hasPendingWrites) return; 
 
       if (docSnap.exists()) {
         const dataAwan = docSnap.data();
         if (dataAwan.payload) {
-          const dataLokal = localStorage.getItem(key);
+          const dataLokal = localStorage.getItem(item.lokal);
           if (dataLokal !== dataAwan.payload) {
-            console.log(`🔄 [Real-time Sync] Data baru masuk dari device lain untuk: ${key}`);
-            localStorage.setItem(key, dataAwan.payload);
+            console.log(`🔄 [Real-time Sync] Data baru masuk dari device lain untuk: ${item.awan}`);
+            localStorage.setItem(item.lokal, dataAwan.payload);
             
             if (typeof window.sinkronisasiDanRender === 'function') {
               window.sinkronisasiDanRender();
