@@ -219,7 +219,7 @@ function ambilDataAman(key) {
 }
 
 // Kunci AES sesungguhnya (Sebaiknya letakkan di file .env nanti: VITE_ENCRYPTION_KEY)
-const SECRET_KEY = import.meta.env.VITE_ENCRYPTION_KEY || "Kunci_Rahasia_MindSpace_2026";
+const SECRET_KEY = import.meta.env.VITE_ENCRYPTION_KEY || "Kunci_GRahasia_MindSpace_2026";
 
 function encryptDataAman(dataObj) {
   const jsonStr = JSON.stringify(dataObj);
