@@ -1789,3 +1789,46 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+// --- FITUR INSTALL APLIKASI (PWA) ---
+let promptInstallTertunda;
+const btnInstallApp = document.getElementById("btnInstallApp");
+
+// 1. Browser mendeteksi bahwa web ini bisa di-install
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Cegah browser memunculkan pop-up install otomatis
+  e.preventDefault();
+  
+  // Simpan event-nya supaya bisa kita panggil pas tombol diklik
+  promptInstallTertunda = e;
+  
+  // Munculkan tombol estetik kita!
+  if (btnInstallApp) {
+    btnInstallApp.style.display = 'inline-block'; 
+  }
+});
+
+// 2. Apa yang terjadi saat tombol diklik
+if (btnInstallApp) {
+  btnInstallApp.addEventListener('click', async () => {
+    if (!promptInstallTertunda) {
+      alert("Aplikasi sudah terinstal atau browser tidak mendukung fitur ini.");
+      return;
+    }
+    
+    // Tampilkan pop-up install bawaan browser
+    promptInstallTertunda.prompt();
+    
+    // Tunggu pilihan user (mau install atau batal)
+    const { outcome } = await promptInstallTertunda.userChoice;
+    console.log(`Pilihan user: ${outcome}`);
+    
+    // Bersihkan data memori
+    promptInstallTertunda = null;
+    
+    // Kalau user pilih install, hilangkan tombolnya biar rapi
+    if (outcome === 'accepted') {
+      btnInstallApp.style.display = 'none';
+    }
+  });
+}

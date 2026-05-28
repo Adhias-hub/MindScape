@@ -319,6 +319,8 @@ body {
     position: relative;
   }
 
+  
+
   /* KUNCI BARU 2: Desain Ulang Posisi Kotak Dropdown Pas di HP */
   .profile-dropdown {
     position: absolute;
@@ -363,4 +365,53 @@ body {
 
 #btnInstalPWA:active {
   transform: translateY(0);
+}
+
+
+/* --- DESAIN TOMBOL INSTALL PREMIUM --- */
+.install-container {
+  text-align: center;
+  width: 100%;
+  padding: 20px 0 50px 0;
+}
+
+.btn-install-premium {
+  background: linear-gradient(135deg, #a855f7, #ec4899); /* Gradasi ungu ke pink */
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+  transition: all 0.3s ease;
+  
+  /* Sembunyikan dulu secara default sesuai aturan PWA */
+  display: none; 
+}
+
+.btn-install-premium:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.6);
+}
+
+.btn-install-premium:active {
+  transform: translateY(1px);
+}
+
+@media (max-width: 480px) {
+  .install-container {
+    padding: 10px 10px 30px 10px; /* Jarak atas-bawah dikurangi agar hemat space */
+  }
+
+  .btn-install-premium {
+    width: auto; /* Tidak dipaksa penuh, biarkan mengecil pas ukuran teks */
+    display: inline-block;
+    padding: 8px 18px; /* Dibuat lebih tipis dan langsing */
+    font-size: 12px; /* Ukuran tulisan diperkecil agar tidak mencolok */
+    border-radius: 30px; /* Lengkungan disesuaikan dengan ukuran yang mini */
+    box-shadow: 0 2px 8px rgba(236, 72, 153, 0.25); /* Shadow lebih halus */
+    letter-spacing: 0.2px;
+  }
 }
