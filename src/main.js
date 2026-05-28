@@ -448,7 +448,7 @@ window.tambahJadwalKuliah = function() {
   let note = document.getElementById("noteInput")?.value.trim() || "-";
 
   if (course === "" || day === "" || start === "") {
-    alert("Isi setidaknya Nama Mata Kuliah, Hari, dan Jam Mulai!");
+    alert("Isi setidaknya Nama Mata Kuliah, Hari, dan Jam!");
     return;
   }
 
