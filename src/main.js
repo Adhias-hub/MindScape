@@ -212,6 +212,12 @@ function scrollDashboard() {
 
 /* ================= SECURITY UTILITY (ENKRIPSI & FIRESTORE OFFLINE SYNC) ================= */
 
+function ambilDataAman(key) {
+  const encryptedString = localStorage.getItem(key); // Cek brankas lokal
+  if (!encryptedString) return null; // Kalau brankas masih kosong, kembalikan null
+  return decryptDataAman(encryptedString); // Buka gembok AES-nya!
+}
+
 // Kunci AES sesungguhnya (Sebaiknya letakkan di file .env nanti: VITE_ENCRYPTION_KEY)
 const SECRET_KEY = import.meta.env.VITE_ENCRYPTION_KEY || "Kunci_Rahasia_MindSpace_2026";
 
