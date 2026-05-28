@@ -10,7 +10,8 @@ import { getMessaging, getToken, onMessage, isSupported } from "firebase/messagi
 
 // ✅ 2. Import Firestore 
 import { 
-  getFirestore, enableIndexedDbPersistence, doc, setDoc, getDoc, onSnapshot, deleteDoc  
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+  doc, setDoc, getDoc, onSnapshot, deleteDoc  
 } from "firebase/firestore";
 
 // ✅ 3. Import Keamanan
@@ -31,14 +32,10 @@ const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
 // ✅ 4. DATABASE & OFFLINE MODE
-const db = getFirestore(app);
-
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code == 'failed-precondition') {
-    console.warn("Gagal mode offline: Ada banyak tab aplikasi yang terbuka.");
-  } else if (err.code == 'unimplemented') {
-    console.warn("Browser ini tidak mendukung fitur offline Firestore.");
-  }
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
 });
 
 /* ================= LEVEL 2: DEKLARASI VARIABEL GLOBAL RAM ================= */
