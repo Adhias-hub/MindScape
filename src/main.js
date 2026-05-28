@@ -251,46 +251,64 @@ function simpanDataAman(key, dataObj) {
   }
 }
 
-// ✅ Handler Ambil: Membaca langsung dari lokal agar tidak ada delay/loading screen
-function ambilDataAman(key) {
-  const encryptedData = localStorage.getItem(key);
-  if (!encryptedData) return null;
-  return decryptDataAman(encryptedData);
-}
-
-// ✅ Fungsi Pendengar Cloud (Aktif secara Real-time)
-function mulaiSinkronisasiCloud() {
+async function mulaiSinkronisasiCloud() {
   const user = auth.currentUser;
   if (!user) return;
   
   // Daftar kunci data yang mau kita pantau
-  const tipeData = [`jadwalKuliah_${user.uid}`, `todoTugas_${user.uid}`, `wellnessLogs_${user.uid}`];
+  const tipeData = [`jadwalKuliah_${user.uid}`, `todoTugas_${user.uid}`, `wellnessLogs_${user.uid}`, `focusHistory_${user.uid}`];
   
+  // 🔥 FASE 1: SEDOT DATA AWAL DARI FIRESTORE (Khusus buat HP yang baru login)
+  console.log("☁️ Memulai proses sedot data awal dari awan...");
+  for (const key of tipeData) {
+    try {
+      const docRef = doc(db, "users", user.uid, "appData", key);
+      const docSnap = await getDoc(docRef); // Tarik paksa sekali dari server
+      
+      if (docSnap.exists()) {
+        const dataAwan = docSnap.data();
+        if (dataAwan.payload) {
+          const dataLokal = localStorage.getItem(key);
+          // Kalau lokal kosong atau beda sama awan, timpa pakai awan!
+          if (!dataLokal || dataLokal !== dataAwan.payload) {
+            console.log(`📥 [Initial Sync] Menarik data ${key} dari awan ke lokal.`);
+            localStorage.setItem(key, dataAwan.payload);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(`Gagal menarik data ${key} dari awan:`, err);
+    }
+  }
+
+  // Refresh UI setelah semua data awal kesedot
+  if (typeof window.sinkronisasiDanRender === 'function') {
+    window.sinkronisasiDanRender();
+  }
+
+  // 🔥 FASE 2: PASANG PENDENGAR (Untuk update real-time misal lu buka di 2 HP barengan)
   tipeData.forEach(key => {
     const docRef = doc(db, "users", user.uid, "appData", key);
     
-    // ✅ REVISI LOGIKA: Tambahkan parameter pemantau asal data (Metadata)
-onSnapshot(docRef, (docSnap) => {
-  // metadata.hasPendingWrites artinya data ini baru saja ditulis oleh device ini 
-  // dan sedang proses otw ke server. Jika TRUE, abaikan saja (jangan timpa lokal).
-  if (docSnap.metadata.hasPendingWrites) return; 
+    onSnapshot(docRef, (docSnap) => {
+      // Abaikan pantulan balik (kalau device ini yang ngirim, jangan di-download ulang)
+      if (docSnap.metadata.hasPendingWrites) return; 
 
-  if (docSnap.exists()) {
-    const dataAwan = docSnap.data();
-    if (dataAwan.payload) {
-      const dataLokal = localStorage.getItem(key);
-      if (dataLokal !== dataAwan.payload) {
-        console.log(`🔄 [Cloud Sync] Sinkronisasi data baru dari server untuk: ${key}`);
-        localStorage.setItem(key, dataAwan.payload);
-        
-        // Panggil mesin sinkronisasi terpusat kamu agar RAM & UI ter-update otomatis
-        if (typeof window.sinkronisasiDanRender === 'function') {
-          window.sinkronisasiDanRender();
+      if (docSnap.exists()) {
+        const dataAwan = docSnap.data();
+        if (dataAwan.payload) {
+          const dataLokal = localStorage.getItem(key);
+          if (dataLokal !== dataAwan.payload) {
+            console.log(`🔄 [Real-time Sync] Data baru masuk dari device lain untuk: ${key}`);
+            localStorage.setItem(key, dataAwan.payload);
+            
+            if (typeof window.sinkronisasiDanRender === 'function') {
+              window.sinkronisasiDanRender();
+            }
+          }
         }
       }
-    }
-  }
-  });
+    });
   });
 }
 
