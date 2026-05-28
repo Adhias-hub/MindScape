@@ -558,7 +558,7 @@ window.hapusJadwal = function(idJadwal) {
   }
 }
 
-/* ================= 2. SATPAM JADWAL H-20 & H-5 ================= */
+//* ================= 2. SATPAM JADWAL H-20 & H-5 ================= */
 let rentangWaktuTerakhir = ""; 
 
 setInterval(() => {
@@ -579,20 +579,20 @@ setInterval(() => {
       const totalMenitJadwal = (jamJadwal * 60) + menitJadwal;
       const selisihMenit = totalMenitJadwal - totalMenitSekarang;
 
-      // Kunci spesifik per matkul dan per menit pengingat
+      // ✅ PERBAIKAN: Nama gembok disesuaikan jadi 5Min agar sinkron dengan logikanya
       const kunci20Min = `${jadwal.id}_20`;
-      const kunci10Min = `${jadwal.id}_10`;
+      const kunci5Min  = `${jadwal.id}_5`; 
 
       if (selisihMenit === 20 && rentangWaktuTerakhir !== kunci20Min) {
         rentangWaktuTerakhir = kunci20Min;
         sendNotification(`🚨 Kelas ${jadwal.matkul}`, "20 menit lagi masuk, yaa! Siap-siap otw kelas.");
-      } else if (selisihMenit === 5 && rentangWaktuTerakhir !== kunci10Min) {
-        rentangWaktuTerakhir = kunci10Min;
+      } else if (selisihMenit === 5 && rentangWaktuTerakhir !== kunci5Min) { // ✅ Menggunakan kunci5Min
+        rentangWaktuTerakhir = kunci5Min; // ✅ Menggunakan kunci5Min
         sendNotification(`🚨 Kelas ${jadwal.matkul}`, "5 menit lagi kelas dimulai! Amankan posisi dudukmu.");
       }
     }
   });
-}, 10000); // 🔥 Pengecekan setiap 10 detik
+}, 10000); // ⏱️ Pengecekan setiap 10 detik, super akurat!
 
 /* ================= 3. STRUKTUR UTAMA SEGMENT TO DO TASKS ================= */
 window.tambahTodoTugas = function() {
