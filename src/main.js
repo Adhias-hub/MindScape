@@ -1089,7 +1089,7 @@ function triggerNotifWellnessOffline(namaAktivitas) {
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
       navigator.serviceWorker.ready.then((registration) => {
         registration.showNotification('🪻 WELLNESS CHECK-IN, yaa!', {
-          body: `Waktunya on-time untuk: "${namaAktivitas}". Jaga kesehatan jiwa dan fisik lu, gass eksekusi! 🌸`,
+          body: `Waktunya on-time untuk: "${namaAktivitas}". Jaga kesehatan jiwa dan fisik kamu, gass eksekusi! 🌸`,
           icon: 'flower.png', 
           badge: 'flower.png',
           vibrate: [200, 100, 200, 100, 400], 
@@ -1098,13 +1098,13 @@ function triggerNotifWellnessOffline(namaAktivitas) {
         });
       }).catch(() => {
         new Notification('🪻 WELLNESS CHECK-IN, yaa!', { 
-          body: `Waktunya on-time untuk: "${namaAktivitas}". Jaga kesehatan jiwa dan fisik lu! 🌸`, 
+          body: `Waktunya on-time untuk: "${namaAktivitas}". Jaga kesehatan jiwa dan fisik kamu! 🌸`, 
           icon: 'flower.png' 
         });
       });
     } else {
       new Notification('🪻 WELLNESS CHECK-IN, yaa!', { 
-        body: `Waktunya on-time untuk: "${namaAktivitas}". Jaga kesehatan jiwa dan fisik lu! 🌸`, 
+        body: `Waktunya on-time untuk: "${namaAktivitas}". Jaga kesehatan jiwa dan fisik kamu! 🌸`, 
         icon: 'flower.png' 
       });
     }
@@ -1640,6 +1640,12 @@ getRedirectResult(auth)
 
 // ✅ PERBAIKAN 1: Dibungkus DOMContentLoaded agar tanda "}" di akhir file seimbang & tidak bikin crash iOS
 document.addEventListener("DOMContentLoaded", () => {
+
+  // --- TOMBOL EXTRA KEAMANAN (Nambal Bug Balapan) ---
+  document.getElementById("btnGantiPassword")?.addEventListener("click", (e) => {
+    e.preventDefault(); // Biar gak memicu reload halaman di Safari iOS
+    if (typeof window.changePassword === "function") window.changePassword();
+  });
 
   // --- TOMBOL STRUKTUR FORM UTAMA ---
   document.getElementById('btnTambahJadwal')?.addEventListener('click', (e) => {
