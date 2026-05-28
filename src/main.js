@@ -6,7 +6,7 @@ import {
   signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut,
   updateProfile, sendPasswordResetEmail, updatePassword,          
 } from "firebase/auth";
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { getMessaging, getToken, onMessage, isSupported } from "firebase/messaging";
 
 // ✅ 2. Import Firestore 
 import { 
@@ -305,32 +305,50 @@ onAuthStateChanged(auth, (user) => {
 });
 
 /* ================= SYSTEM UTILITY (NOTIFIKASI & SUARA) ================= */
-if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-  Notification.requestPermission();
+if ('Notification' in window) {
+  
+  // 2. Jika ada (di Android, Windows, atau PWA iOS yang sudah di-install)
+  if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+    console.log("Izin notifikasi belum ditentukan, siap meminta izin...");
+    
+    // Sembunyikan atau jalankan fungsi meminta permission di sini
+    // Contoh: Notification.requestPermission();
+  }
+
+} else {
+  // 3. Jika tidak ada (kasus Safari iOS sebelum di-install)
+  console.log("Notifikasi tidak didukung di browser ini. User harus menginstal PWA terlebih dahulu di iOS.");
 }
 
-// ✅ Cukup deklarasikan SATU instance audio global di atas agar hemat memori RAM
-const alarmSound = new Audio("./alarm.mp3"); 
-alarmSound.volume = 1.0;
+let alarmSound;
 
-// ✅ Fungsi Pintar Pemutar Audio (Kebal Blokir Autoplay Browser)
+try {
+  // Cek apakah objek Audio ada dan bisa diinisialisasi
+  alarmSound = new Audio("/alarm.mp3");
+  alarmSound.volume = 1.0;
+} catch (error) {
+  console.warn("⚠️ Browser ini memblokir pembuatan objek Audio asli. Menggunakan audio dummy agar tidak crash.");
+  // Membuat objek tiruan (dummy) agar fungsi .play() atau .pause() tidak error
+  alarmSound = {
+    play: () => Promise.resolve(),
+    pause: () => {},
+    currentTime: 0,
+    volume: 1.0
+  };
+}
+
+// Fungsi putar suara yang aman dari hard crash
 function putarSuaraAlarm() {
-  alarmSound.play()
-    .then(() => {
-      console.log("🔊 Alarm berhasil berbunyi!");
-    })
-    .catch((error) => {
-      console.warn("⚠️ Suara ditangguhkan browser (Autoplay Policy). User harus berinteraksi dulu dengan halaman.");
-      
-      // Membuat toast/notifikasi kecil di pojok layar jika suara tersendat
-      const pengingatKlik = document.createElement("div");
-      pengingatKlik.innerHTML = `
-        <div style="position: fixed; bottom: 20px; right: 20px; bg-color: #ef4444; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; cursor: pointer; font-family: sans-serif; font-size: 14px;" onclick="this.remove()">
-          🚨 <b>MindSpace:</b> Ketuk layar ini untuk mengaktifkan suara alarm pengingat kuliah & tugas! 🌸
-        </div>
-      `;
-      document.body.appendChild(pengingatKlik);
-    });
+  try {
+    const playPromise = alarmSound.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        console.log("Autoplay diblokir oleh interaksi pengguna, aman.");
+      });
+    }
+  } catch (err) {
+    console.error("❌ Gagal memutar suara (WebKit Crash Prevention):", err);
+  }
 }
 
 function sendNotification(title, message) {
@@ -344,35 +362,46 @@ function sendNotification(title, message) {
 }
 
 /* ================= INITIALIZE FCM MESSAGING ================= */
-const messaging = getMessaging(app);
 
-function aktifkanNotificationFCM() {
-  Notification.requestPermission().then((permission) => {
+
+let messaging = null;
+
+// Pengecekan aman agar aplikasi tidak mogok di iOS / HTTP
+isSupported().then((supported) => {
+  if (supported) {
+    messaging = getMessaging(app);
+    
+    // Pindahkan onMessage ke dalam sini
+    onMessage(messaging, (payload) => {
+      console.log('Notif masuk pas aplikasi kebuka:', payload);
+      alert(`📢 ${payload.notification.title}\n\n${payload.notification.body}`);
+    });
+  } else {
+    console.warn("FCM tidak didukung di browser/environment ini. Melewati inisialisasi agar tidak crash.");
+  }
+}).catch((err) => console.error("Error cek dukungan FCM:", err));
+
+// ✅ Fungsi yang sempat hilang
+window.aktifkanNotificationFCM = async function() {
+  // Cek dulu apakah browser mendukung (penting untuk iOS)
+  if (typeof Notification === "undefined") {
+    alert("Fitur Notifikasi belum didukung di browser ini. Jika kamu pakai iPhone/Safari, silakan Install ke Home Screen (PWA) terlebih dahulu, yaa! 🌸");
+    return;
+  }
+  
+  try {
+    const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-      console.log('Izin notifikasi diberikan.');
-      
-      getToken(messaging, { 
-        vapidKey: 'BPyZbomuMFw7K1C7RbAKX7-0R2crOwKSCD7txHAD5Z8xVeoOCzzLL3AZo58bGLw7SBhgwCQ_WmoKaCekkROhhp0' 
-      })
-      .then((currentToken) => {
-        if (currentToken) {
-          console.log("TOKEN FCM LU (Copas ini buat ngetes):", currentToken);
-        } else {
-          console.log('Gagal dapet token, cek setelan Firebase lu.');
-        }
-      }).catch((err) => {
-        console.error('Error saat mengambil token: ', err);
-      });
+      console.log('Izin FCM berhasil diberikan! 🎉');
+      alert("Notifikasi berhasil diaktifkan! ✨");
+      // (Opsional) Kamu bisa menambahkan logika getToken() FCM kamu di sini nanti
     } else {
-      console.log('User menolak izin notifikasi.');
+      alert("Izin notifikasi ditolak oleh sistem.");
     }
-  });
-}
-
-onMessage(messaging, (payload) => {
-  console.log('Notif masuk pas aplikasi kebuka:', payload);
-  alert(`📢 ${payload.notification.title}\n\n${payload.notification.body}`);
-});
+  } catch (error) {
+    console.error("Gagal meminta izin notifikasi:", error);
+  }
+};
 
 /* ================= AUTOMATION AUTOMATIC CLEANER ================= */
 window.bersihkanWellnessGantiHariOtomatis = function() {
@@ -397,42 +426,6 @@ window.bersihkanWellnessGantiHariOtomatis = function() {
   }
 }
 
-/* ================= PROGRESSIVE WEB APPS (PWA) UTILITY ================= */
-let deferredPrompt; 
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  
-  const tombolInstal = document.getElementById('btnInstalPWA');
-  if (tombolInstal) {
-    tombolInstal.style.display = 'inline-block'; 
-    
-    const tombolBaru = tombolInstal.cloneNode(true);
-    tombolInstal.parentNode.replaceChild(tombolBaru, tombolInstal);
-    
-    tombolBaru.addEventListener('click', () => {
-      tombolBaru.style.display = 'none';
-      deferredPrompt.prompt();
-      
-      deferredPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === 'accepted') {
-          console.log('User gokil, sukses instal MindSpace! 🌸');
-        } else {
-          console.log('User nolak instal.');
-          tombolBaru.style.display = 'inline-block';
-        }
-        deferredPrompt = null;
-      });
-    });
-  }
-});
-
-window.addEventListener('appinstalled', () => {
-  console.log('Aplikasi resmi terpasang di perangkat, yaa!');
-  const tombolInstal = document.getElementById('btnInstalPWA');
-  if (tombolInstal) tombolInstal.style.display = 'none';
-});
 
 /* ================= 1. STRUKTUR UTAMA SEGMENT JADWAL KULIAH ================= */
 window.tambahJadwalKuliah = function() {
@@ -885,34 +878,30 @@ setInterval(() => {
 function triggerNotifTodoOffline(namaTugas) {
   putarSuaraAlarm();
 
-  if (Notification.permission === 'granted') {
+  if (typeof Notification !== "undefined" && Notification.permission === 'granted') {
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
       navigator.serviceWorker.ready.then((registration) => {
         registration.showNotification('🚨 DEADLINE DEPAN MATA, yaa!', {
-          body: `Tugas "${namaTugas}" kamu sisa 10 MENIT lagi! Ayoo buruan submit ke sistem! 🌸`, // 🔥 Teks diupdate
-          icon: '/flower.png', 
-          vibrate: [500, 100, 500, 100, 500], 
-          badge: '/flower.png',
-          tag: 'todo-alert-' + namaTugas,
+          body: `Tugas "${namaTugas}" kamu sisa 10 MENIT lagi!`,
+          icon: '/flower.png',
           requireInteraction: true 
         });
-      }).catch(() => {
-        new Notification('🚨 DEADLINE DEPAN MATA, yaa!', { 
-          body: `Tugas "${namaTugas}" kamu sisa 10 MENIT lagi! Ayoo buruan submit! 🌸`, // 🔥 Teks diupdate
-          icon: '/flower.png' 
-        });
-      });
+      }).catch(err => console.error(err));
     } else {
-      new Notification('🚨 DEADLINE DEPAN MATA, yaa!', { 
-        body: `Tugas "${namaTugas}" kamu sisa 10 MENIT lagi! Ayoo buruan submit! 🌸`, // 🔥 Teks diupdate
-        icon: '/flower.png' 
-      });
+      // ✅ Aman dari crash iOS karena dibungkus try-catch
+      try {
+        if (typeof Notification !== 'undefined' && Notification.prototype) {
+          new Notification('🚨 DEADLINE DEPAN MATA, yaa!', { body: `Tugas "${namaTugas}" kamu sisa 10 MENIT lagi!` });
+        }
+      } catch (e) {
+        console.warn("Browser tidak mendukung instansiasi Notification langsung (iOS Safari).");
+      }
     }
   }
 }
 
 function triggerNotifTodoGagal(namaTugas) {
-  if (Notification.permission === 'granted') {
+  if (typeof Notification !== "undefined" && Notification.permission === 'granted') {
     new Notification('⚠️ TUGAS HANGUS!', {
       body: `Yah, tugas "${namaTugas}" sudah melewati batas waktu. Yuk, jangan berkecil hati, segera cek daftar tugas gagal untuk evaluasi!`,
       icon: '/flower.png',
@@ -1085,7 +1074,7 @@ function triggerNotifWellnessOffline(namaAktivitas) {
   putarSuaraAlarm();
 
   // 2. Tampilkan Pop-up Visual
-  if (Notification.permission === 'granted') {
+  if (typeof Notification !== "undefined" && Notification.permission === 'granted') {
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
       navigator.serviceWorker.ready.then((registration) => {
         registration.showNotification('🪻 WELLNESS CHECK-IN, yaa!', {
@@ -1466,7 +1455,7 @@ function triggerNotifFocusOffline() {
   putarSuaraAlarm();
 
   // 2. Tampilkan Jendela Pop-up Notifikasi Sistem
-  if (Notification.permission === 'granted') {
+  if (typeof Notification !== "undefined" && Notification.permission === 'granted') {
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
       navigator.serviceWorker.ready.then((registration) => {
         registration.showNotification('🪻 SESSION FOCUS SELESAI, yaa!', {
@@ -1492,16 +1481,7 @@ function triggerNotifFocusOffline() {
   }
 }
 
-// Meminta izin akses notifikasi otomatis saat halaman dimuat
-document.addEventListener("DOMContentLoaded", () => {
-  if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-    Notification.requestPermission().then(permission => {
-      if (permission === "granted") {
-        console.log("Izin notifikasi resmi diberikan oleh pengguna! 🎉");
-      }
-    });
-  }
-});
+
 
 /* ================= 8. SATPAM GLOBAL FOCUS MODE (Berjalan di Seluruh Halaman) ================= */
 setInterval(() => {
@@ -1610,13 +1590,6 @@ onAuthStateChanged(auth, (user) => {
       if (typeof window.sinkronisasiDanRender === "function") window.sinkronisasiDanRender();
     }, 400);
 
-    document.querySelectorAll('nav a, .sidebar-menu a, [data-page]').forEach(tombol => {
-      tombol.addEventListener("click", () => {
-        setTimeout(() => {
-          if (typeof window.sinkronisasiDanRender === "function") window.sinkronisasiDanRender();
-        }, 150);
-      });
-    });
 
   } else {
     if (!isLoginPage) {
@@ -1640,10 +1613,10 @@ const globalFunctions = {
   openProfile,
   privacySecurity,
   scrollDashboard,
-  aktifkanNotificationFCM,
   sendNotification,
   triggerNotifWellnessOffline,
   triggerNotifFocusOffline,
+  aktifkanNotificationFCM,
   bersihkanWellnessGantiHariOtomatis,
   displayFocusHistory,          // 👈 Tambahkan Ini jika belum ada
   hapusFocusHistoryPermanen,
@@ -1687,6 +1660,26 @@ getRedirectResult(auth)
 
 // ✅ PERBAIKAN 1: Dibungkus DOMContentLoaded agar tanda "}" di akhir file seimbang & tidak bikin crash iOS
 document.addEventListener("DOMContentLoaded", () => {
+
+  document.querySelectorAll('nav a, .sidebar-menu a, [data-page]').forEach(tombol => {
+  tombol.addEventListener("click", () => {
+    setTimeout(() => {
+      if (typeof window.sinkronisasiDanRender === "function") window.sinkronisasiDanRender();
+    }, 150);
+  });
+  });
+
+  if (typeof Notification !== "undefined") {
+    if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          console.log("Izin notifikasi resmi diberikan oleh pengguna! 🎉");
+        }
+      });
+    }
+  } else {
+    console.log("Objek Notification tidak ada (Kemungkinan besar diakses via Safari iOS non-PWA).");
+  }
 
   // --- TOMBOL EXTRA KEAMANAN (Nambal Bug Balapan) ---
   document.getElementById("btnGantiPassword")?.addEventListener("click", (e) => {
@@ -1851,45 +1844,49 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// --- FITUR INSTALL APLIKASI (PWA) ---
-let promptInstallTertunda;
-const btnInstallApp = document.getElementById("btnInstallApp");
+/* ================= PROGRESSIVE WEB APPS (PWA) UTILITY ================= */
+let deferredPrompt; 
 
-// 1. Browser mendeteksi bahwa web ini bisa di-install
+// 1. Mendeteksi jika browser mendukung & mendeteksi aplikasi siap diinstal
 window.addEventListener('beforeinstallprompt', (e) => {
-  // Cegah browser memunculkan pop-up install otomatis
+  // Cegah browser memunculkan banner instalasi bawaan otomatis
   e.preventDefault();
+  // Simpan event agar bisa dipanggil secara manual dari tombol
+  deferredPrompt = e;
   
-  // Simpan event-nya supaya bisa kita panggil pas tombol diklik
-  promptInstallTertunda = e;
-  
-  // Munculkan tombol estetik kita!
-  if (btnInstallApp) {
-    btnInstallApp.style.display = 'inline-block'; 
+  const tombolInstal = document.getElementById('btnInstalPWA');
+  if (tombolInstal) {
+    // Tampilkan tombol kustom estetik kita
+    tombolInstal.style.display = 'inline-block'; 
+    
+    // Trik cloneNode untuk membersihkan event listener lama agar memori RAM maksimal
+    const tombolBaru = tombolInstal.cloneNode(true);
+    tombolInstal.parentNode.replaceChild(tombolBaru, tombolInstal);
+    
+    tombolBaru.addEventListener('click', () => {
+      if (!deferredPrompt) return;
+      
+      // Sembunyikan tombol sesaat setelah diklik
+      tombolBaru.style.display = 'none';
+      // Jalankan pop-up instalasi resmi bawaan browser
+      deferredPrompt.prompt();
+      
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User sukses menginstal MindSpace! 🌸');
+        } else {
+          console.log('User menolak proses instalasi.');
+          tombolBaru.style.display = 'inline-block'; // Tampilkan lagi jika user membatalkan
+        }
+        deferredPrompt = null;
+      });
+    });
   }
 });
 
-// 2. Apa yang terjadi saat tombol diklik
-if (btnInstallApp) {
-  btnInstallApp.addEventListener('click', async () => {
-    if (!promptInstallTertunda) {
-      alert("Aplikasi sudah terinstal atau browser tidak mendukung fitur ini.");
-      return;
-    }
-    
-    // Tampilkan pop-up install bawaan browser
-    promptInstallTertunda.prompt();
-    
-    // Tunggu pilihan user (mau install atau batal)
-    const { outcome } = await promptInstallTertunda.userChoice;
-    console.log(`Pilihan user: ${outcome}`);
-    
-    // Bersihkan data memori
-    promptInstallTertunda = null;
-    
-    // Kalau user pilih install, hilangkan tombolnya biar rapi
-    if (outcome === 'accepted') {
-      btnInstallApp.style.display = 'none';
-    }
-  });
-}
+// 2. Mendeteksi jika aplikasi berhasil terpasang di sistem
+window.addEventListener('appinstalled', () => {
+  console.log('MindSpace resmi terpasang di perangkat Anda!');
+  const tombolInstal = document.getElementById('btnInstalPWA');
+  if (tombolInstal) tombolInstal.style.display = 'none';
+});

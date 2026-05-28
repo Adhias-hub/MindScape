@@ -248,3 +248,7 @@ body {
   }
 }
 
+button, input[type="button"], a {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent; /* Menghilangkan kotak hitam saat di-tap di iOS */
+}
