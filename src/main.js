@@ -1503,6 +1503,53 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+/* ================= 8. SATPAM GLOBAL FOCUS MODE (Berjalan di Seluruh Halaman) ================= */
+setInterval(() => {
+  if (!auth.currentUser) return;
+  const uidAman = auth.currentUser.uid;
+
+  // Cek status timer yang lagi berjalan lewat enkripsi lokal
+  const statusTimer = ambilDataAman(`focusStatus_${uidAman}`);
+  const targetEnd = ambilDataAman(`focusTargetEnd_${uidAman}`);
+
+  // Kalau timer terdeteksi sedang "running" dan target selesainya ada
+  if (statusTimer === "running" && targetEnd) {
+    
+    // Bandingkan waktu sekarang dengan target waktu selesai
+    if (Date.now() >= Number(targetEnd)) {
+      console.log("Satpam Global: Timer Fokus Habis di Halaman Lain! Menyimpan otomatis... 🏆");
+
+      // Ambil data buat dicatat di jurnal
+      const teksTarget = ambilDataAman(`focusTargetText_${uidAman}`) || "Sesi Fokus";
+      const teksCatatan = ambilDataAman(`focusNoteText_${uidAman}`) || "-";
+      const durasiAsli = ambilDataAman(`focusOriginalDuration_${uidAman}`) || 25;
+
+      // 1. Bersihkan State (Gembok langsung ditutup biar gak ke-trigger dobel)
+      simpanDataAman(`focusTargetEnd_${uidAman}`, null);
+      simpanDataAman(`focusStatus_${uidAman}`, "stopped");
+      simpanDataAman(`focusTargetText_${uidAman}`, "");
+      simpanDataAman(`focusNoteText_${uidAman}`, "");
+      simpanDataAman(`focusOriginalDuration_${uidAman}`, null);
+
+      // 2. Tembak Notifikasi & Suara Alarm (Bakal bunyi di halaman manapun lu berada)
+      if (typeof triggerNotifFocusOffline === "function") triggerNotifFocusOffline();
+
+      // 3. Simpan Riwayat ke Jurnal Focus
+      if (typeof catatRiwayatFocusSelesai === "function") {
+        catatRiwayatFocusSelesai(durasiAsli, teksTarget, teksCatatan);
+      }
+
+      // 4. Update UI (Hanya berlaku kalau kebetulan layarnya ada di focus.html)
+      if (typeof window.displayFocusHistory === "function") window.displayFocusHistory();
+      if (typeof HubungkanVisualFocusDanKunci === "function") HubungkanVisualFocusDanKunci(false, "Belum ada target belajar.", "Belum ada catatan.");
+      if (typeof updateVisualTimer === "function") updateVisualTimer(0, 0);
+
+      // Matikan interval lokal bawaan timer (mencegah bentrok)
+      if (typeof timerFokus !== 'undefined') clearInterval(timerFokus);
+      if (typeof sedangBerjalan !== 'undefined') sedangBerjalan = false;
+    }
+  }
+}, 5000); // ⏱️ Satpam ngecek setiap 5 detik biar super responsif!
 
 /* ================= LEVEL 5: AUTH STATE OBSERVER & SYNC ================= */
 onAuthStateChanged(auth, (user) => {
