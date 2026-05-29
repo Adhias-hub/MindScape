@@ -2,15 +2,20 @@
 <html lang="id">
 
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://apis.google.com https://*.googleapis.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com; frame-src https://*.firebaseapp.com https://accounts.google.com;">
+  <!-- 🛡️ CONTENT SECURITY POLICY: Dioptimasi Penuh Untuk Firebase, FCM, PWA, dan YouTube Video External -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://apis.google.com https://*.googleapis.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn-icons-png.flaticon.com https://apis.google.com data:; connect-src 'self' https://cdn-icons-png.flaticon.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://identitytoolkit.googleapis.com https://firebaseinstallations.googleapis.com https://fcm.googleapis.com https://fcmregistrations.googleapis.com https://apis.google.com https://*.youtube.com https://*.youtu.be; frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://*.youtube.com https://*.youtu.be;">
+  
   <meta name="description" content="MindSpace: Aplikasi produktivitas mahasiswa untuk mengatur jadwal kuliah, tugas, kesehatan, dan fokus belajar dengan notifikasi pintar.">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>MindSpace Login</title>
 
+  <!-- Jalur Aset CSS Utama -->
   <link rel="stylesheet" href="/src/in.css">
   <link rel="manifest" href="manifest.json">
+  
+  <!-- 🍏 IOS WEB APP CAPABLE (Mantra Anti-Crash Safari Standalone) -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -19,6 +24,19 @@
 
 <body>
 
+  <!-- 🎬 VIDEO EXTERNAL SECTION (Disuntik di Atas Box Login Biar Estetik & Ringan) -->
+  <div class="video-hero-container" style="max-width: 450px; margin: 20px auto 0 auto; padding: 0 20px; box-sizing: border-box;">
+    <!-- Menggunakan Youtube Embed Terkompresi: Auto-play, Muted, Loop, Hide Controls -->
+    <iframe width="100%" height="250" 
+      src="https://www.youtube.com/embed/af0fMMdCEpY?autoplay=1&mute=1&loop=1&playlist=af0fMMdCEpY&controls=0&showinfo=0&rel=0" 
+      frameborder="0" 
+      allow="autoplay; encrypted-media" 
+      allowfullscreen 
+      style="border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); width: 100%;">
+    </iframe>
+  </div>
+
+  <!-- 🔑 PAGES 1: HALAMAN LOGIN -->
   <div class="auth-container" id="loginPage">
     <div class="auth-box">
       <h1>MindSpace 🌸</h1>
@@ -50,6 +68,7 @@
     </div>
   </div>
 
+  <!-- 📝 PAGES 2: HALAMAN REGISTER -->
   <div class="auth-container" id="registerPage" style="display:none;">
     <div class="auth-box">
       <h1>Daftar Akun</h1>
@@ -60,10 +79,10 @@
         <input type="text" id="registerName" placeholder="Masukkan nama lengkap">
       </div>
 
-     <div class="input-box">
-  <label for="registerEmail">Email</label>
-  <input type="email" id="registerEmail" placeholder="Masukkan email">
-</div>
+      <div class="input-box">
+        <label for="registerEmail">Email</label>
+        <input type="email" id="registerEmail" placeholder="Masukkan email">
+      </div>
     
       <div class="input-box">
         <label for="registerPassword">Password</label>
@@ -78,7 +97,8 @@
     </div>
   </div>
 
-  <script type="module" src="/src/main.js"></script>
+  <!-- 🚀 CORE ENGINE VITE: Mengarah langsung ke file bundling root utama -->
+  <script type="module" src="/main.js"></script>
 
 </body>
 </html>
